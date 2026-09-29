@@ -58,7 +58,7 @@
 .hd.n { left: 50%; top: 0; cursor: ns-resize; } .hd.s { left: 50%; top: 100%; cursor: ns-resize; }
 .hd.w { left: 0; top: 50%; cursor: ew-resize; } .hd.e { left: 100%; top: 50%; cursor: ew-resize; }
 .hd.edge { border-radius: 50%; }
-.ov-sel.noedge .hd.edge, .ov-sel.gen .hd, .ov-sel.locked .hd, .ov-sel.dragging .hd { display: none; }
+.ov-sel.inline .hd, .ov-sel.gen .hd, .ov-sel.locked .hd, .ov-sel.dragging .hd { display: none; }
 
 /* 拖动：可移动范围（浅绿框）、原位置虚影、越界变红 */
 .ov-range { border: calc(1.5px * var(--inv)) dashed var(--range); background: rgba(31, 181, 122, .06); border-radius: 3px; pointer-events: none; display: none; transition: border-color var(--fast), background var(--fast); }

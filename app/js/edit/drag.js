@@ -59,13 +59,15 @@ function track(onMove, onUp, onCancel) {
 }
 
 // ---------- 移动 ----------
-export function startMove(ed, info, e0, onClick) {
-  const elm = info.element;
+export function startMove(ed, info0, e0, onClick) {
+  let info = info0, elm = info.element, swapped = false;
   const p0 = ed.toPage(e0.clientX, e0.clientY);
   let st = null, dx = 0, dy = 0, crossed = false;
   const ov = ed.ov;
 
   function begin() {
+    const blk = ed.movableOf(elm);
+    if (blk !== elm) { ed.select(blk); info = ed.selection; elm = blk; swapped = true; }
     if (ed.isLocked(info)) { toast('这个元素已锁定，先解锁再拖', 'err'); return false; }
     const cont = elm.parentElement ? elm.parentElement.closest(CONTAINERS) : null;
     const scope = cont || ed.frame.doc.body;
@@ -84,7 +86,7 @@ export function startMove(ed, info, e0, onClick) {
     ov.sel.classList.add('dragging');
     ov.hide(ov.hover);
     ed.dragging = true;
-    ed.setHint('拖动中 · 按住 <b>Alt</b> 暂停吸附 · 按住 <b>Shift</b> 只走横 / 竖 · <b>Esc</b> 取消');
+    ed.setHint(`${swapped ? `这是行内文字，拖的是它所在的 &lt;${info.tag}&gt; 整块 · ` : ''}拖动中 · 按住 <b>Alt</b> 暂停吸附 · 按住 <b>Shift</b> 只走横 / 竖 · <b>Esc</b> 取消`);
     return true;
   }
 

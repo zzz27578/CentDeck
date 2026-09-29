@@ -50,6 +50,14 @@ export function createEditor(app) {
     return { owner: ed.frame.owner(n.parentElement), pt: d };
   };
   ed.selectorOf = (e) => { const loc = ed.frame.locOf(e); const p = loc != null && ed.frame.parsed.byLoc(loc); return p ? p.selector : null; };
+  // 行内文字（em、a、span…）按浏览器规定不能单独挪动或缩放：拖它就拖它所在的整块
+  const REPLACED = /^(img|svg|video|canvas|iframe|input|select|textarea|button|object|embed)$/i;
+  ed.isInlineText = (e) => !REPLACED.test(e.tagName) && /^(inline|contents)$/.test(ed.frame.win.getComputedStyle(e).display);
+  ed.movableOf = (e) => {
+    let n = e;
+    while (n && n.tagName !== 'BODY' && (!n.hasAttribute('data-loc') || ed.isInlineText(n))) n = n.parentElement;
+    return n && n.tagName !== 'BODY' ? n : e;
+  };
   ed.isLocked = (info) => app.isLocked(info);
 
   ed.infoOf = (e) => {
@@ -299,8 +307,10 @@ export function createEditor(app) {
 
   // ---------- 键盘微调（连续按合并成一步撤销） ----------
   ed.nudge = (dx, dy) => {
-    const info = ed.selection;
+    let info = ed.selection;
     if (!info) return;
+    const blk = ed.movableOf(info.element);
+    if (blk !== info.element) { ed.select(blk); info = ed.selection; toast(`行内文字不能单独挪动，改为挪动它所在的 <${info.tag}>`, '', 2600); }
     if (ed.isLocked(info)) { toast('这个元素已锁定', 'err'); return; }
     const e = info.element;
     if (!nudge || nudge.el !== e) { if (nudge) flushNudge(); nudge = { el: e, info, dx: 0, dy: 0, inline0: e.style.translate, t0: String(e.style.translate || '0 0').split(/\s+/).map(parseFloat) }; }
@@ -417,8 +427,7 @@ export function createEditor(app) {
       const locked = app.isLocked(gen ? null : { generated: false, selector: info && info.selector });
       ov.sel.classList.toggle('gen', gen);
       ov.sel.classList.toggle('locked', !!locked);
-      const disp = f.win.getComputedStyle(s).display;
-      ov.sel.classList.toggle('noedge', disp === 'inline' || disp === 'contents');
+      ov.sel.classList.toggle('inline', ed.isInlineText(s));
       const label = gen ? `<${s.tagName.toLowerCase()}> 程序生成` : `<${info.tag}> · 第 ${info.line} 行${locked ? ' · 已锁定' : ''}`;
       if (ov.tag.textContent !== label) ov.tag.textContent = label;
       const size = `${Math.round(r.w)} × ${Math.round(r.h)}`;

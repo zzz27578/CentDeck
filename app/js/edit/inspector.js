@@ -136,9 +136,14 @@ export function renderInspector(ed, info, clear) {
   const wI = q('[data-k=w]'), hI = q('[data-k=h]');
   wI.value = Math.round(e.offsetWidth || e.getBoundingClientRect().width);
   hI.value = Math.round(e.offsetHeight || e.getBoundingClientRect().height);
-  const inline = cs.display === 'inline';
-  wI.disabled = hI.disabled = inline;
-  if (inline) wI.parentElement.parentElement.setAttribute('data-tip', '行内文字的宽高由文字决定，可以用缩放');
+  const inline = ed.isInlineText(e);
+  const scI0 = q('[data-k=sc]');
+  [xI, yI, wI, hI, scI0].forEach((n) => { n.disabled = inline; });
+  if (inline) {
+    const sec = xI.closest('.p-sec');
+    sec.querySelector('.p-sec-title span:last-child').textContent = '行内文字：挪动或缩放它所在的整块';
+    sec.insertAdjacentHTML('beforeend', '<div class="hint" style="margin-top:6px">浏览器规定行内文字（比如一句话里的加粗、链接）不能单独挪动或缩放。按 <kbd>Shift</kbd>+<kbd>Enter</kbd> 选外面一层，或者直接拖它——会自动拖整块。</div>');
+  }
   wI.onchange = () => { const v = Math.round(+wI.value); if (v > 0) ed.applyStyle({ width: v + 'px' }, `宽度改为 ${v}px`); };
   hI.onchange = () => { const v = Math.round(+hI.value); if (v > 0) ed.applyStyle({ height: v + 'px' }, `高度改为 ${v}px`); };
   const scI = q('[data-k=sc]'), scV = q('[data-k=scv]');
