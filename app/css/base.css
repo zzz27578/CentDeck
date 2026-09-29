@@ -174,3 +174,10 @@ textarea.ipt { height: auto; padding: 7px 9px; resize: vertical; line-height: 1.
 .keyhelp h4 { font-size: 12px; color: var(--dim); font-weight: 600; margin: 10px 0 6px; }
 .kh-row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px dashed var(--line); color: var(--text); }
 .kh-row kbd { margin-left: 3px; }
+.kh-row > span:last-child { display: inline-flex; align-items: center; gap: 4px; }
+.kh-key { min-width: 30px; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line-2); border-bottom-width: 2px; background: #fff; font: 11.5px/19px ui-monospace, Consolas, monospace; color: var(--accent-2); text-decoration: underline dotted; text-underline-offset: 3px; transition: border-color var(--fast), background var(--fast); }
+.kh-key:hover { border-color: var(--accent); background: var(--accent-soft); }
+.kh-key.wait { border-color: var(--accent); background: var(--accent); color: #fff; text-decoration: none; animation: pulse 1s infinite; }
+.kh-reset { width: 20px; height: 20px; border-radius: 5px; color: var(--dim); }
+.kh-reset:hover { background: var(--bg-2); color: var(--text); }
+.kh-lock { font-style: normal; font-size: 11px; opacity: .55; }

@@ -1,9 +1,14 @@
 // 服务端接口回归：node tests/api.test.mjs（会临时启动一个服务，结束后清理测试项目）
 import { spawn } from 'child_process';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// 测试会改模型设置，结束后原样放回，不影响真实使用
+const SETTINGS = path.join(ROOT, 'config.local', 'settings.json');
+const savedSettings = fs.existsSync(SETTINGS) ? fs.readFileSync(SETTINGS, 'utf8') : null;
+const restoreSettings = () => { if (savedSettings == null) fs.rmSync(SETTINGS, { force: true }); else fs.writeFileSync(SETTINGS, savedSettings); };
 const PORT = 8490;
 const srv = spawn(process.execPath, ['server/server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), CENTDECK_NO_OPEN: '1' }, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 900));
@@ -48,6 +53,7 @@ try {
   ok(!s2.providers.find((p) => p.id === 'deepseek').hasKey, '设置：可以清除密钥');
 } catch (e) { fail++; console.log('  ✗', e.message); }
 for (const id of made) { try { await call('DELETE', `/api/projects/${id}`); } catch { /* 忽略 */ } }
-srv.kill();
+await new Promise((r) => { srv.once('exit', r); srv.kill(); });
+restoreSettings();
 console.log(`接口测试：${pass} 通过，${fail} 失败`);
 process.exit(fail ? 1 : 0);

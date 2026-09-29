@@ -72,7 +72,7 @@ export function openModal({ title = '', body = '', actions, width, onClose, clas
   });
   if (!foot.children.length) foot.remove();
   dlg.querySelector('.modal-x').onclick = () => close();
-  wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(); });
+  wrap.addEventListener('pointerdown', (e) => { if (e.target === wrap) close(); });
   modalStack.push(entry);
   document.body.appendChild(wrap);
   requestAnimationFrame(() => wrap.classList.add('show'));
@@ -146,7 +146,9 @@ export function showMenu(items, x, y, { minWidth = 190, anchor = null, align = '
   return menu;
 }
 export const menuOpen = () => !!openMenuEl;
-document.addEventListener('mousedown', (e) => { if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }, true);
+// 用 pointerdown：页面覆盖层会取消 pointerdown，那样浏览器就不再补发 mousedown，菜单会关不掉
+document.addEventListener('pointerdown', (e) => { if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }, true);
+document.addEventListener('contextmenu', (e) => { if (openMenuEl && !openMenuEl.contains(e.target)) closeMenu(); }, true);
 window.addEventListener('blur', closeMenu);
 window.addEventListener('resize', closeMenu);
 
@@ -175,7 +177,7 @@ document.addEventListener('mouseover', (e) => {
     tipEl.classList.add('show');
   }, 380);
 });
-document.addEventListener('mousedown', hideTip, true);
+document.addEventListener('pointerdown', hideTip, true);
 document.addEventListener('wheel', hideTip, { passive: true, capture: true });
 
 // 行内分段按钮组的通用同步

@@ -1,6 +1,7 @@
 // 工作台外壳：顶栏（项目/页面/视图切换/保存状态/撤销/助手）、左侧栏+抽屉面板、右侧属性栏、状态栏
 import { icon } from '../core/icons.js';
-import { el, esc, showMenu, toast, confirmDlg, closeMenu, menuOpen, anyModalOpen, closeTopModal } from '../core/ui.js';
+import { el, esc, showMenu, toast, confirmDlg, closeMenu, menuOpen, anyModalOpen, closeTopModal, segSync } from '../core/ui.js';
+import { getDevice, setDevice } from '../core/viewport.js';
 import { bindKey, showKeyHelp } from '../core/keys.js';
 
 const VIEWS = [
@@ -20,14 +21,21 @@ export function buildShell(app) {
         <span class="tb-proj" id="tb-proj"></span>
         <button class="tb-page" id="tb-page" hidden data-tip="切换页面"><span></span>${icon('chevDown', 14)}</button>
       </div>
-      <div class="view-switch" id="view-switch"><i class="pill"></i>
-        ${VIEWS.map((v) => `<button data-view="${v.id}" data-tip="${v.label}" data-kbd="${v.kbd}">${icon(v.icon, 16)}${v.label}</button>`).join('')}
+      <div class="tb-center">
+        <div class="view-switch" id="view-switch"><i class="pill"></i>
+          ${VIEWS.map((v) => `<button data-view="${v.id}" data-tip="${v.label}" data-kbd="${v.kbd}">${icon(v.icon, 16)}${v.label}</button>`).join('')}
+        </div>
+        <div class="seg dev-switch" id="dev-switch">
+          <button data-dev="desktop" data-tip="按电脑屏幕看和改">${icon('monitor', 15)}电脑</button>
+          <button data-dev="mobile" data-tip="按手机屏幕看和改：在这里改的样式只对手机生效">${icon('phone', 15)}手机</button>
+        </div>
       </div>
       <div class="tb-right">
         <span class="save-state" id="save-state"><i></i><span>已保存</span></span>
         <button class="icon-btn" id="tb-undo" data-tip="撤销" data-kbd="Ctrl+Z">${icon('undo')}</button>
         <button class="icon-btn" id="tb-redo" data-tip="重做" data-kbd="Ctrl+Shift+Z">${icon('redo')}</button>
         <span class="tb-sep"></span>
+        <button class="icon-btn" id="tb-insp" hidden data-tip="属性栏（选中元素时自动弹出）" data-kbd="Alt+P">${icon('sliders')}</button>
         <button class="tb-agent" id="tb-agent" data-tip="召唤助手" data-kbd="Ctrl+K">${icon('sparkle', 16)}助手</button>
         <button class="icon-btn" id="tb-more" data-tip="更多">${icon('more')}</button>
       </div>
@@ -60,8 +68,18 @@ export function buildShell(app) {
   $('#tb-undo').onclick = () => app.bus.undo();
   $('#tb-redo').onclick = () => app.bus.redo();
   $('#tb-agent').onclick = () => app.toggleAgent();
+  $('#tb-insp').onclick = () => app.editor.toggleInspector();
   $('#drawer-close').onclick = () => openPanel(null);
   $('#view-switch').querySelectorAll('button').forEach((b) => { b.onclick = () => app.setView(b.dataset.view); });
+  const syncDev = () => segSync($('#dev-switch'), getDevice(), 'data-dev');
+  $('#dev-switch').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      setDevice(b.dataset.dev);
+      syncDev();
+      if (b.dataset.dev === 'mobile') toast('手机模式：在这里改的位置、大小、字号只对手机屏幕生效，电脑版不受影响', '', 3800);
+    };
+  });
+  syncDev();
   $('#tb-more').onclick = (e) => showMenu([
     { label: '快捷键一览', icon: 'keyboard', kbd: '?', onClick: showKeyHelp },
     '-',
@@ -138,6 +156,7 @@ export function buildShell(app) {
     if (on) { pill.style.width = on.offsetWidth + 'px'; pill.style.transform = `translateX(${on.offsetLeft - 3}px)`; }
     const pageBtn = $('#tb-page');
     pageBtn.hidden = app.state.view !== 'edit';
+    $('#tb-insp').hidden = app.state.view !== 'edit';
     const pg = app.project().pages.find((p) => p.file === app.state.page);
     pageBtn.querySelector('span').textContent = pg ? pg.title : '';
     if (activePanel) {
@@ -178,10 +197,10 @@ export function bindShellKeys(app) {
   bindKey(['Ctrl+Z'], { label: '撤销', group: '通用', when: inWb, run: () => { app.bus.undo(); } });
   bindKey(['Ctrl+Shift+Z', 'Ctrl+Y'], { label: '重做', group: '通用', when: inWb, run: () => { app.bus.redo(); } });
   bindKey('Ctrl+S', { label: '保存（改动会自动保存）', group: '通用', field: true, when: inWb, run: () => { app.bus.flushMeta(); toast('所有改动都已自动保存', 'ok', 1600); } });
-  bindKey('Ctrl+K', { label: '召唤 / 收起助手', group: '通用', field: true, when: inWb, run: () => { app.toggleAgent(); } });
+  bindKey('Ctrl+K', { id: 'agent.toggle', label: '召唤 / 收起助手', group: '通用', field: true, when: inWb, run: () => { app.toggleAgent(); } });
   bindKey('?', { label: '快捷键一览', group: '通用', run: () => { showKeyHelp(); } });
-  bindKey('Alt+1', { label: '总览', group: '视图', when: inWb, run: () => { app.setView('overview'); } });
-  bindKey('Alt+2', { label: '编辑', group: '视图', when: inWb, run: () => { app.setView('edit'); } });
-  bindKey(['F5', 'Alt+3'], { label: '放映（从首页）', group: '视图', field: true, when: inWb, run: () => { app.present(null); } });
-  bindKey('Shift+F5', { label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
+  bindKey('Alt+1', { id: 'view.overview', label: '总览', group: '视图', when: inWb, run: () => { app.setView('overview'); } });
+  bindKey('Alt+2', { id: 'view.edit', label: '编辑', group: '视图', when: inWb, run: () => { app.setView('edit'); } });
+  bindKey('F5', { id: 'view.present', label: '放映（从首页）', group: '视图', field: true, when: inWb, run: () => { app.present(null); } });
+  bindKey('Shift+F5', { id: 'view.presentHere', label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
 }

@@ -56,6 +56,21 @@ export function setupTokens(app) {
           pre.querySelector('.p-actions').appendChild(b);
         });
         host.appendChild(pre);
+        const shapes = el(`<div class="p-sec"><div class="p-sec-title">按钮形状</div><div class="seg" data-shape style="width:100%">
+          <button data-v="4px" style="flex:1">方角</button><button data-v="10px" style="flex:1">圆角</button><button data-v="999px" style="flex:1">胶囊</button></div>
+          <button class="btn small block" data-ai style="margin-top:10px">${icon('sparkle', 14)}让助手出几套配色和按钮样式</button></div>`);
+        shapes.querySelectorAll('[data-v]').forEach((b) => {
+          b.classList.toggle('on', (t.radius || [])[0] === b.dataset.v);
+          b.onclick = async () => {
+            const old = (t.radius || []).slice();
+            const next = [b.dataset.v, ...(old.length ? old.slice(1) : ['14px', '24px'])];
+            await bus.doMeta({ label: '改按钮形状', apply: () => { t.radius = next; }, revert: () => { t.radius = old; } });
+            paint();
+            toast('按钮形状已改，点"应用到全站"让页面生效', 'ok');
+          };
+        });
+        shapes.querySelector('[data-ai]').onclick = () => app.agent.prefill('请用「设计规范」技能给这个网站出 3 套配色和按钮样式（主色、强调色、背景、文字色、按钮圆角和阴影），每套说明适合什么感觉，做成可以直接应用的 tokens。', { skill: 'design-system' });
+        host.appendChild(shapes);
         const colors = el('<div class="p-sec"><div class="p-sec-title">颜色</div></div>');
         Object.entries(t.colors || {}).forEach(([k, v]) => {
           const row = el(`<div class="p-row"><label style="width:76px">${esc(k)}</label><input type="color" class="color-ipt" value="${/^#[0-9a-f]{6}$/i.test(v) ? v : '#000000'}"><input class="ipt" value="${esc(v)}" style="flex:1"></div>`);

@@ -1,20 +1,20 @@
 // 编辑视图：真实桌面视口里的页面 + 覆盖层交互。三个基础工具互不干扰：
-//   交互（I）= 像真实浏览一样点按钮、开弹窗、填表单；选择（V）= 点选/拖动/缩放；文字（T）= 点哪改哪。
+//   交互（E）= 像真实浏览一样点按钮、开弹窗、填表单；选择（R）= 点选/拖动/缩放；文字（T）= 点哪改哪（按键可改）。
 import { createStage } from '../core/stage.js';
-import { getViewport, onViewportChange } from '../core/viewport.js';
+import { getViewport, onViewportChange, getDevice, MOBILE_MAX } from '../core/viewport.js';
 import { createFrame } from '../engine/frame.js';
 import { applyEdit } from '../engine/writeback.js';
 import { createOverlay } from './overlay.js';
-import { startMove, startResize, CONTAINERS } from './drag.js';
+import { startMove, startResize, CONTAINERS, curTranslate, saveInline, restoreInline, setImp } from './drag.js';
 import { startTextEdit } from './text.js';
 import { buildChrome, showVerdict, hideVerdict, openContextMenu, renderCrumbs } from './chrome.js';
 import { renderInspector } from './inspector.js';
-import { attachDoc, bindKey, isSpaceDown } from '../core/keys.js';
+import { attachDoc, bindKey, isSpaceDown, comboFor } from '../core/keys.js';
 import { toast } from '../core/ui.js';
 
 const BASE_TOOLS = [
-  { id: 'interact', label: '交互', tip: '交互：像真实浏览一样点按钮、开弹窗、填表单', icon: 'hand', kbd: 'I', cls: 'passthru' },
-  { id: 'select', label: '选择', tip: '选择：点选、拖动、拖手柄缩放', icon: 'select', kbd: 'V', cls: 't-select' },
+  { id: 'interact', label: '交互', tip: '交互：像真实浏览一样点按钮、开弹窗、填表单', icon: 'hand', kbd: 'E', cls: 'passthru' },
+  { id: 'select', label: '选择', tip: '选择：点选、拖动、拖手柄缩放', icon: 'select', kbd: 'R', cls: 't-select' },
   { id: 'text', label: '文字', tip: '文字：点文字直接改；点空白处新建文本框', icon: 'text', kbd: 'T', cls: 't-text' },
 ];
 
@@ -86,9 +86,28 @@ export function createEditor(app) {
     ed.sel = e || null;
     ed.selSelector = e ? ed.selectorOf(e) : null;
     const info = ed.selection;
+    if (!info) inspForced = false;
     renderInspector(ed, info);
+    ed.syncInspector();
     renderCrumbs(ed);
     bus.emit('select', info);
+  };
+  // 属性栏：选中元素时自动弹出，没选中就收起；点 × 关掉后不再自动弹，按顶栏按钮（Alt+P）再叫出来
+  let inspMode = localStorage.getItem('cd.insp') === 'off' ? 'off' : 'auto', inspForced = false;
+  ed.syncInspector = () => {
+    const open = app.state.view === 'edit' && !!ed.frame && inspMode === 'auto' && (!!ed.selection || inspForced);
+    if (app.refs) app.refs.inspector.classList.toggle('open', open);
+    const b = document.getElementById('tb-insp');
+    if (b) b.classList.toggle('on', open);
+  };
+  ed.toggleInspector = (force) => {
+    const open = app.refs && app.refs.inspector.classList.contains('open');
+    const want = force == null ? !open : force;
+    inspMode = want ? 'auto' : 'off';
+    inspForced = want && !ed.selection;
+    localStorage.setItem('cd.insp', inspMode);
+    if (want && !ed.selection) renderInspector(ed, null);
+    ed.syncInspector();
   };
   Object.defineProperty(ed, 'selection', { get: () => (ed.sel && ed.sel.isConnected ? ed.infoOf(ed.sel) : null) });
   ed.clearSelection = () => ed.select(null);
@@ -125,7 +144,7 @@ export function createEditor(app) {
     }
     if (t.activate) t.activate(ed);
     if (ed.chrome) ed.chrome.syncDock();
-    ed.setHint(id === 'interact' ? '交互模式：页面和真实浏览一样可以点、可以滚、能打开弹窗 · 按 <b>V</b> 回到选择' : '');
+    ed.setHint(id === 'interact' ? `交互模式：页面和真实浏览一样可以点、可以滚、能打开弹窗 · 按 <b>${comboFor('tool.select', 'R')}</b> 回到选择` : '');
   };
   ed.setHint = (h) => app.setHint(h);
 
@@ -165,6 +184,7 @@ export function createEditor(app) {
       ed.sel = p ? ed.frame.elByLoc(p.loc) : null;
     } else ed.sel = null;
     renderInspector(ed, ed.selection);
+    ed.syncInspector();
     renderCrumbs(ed);
     bus.emit('rendered');
   }
@@ -219,7 +239,16 @@ export function createEditor(app) {
   const targetOf = (info) => (info.generated ? { generated: true, selector: info.selector, text: info.text } : info.loc);
   const DUP_REASON = '浏览器在这里自动修正了原代码里交叉嵌套的标签（复制出了一份元素），这一块和代码对不上号，没法直接写回。可以记成草图标记交给 AI，顺便请它把这里的标签理顺。';
   const dupRes = () => ({ light: 'red', reason: DUP_REASON });
-  ed.runEdit = (label, edit) => ed.doSource({ label, build: (src) => (typeof edit.target === 'number' && ed.frame.isDup(edit.target) ? dupRes() : applyEdit(src, edit, { measure: ed.measure })) });
+  // 手机模式下，位置、大小、字号这类样式只写进手机专用的 @media 规则
+  const mobile = () => getDevice() === 'mobile';
+  ed.runEdit = (label, edit) => ed.doSource({
+    label: mobile() && (edit.kind === 'style' || edit.kind === 'move') ? label + '（仅手机）' : label,
+    build: (src) => {
+      if (typeof edit.target === 'number' && ed.frame.isDup(edit.target)) return dupRes();
+      const e2 = mobile() && (edit.kind === 'style' || edit.kind === 'move') ? { ...edit, media: MOBILE_MAX } : edit;
+      return applyEdit(src, e2, { measure: ed.measure });
+    },
+  });
   ed.commitMove = async (info, dx, dy, restore) => {
     const r = await ed.runEdit(`移动 <${info.tag}>（${dx}, ${dy}）`, { kind: 'move', target: targetOf(info), dx, dy, crossed: false });
     if (!r.ok) restore();
@@ -317,9 +346,9 @@ export function createEditor(app) {
     if (blk !== info.element) { ed.select(blk); info = ed.selection; toast(`行内文字不能单独挪动，改为挪动它所在的 <${info.tag}>`, '', 2600); }
     if (ed.isLocked(info)) { toast('这个元素已锁定', 'err'); return; }
     const e = info.element;
-    if (!nudge || nudge.el !== e) { if (nudge) flushNudge(); nudge = { el: e, info, dx: 0, dy: 0, inline0: e.style.translate, t0: String(e.style.translate || '0 0').split(/\s+/).map(parseFloat) }; }
+    if (!nudge || nudge.el !== e) { if (nudge) flushNudge(); nudge = { el: e, info, dx: 0, dy: 0, inline0: saveInline(e), t0: curTranslate(ed.frame.win, e) }; }
     nudge.dx += dx; nudge.dy += dy;
-    e.style.translate = `${(nudge.t0[0] || 0) + nudge.dx}px ${(nudge.t0[1] || 0) + nudge.dy}px`;
+    setImp(e, 'translate', `${nudge.t0[0] + nudge.dx}px ${nudge.t0[1] + nudge.dy}px`);
     clearTimeout(nudge.timer);
     nudge.timer = setTimeout(flushNudge, 420);
     ed.setHint(`微调 → ${nudge.dx}　↓ ${nudge.dy}（松开方向键后写回）`);
@@ -330,7 +359,7 @@ export function createEditor(app) {
     clearTimeout(n.timer);
     ed.setHint('');
     if (!n.dx && !n.dy) return;
-    ed.commitMove(n.info, n.dx, n.dy, () => { n.el.style.translate = n.inline0; });
+    ed.commitMove(n.info, n.dx, n.dy, () => restoreInline(n.el, n.inline0));
   }
 
   // ---------- 覆盖层事件 ----------
@@ -466,6 +495,13 @@ export function createEditor(app) {
     loop();
     const file = app.state.page && app.project().pages.some((p) => p.file === app.state.page) ? app.state.page : (app.project().pages[0] || {}).file;
     if (file) await ed.openPage(file);
+    else {
+      const empty = document.createElement('div');
+      empty.className = 'ed-empty';
+      empty.innerHTML = '<b>这个项目还没有页面</b><span>回到总览，用一句话让助手生成方案，或者新建一张空白页。</span><button class="btn primary">回到总览</button>';
+      empty.querySelector('button').onclick = () => app.setView('overview');
+      ed.host.appendChild(empty);
+    }
   };
   ed.leave = () => {
     if (nudge) flushNudge();
@@ -482,7 +518,7 @@ export function createEditor(app) {
   // ---------- 快捷键 ----------
   const inEdit = () => app.state.view === 'edit' && !!ed.frame && !ed.textEditing;
   const G = '编辑';
-  BASE_TOOLS.forEach((t) => bindKey(t.kbd, { label: t.label + '工具', group: '工具', when: inEdit, run: () => ed.setTool(t.id) }));
+  BASE_TOOLS.forEach((t) => bindKey(t.kbd, { id: 'tool.' + t.id, label: t.label + '工具', group: '工具', when: inEdit, run: () => ed.setTool(t.id) }));
   bindKey('Esc', { hidden: true, when: inEdit, run: () => {
     if (ed.sel) { ed.clearSelection(); return; }
     if (ed.tool !== 'select') { ed.setTool('select'); return; }
@@ -490,18 +526,19 @@ export function createEditor(app) {
   } });
   bindKey(['Delete', 'Backspace'], { label: '删除选中元素', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.deleteSelection() });
   bindKey('Enter', { label: '改选中元素的文字', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.editTextOf(ed.sel, null) });
-  bindKey('Shift+Enter', { label: '选择外面一层（父级）', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.selectParent() });
+  bindKey('Shift+Enter', { id: 'edit.parent', label: '选择外面一层（父级）', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.selectParent() });
   bindKey('Tab', { label: '选下一个同级元素', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.selectSibling(1) });
   bindKey('Shift+Tab', { label: '选上一个同级元素', group: G, when: () => inEdit() && !!ed.sel, run: () => ed.selectSibling(-1) });
   [['↑', 0, -1], ['↓', 0, 1], ['←', -1, 0], ['→', 1, 0]].forEach(([k, x, y]) => {
     bindKey(k, { label: '微调 1 像素', group: G, hidden: k !== '↑', when: () => inEdit() && !!ed.sel, run: () => ed.nudge(x, y) });
     bindKey('Shift+' + k, { label: '微调 10 像素', group: G, hidden: k !== '↑', when: () => inEdit() && !!ed.sel, run: () => ed.nudge(x * 10, y * 10) });
   });
-  bindKey('Ctrl+Shift+L', { label: '锁定 / 解锁选中元素', group: G, when: () => inEdit() && !!ed.sel, run: () => { const i = ed.selection; if (i && !i.generated) app.setElementLock(ed.page, i.selector, !app.elementLocked(ed.page, i.selector)).then(() => renderInspector(ed, ed.selection)); } });
-  bindKey('Shift+1', { label: '适应屏幕', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.fit(true) });
-  bindKey(['Ctrl+0', 'Shift+0'], { label: '实际大小 100%', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.actual() });
-  bindKey(['Ctrl++', 'Ctrl+Shift++'], { label: '放大', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.zoomIn() });
-  bindKey('Ctrl+-', { label: '缩小', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.zoomOut() });
+  bindKey('Ctrl+Shift+L', { id: 'edit.lock', label: '锁定 / 解锁选中元素', group: G, when: () => inEdit() && !!ed.sel, run: () => { const i = ed.selection; if (i && !i.generated) app.setElementLock(ed.page, i.selector, !app.elementLocked(ed.page, i.selector)).then(() => renderInspector(ed, ed.selection)); } });
+  bindKey('Shift+1', { id: 'view.fit', label: '适应屏幕', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.fit(true) });
+  bindKey('Ctrl+0', { id: 'view.actual', label: '实际大小 100%', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.actual() });
+  bindKey('Ctrl++', { id: 'view.zoomIn', label: '放大', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.zoomIn() });
+  bindKey('Alt+P', { id: 'view.inspector', label: '属性栏 开 / 关', group: '视图', when: () => app.state.view === 'edit', run: () => ed.toggleInspector() });
+  bindKey('Ctrl+-', { id: 'view.zoomOut', label: '缩小', group: '视图', when: () => app.state.view === 'edit', run: () => ed.stage.zoomOut() });
 
   return ed;
 }

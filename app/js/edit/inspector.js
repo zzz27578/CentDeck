@@ -2,6 +2,8 @@
 import { icon } from '../core/icons.js';
 import { el, esc, toast } from '../core/ui.js';
 import { getStyleProp } from '../engine/writeback.js';
+import { comboFor } from '../core/keys.js';
+import { getDevice } from '../core/viewport.js';
 
 const FONTS = [
   ['跟随页面', ''], ['微软雅黑', '"Microsoft YaHei", sans-serif'], ['苹方', '"PingFang SC", sans-serif'],
@@ -35,10 +37,12 @@ export function renderInspector(ed, info, clear) {
     <div class="insp-head">
       <div class="insp-title"><span class="grow">${esc(kind)} <span style="color:var(--dim);font-weight:400">&lt;${esc(info.tag)}&gt;</span></span>
         ${info.generated ? '' : `<button class="icon-btn sm ${elLocked ? 'on' : ''}" data-a="lock" data-tip="${elLocked ? '解锁' : '锁定：手和 AI 都改不了'}" data-kbd="Ctrl+Shift+L">${icon(elLocked ? 'lock' : 'unlock', 15)}</button>`}
-        <button class="icon-btn sm" data-a="parent" data-tip="选择外面一层" data-kbd="Shift+Enter">${icon('parent', 15)}</button></div>
+        <button class="icon-btn sm" data-a="parent" data-tip="选择外面一层" data-kbd="Shift+Enter">${icon('parent', 15)}</button>
+        <button class="icon-btn sm" data-a="close" data-tip="收起属性栏" data-kbd="Alt+P">${icon('close', 14)}</button></div>
       <div class="insp-sub">${info.generated ? '程序运行时生成（代码里没有它自己的一行）' : `代码第 ${info.line}${info.endLine > info.line ? '–' + info.endLine : ''} 行 · ${Math.round(e.getBoundingClientRect().width)} × ${Math.round(e.getBoundingClientRect().height)}`}</div>
       ${info.generated ? '<div class="insp-warn red">它是脚本临时生成的，没法直接改代码；想改就右键"记成草图标记"交给 AI。</div>' : ''}
       ${locked ? `<div class="insp-warn">已锁定${app.pageLocked(ed.page) ? '（整页锁定）' : ''}，修改入口都关掉了。</div>` : ''}
+      ${getDevice() === 'mobile' && !info.generated ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">手机模式：这里改的位置、大小、字号、颜色只对手机屏幕生效；文字内容两边共用。</div>' : ''}
       ${!info.generated && info.transformAnim ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">带动画：挪位和缩放走独立通道，不会和动画打架。</div>' : ''}
     </div>
     <div class="insp-body ${locked || info.generated ? 'disabled' : ''}">
@@ -63,6 +67,7 @@ export function renderInspector(ed, info, clear) {
     </div>`;
   const q = (s) => box.querySelector(s);
   q('[data-a=parent]').onclick = () => ed.selectParent();
+  q('[data-a=close]').onclick = () => ed.toggleInspector(false);
   const lockB = q('[data-a=lock]');
   if (lockB) lockB.onclick = () => app.setElementLock(ed.page, info.selector, !elLocked).then(() => renderInspector(ed, ed.selection));
   q('[data-a=note]').onclick = () => app.notes && app.notes.addFor(info);
@@ -96,7 +101,7 @@ export function renderInspector(ed, info, clear) {
   const fs = Math.round(parseFloat(cs.fontSize));
   const fsI = q('[data-k=fs]'), fsR = q('[data-k=fsr]');
   fsI.value = fs; fsR.value = Math.min(96, Math.max(8, fs));
-  fsR.oninput = () => { fsI.value = fsR.value; e.style.fontSize = fsR.value + 'px'; };
+  fsR.oninput = () => { fsI.value = fsR.value; e.style.setProperty('font-size', fsR.value + 'px', 'important'); };
   fsR.onchange = () => ed.applyStyle({ 'font-size': fsR.value + 'px' }, `字号改为 ${fsR.value}px`);
   fsI.onchange = () => { const v = Math.round(+fsI.value); if (v > 0) ed.applyStyle({ 'font-size': v + 'px' }, `字号改为 ${v}px`); };
   const ff = q('[data-k=ff]');
@@ -113,7 +118,7 @@ export function renderInspector(ed, info, clear) {
   });
   const ci = q('[data-k=color]');
   ci.value = cur;
-  ci.oninput = () => { e.style.color = ci.value; };
+  ci.oninput = () => { e.style.setProperty('color', ci.value, 'important'); };
   ci.onchange = () => ed.applyStyle({ color: ci.value }, `颜色改为 ${ci.value}`);
   const bold = parseInt(cs.fontWeight, 10) >= 600;
   const bB = q('[data-k=bold]');
@@ -125,7 +130,7 @@ export function renderInspector(ed, info, clear) {
   });
 
   // 位置与大小
-  const t = String(getStyleProp(info, 'translate') || '0 0').split(/\s+/).map(parseFloat);
+  const t = cs.translate && cs.translate !== 'none' ? cs.translate.split(/\s+/).map(parseFloat) : [0, 0];
   const xI = q('[data-k=x]'), yI = q('[data-k=y]');
   xI.value = Math.round(t[0] || 0); yI.value = Math.round(t[1] || 0);
   const setOff = () => {
@@ -147,9 +152,9 @@ export function renderInspector(ed, info, clear) {
   wI.onchange = () => { const v = Math.round(+wI.value); if (v > 0) ed.applyStyle({ width: v + 'px' }, `宽度改为 ${v}px`); };
   hI.onchange = () => { const v = Math.round(+hI.value); if (v > 0) ed.applyStyle({ height: v + 'px' }, `高度改为 ${v}px`); };
   const scI = q('[data-k=sc]'), scV = q('[data-k=scv]');
-  const sc0 = Math.round((parseFloat(getStyleProp(info, 'scale')) || 1) * 100);
+  const sc0 = Math.round((parseFloat(cs.scale) || 1) * 100);
   scI.value = sc0; scV.textContent = sc0 + '%';
-  scI.oninput = () => { scV.textContent = scI.value + '%'; e.style.scale = String(scI.value / 100); };
+  scI.oninput = () => { scV.textContent = scI.value + '%'; e.style.setProperty('scale', String(scI.value / 100), 'important'); };
   scI.onchange = () => { const v = +scI.value; ed.applyStyle({ scale: v === 100 ? null : String(v / 100) }, `缩放到 ${v}%`); };
 }
 
@@ -159,13 +164,14 @@ function renderPage(ed, box) {
   const locked = app.pageLocked(ed.page);
   box.innerHTML = `
     <div class="insp-head"><div class="insp-title"><span class="grow">${esc(pg.title || '')}</span>
-      <button class="icon-btn sm ${locked ? 'on' : ''}" data-a="plock" data-tip="${locked ? '解锁本页' : '锁定本页：整页只读'}">${icon(locked ? 'lock' : 'unlock', 15)}</button></div>
+      <button class="icon-btn sm ${locked ? 'on' : ''}" data-a="plock" data-tip="${locked ? '解锁本页' : '锁定本页：整页只读'}">${icon(locked ? 'lock' : 'unlock', 15)}</button>
+      <button class="icon-btn sm" data-a="close" data-tip="收起属性栏" data-kbd="Alt+P">${icon('close', 14)}</button></div>
       <div class="insp-sub">${esc(ed.page || '')}</div></div>
     <div class="insp-tips">
       <h4>怎么改</h4>
-      <div><kbd>V</kbd>选择：点一下选中，按住直接拖</div>
-      <div><kbd>T</kbd>文字：点哪里就在哪里改字</div>
-      <div><kbd>I</kbd>交互：像真实浏览一样点按钮、开弹窗</div>
+      <div><kbd>${comboFor('tool.select', 'R')}</kbd>选择：点一下选中，按住直接拖</div>
+      <div><kbd>${comboFor('tool.text', 'T')}</kbd>文字：点哪里就在哪里改字</div>
+      <div><kbd>${comboFor('tool.interact', 'E')}</kbd>交互：像真实浏览一样点按钮、开弹窗</div>
       <div>拖<b>角点</b>等比缩放，拖<b>边线</b>改宽高</div>
       <div><kbd>Shift</kbd>+<kbd>Enter</kbd> 选外面一层 · <kbd>Tab</kbd> 选下一个</div>
       <div>方向键微调 1px，加 <kbd>Shift</kbd> 10px</div>
@@ -173,5 +179,6 @@ function renderPage(ed, box) {
       <div><kbd>Ctrl</kbd>+滚轮缩放 · 空格+拖动平移</div>
       <div style="margin-top:8px;color:var(--dim)">每次修改都会亮灯：绿灯直接写回；黄灯写回但提示连带影响；红灯保持原样并帮你记成草图标记。</div>
     </div>`;
-  box.querySelector('[data-a=plock]').onclick = () => app.setPageLock(ed.page, !locked).then(() => { renderPage(ed, box); ed.chrome && ed.chrome.syncLabel(); });
+  box.querySelector('[data-a=close]').onclick = () => ed.toggleInspector(false);
+  box.querySelector('[data-a=plock]').onclick =() => app.setPageLock(ed.page, !locked).then(() => { renderPage(ed, box); ed.chrome && ed.chrome.syncLabel(); });
 }

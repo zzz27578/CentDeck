@@ -64,28 +64,14 @@ export function setupAssets(app) {
       },
     });
   }
-  function insertImage(filename, contLoc) {
-    const ed = app.editor;
-    const c = ed.frame.parsed.byLoc(contLoc);
-    if (!c) return;
-    ed.doSource({
-      label: `插入图片：${filename}`,
-      build: (src) => {
-        let ls = src.lastIndexOf('\n', c.closeStart - 1) + 1;
-        let indent = src.slice(ls, c.closeStart);
-        if (/\S/.test(indent)) { ls = c.closeStart; indent = ''; }
-        const html = `<img src="${esc(relFrom(ed.page, 'assets/' + filename))}" alt="" style="max-width: 100%;">`;
-        return { light: 'yellow', newSource: src.slice(0, ls) + indent + '  ' + html + '\n' + src.slice(ls), line: c.line, note: `图片插在 <${c.tag}> 的最后，下面的内容会往下让。`, affected: [] };
-      },
-    });
-  }
   function useFont(font) {
     const ed = app.editor;
     const rule = `<style>@font-face{font-family:"${font.name}";src:url("${relFrom(ed.page, 'assets/' + font.file)}");font-display:swap}</style>`;
     if (ed.frame.source.includes(`font-family:"${font.name}"`)) { toast('本页已经导入过这个字体', 'err'); return; }
     ed.doSource({ label: `导入字体：${font.name}`, build: (src) => { const i = src.indexOf('</head>'); if (i < 0) return { light: 'red', reason: '页面里找不到 <head>' }; return { light: 'green', newSource: src.slice(0, i) + rule + '\n' + src.slice(i), line: null, note: '选中文字后在字体下拉里就能选它' }; } });
   }
-  // 从素材卡拖到编辑舞台：落在图片上 = 换图；落在别处 = 插进那一块
+  // 从素材卡拖到页面上：变成一张浮在最上层的参考图（草图，不写代码），像 Word 一样随意摆
+  const assetUrl = (name) => `/preview/${encodeURIComponent(app.project().id)}/assets/${encodeURIComponent(name)}`;
   document.addEventListener('dragover', (e) => {
     if (app.view() !== 'edit' || !e.dataTransfer || ![...e.dataTransfer.types].includes('text/x-cd-asset')) return;
     if (e.target.closest && e.target.closest('.stage-host')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
@@ -94,13 +80,7 @@ export function setupAssets(app) {
     const name = e.dataTransfer && e.dataTransfer.getData('text/x-cd-asset');
     if (!name || app.view() !== 'edit' || !(e.target.closest && e.target.closest('.stage-host'))) return;
     e.preventDefault();
-    const ed = app.editor;
-    const hit = ed.pickAt(e.clientX, e.clientY);
-    const own = hit && ed.frame.owner(hit);
-    if (!own) { toast('没有落在页面内容上', 'err'); return; }
-    if (own.tagName === 'IMG') { replaceImage(name, ed.frame.locOf(own)); return; }
-    const box = own.closest('section[data-cd-loc],main[data-cd-loc],article[data-cd-loc],div[data-cd-loc],header[data-cd-loc],footer[data-cd-loc]') || own;
-    insertImage(name, ed.frame.locOf(box));
+    app.sketch.addImage({ asset: name, src: assetUrl(name) }, app.editor.toPage(e.clientX, e.clientY));
   });
 
   bus.registerPanel({
@@ -108,7 +88,7 @@ export function setupAssets(app) {
     render(host) {
       const paint = async () => {
         host.innerHTML = `<div class="p-sec"><button class="btn small primary" data-up>${icon('upload', 14)}上传图片 / 字体</button>
-          <div class="hint" style="margin-top:8px">也可以把文件直接拖进这里。大图会自动压缩。把图片卡拖到页面上：落在图片上就换图，落在别处就插进那一块。</div></div>
+          <div class="hint" style="margin-top:8px">也可以把文件直接拖进这里，大图会自动压缩。把图片卡拖到页面上，它会变成一张浮在最上层的参考图，随意摆放后交给 AI 放进代码。</div></div>
           <div class="asset-grid"></div>`;
         host.querySelector('[data-up]').onclick = () => { const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.accept = 'image/*,.svg,.woff,.woff2,.ttf,.otf'; i.onchange = () => [...i.files].forEach(upload); i.click(); };
         host.ondragover = (e) => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); host.classList.add('drop'); } };
@@ -126,7 +106,9 @@ export function setupAssets(app) {
           if (img) card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/x-cd-asset', a.filename); e.dataTransfer.effectAllowed = 'copy'; });
           if (img && app.view() === 'edit') {
             if (sel && sel.tag === 'img' && !sel.generated) { const b = el('<button class="btn small">换掉选中图</button>'); b.onclick = () => replaceImage(a.filename, sel.loc); acts.appendChild(b); }
-            if (sel && !sel.generated) { const b = el('<button class="btn small">插到选中块里</button>'); b.onclick = () => insertImage(a.filename, sel.loc); acts.appendChild(b); }
+            const put = el('<button class="btn small" data-tip="浮在页面最上层，随意拖动缩放，不写进代码">放到页面上</button>');
+            put.onclick = () => app.sketch.addImage({ asset: a.filename, src: a.url });
+            acts.appendChild(put);
           }
           if (font && app.view() === 'edit') { const b = el('<button class="btn small">用到本页</button>'); b.onclick = () => useFont({ name: a.filename.replace(/\.\w+$/, ''), file: a.filename }); acts.appendChild(b); }
           grid.appendChild(card);

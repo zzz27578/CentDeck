@@ -98,6 +98,54 @@ export function setCssRule(source, parsed, selector, props) {
   return source.slice(0, target[0]) + out + source.slice(target[1]);
 }
 
+// ---------- 只对手机生效：写进 <style id="cd-responsive"> 里的 @media 块（标准的响应式写法） ----------
+// 元素有唯一 id 就用 #id；否则给它加一个 data-cd 标记。规则带 !important，才能盖过电脑版写在元素上的样式。
+const RESP_RE = /<style id="cd-responsive">([\s\S]*?)<\/style>/;
+function mediaTarget(source, parsed, info) {
+  const id = info.attrMap && info.attrMap.id;
+  if (id && /^[A-Za-z][\w-]*$/.test(id) && parsed.elements.filter((e) => e.id === id).length === 1) return { source, selector: '#' + id };
+  const cd = info.attrMap && info.attrMap['data-cd'];
+  if (cd) return { source, selector: `[data-cd="${cd}"]` };
+  const v = 'e' + info.loc.toString(36) + Math.random().toString(36).slice(2, 6);
+  return { source: source.slice(0, info.insertAt) + ` data-cd="${v}"` + source.slice(info.insertAt), selector: `[data-cd="${v}"]` };
+}
+function mediaBlock(css, maxW) {
+  const head = `@media (max-width: ${maxW}px) {`;
+  let at = css.indexOf(head);
+  if (at < 0) { css = css.replace(/\s*$/, '') + `\n${head}\n}\n`; at = css.indexOf(head); }
+  const open = at + head.length - 1;
+  let depth = 0, close = css.length - 1;
+  for (let i = open; i < css.length; i++) { if (css[i] === '{') depth++; else if (css[i] === '}' && --depth === 0) { close = i; break; } }
+  return { css, open, close };
+}
+export function mediaProp(source, selector, prop, maxW) {
+  const m = RESP_RE.exec(source);
+  if (!m) return null;
+  const { css, open, close } = mediaBlock(m[1], maxW);
+  const r = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}').exec(css.slice(open + 1, close));
+  if (!r) return null;
+  let v = null;
+  parseStyle(r[1].replace(/\s*!important/g, '')).forEach((p) => { if (p[0] === prop) v = p[1]; });
+  return v;
+}
+function upsertMediaRule(source, selector, props, maxW) {
+  const m = RESP_RE.exec(source);
+  const { css, open, close } = mediaBlock(m ? m[1] : '', maxW);
+  const inner = css.slice(open + 1, close);
+  const rm = new RegExp('(\\n[ \\t]*)' + selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}').exec(inner);
+  const pairs = applyProps(parseStyle(rm ? rm[2].replace(/\s*!important/g, '') : ''), props);
+  const rule = `${selector} { ${pairs.map(([k, v]) => `${k}: ${String(v).replace(/"/g, "'")} !important;`).join(' ')} }`;
+  let next;
+  if (rm) next = inner.slice(0, rm.index) + (pairs.length ? `${rm[1]}${rule}` : '') + inner.slice(rm.index + rm[0].length);
+  else next = inner.replace(/\s*$/, '') + `\n  ${rule}\n`;
+  const block = `<style id="cd-responsive">${css.slice(0, open + 1)}${next}${css.slice(close)}</style>`;
+  if (m) return source.slice(0, m.index) + block + source.slice(m.index + m[0].length);
+  const hi = source.search(/<\/head>/i);
+  if (hi >= 0) return source.slice(0, hi) + block + '\n' + source.slice(hi);
+  const bi = source.search(/<\/body>/i);
+  return bi >= 0 ? source.slice(0, bi) + block + '\n' + source.slice(bi) : source + '\n' + block;
+}
+
 // ---------- 结构性属性：改这些等于"改排列结构"，红灯 ----------
 const STRUCTURAL = new Set([
   'display', 'position', 'float', 'clear',
@@ -295,6 +343,10 @@ export function applyEdit(source, edit, opts = {}) {
       newSource = setCssRule(source, parsed, '.' + cls, props);
       if (newSource == null) return fail('页面里没有 <style> 块，无处写共用规则。', { selector: info.selector, line: info.line });
       scopeClass = cls;
+    } else if (edit.media) {
+      const t = mediaTarget(source, parsed, info);
+      newSource = upsertMediaRule(t.source, t.selector, props, edit.media);
+      note = '只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。';
     } else {
       newSource = setInlineStyle(source, info, props).src;
     }
@@ -304,10 +356,18 @@ export function applyEdit(source, edit, opts = {}) {
       return fail(at('跨区域移动') + '属于"改结构"：需要把整段代码剪切到新位置并适应新区域的排版，不宜直接写回；已恢复原样，请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
     }
     const dx = +edit.dx || 0, dy = +edit.dy || 0;
-    const base = curTranslate(info);
+    let target = null, base = curTranslate(info);
+    if (edit.media) {
+      target = mediaTarget(source, parsed, info);
+      const mv = mediaProp(target.source, target.selector, 'translate', edit.media);
+      if (mv) { const p = mv.split(/\s+/).map(parseFloat); base = [p[0] || 0, p[1] || 0]; }
+    }
     const nx = Math.round(base[0] + dx), ny = Math.round(base[1] + dy);
     const nv = (nx || ny) ? nx + 'px ' + ny + 'px' : null; // 回到原点就清掉 translate
-    if (edit.scope === 'class') {
+    if (target) {
+      newSource = upsertMediaRule(target.source, target.selector, { translate: nv || '0px 0px' }, edit.media);
+      note = '只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。';
+    } else if (edit.scope === 'class') {
       const cls = edit.className || info.classes[0];
       if (!cls || !info.classes.includes(cls)) return fail('scope:"class" 要求目标带指定 class。', { selector: info.selector, line: info.line });
       newSource = setCssRule(source, parsed, '.' + cls, { translate: nv });

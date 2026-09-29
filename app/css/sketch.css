@@ -42,3 +42,14 @@
 .ovl.passthru * { pointer-events: none !important; }
 .ov-sel.editing { border-style: dashed; box-shadow: none; }
 .ov-sel.editing .hd, .ov-sel.editing .ov-tag, .ov-sel.editing .ov-size { display: none; }
+
+/* 参考图（浮动图片） */
+.sk-mark .sk-img-frame { stroke: transparent; stroke-width: calc(1.5px * var(--inv)); pointer-events: all; cursor: move; }
+.sk-mark.sel .sk-img-frame { stroke: var(--accent); stroke-dasharray: calc(5px * var(--inv)) calc(4px * var(--inv)); }
+.ovl.t-draw .sk-img-frame, .ovl.t-note .sk-img-frame, .ovl.t-text .sk-img-frame, .ovl.passthru .sk-img-frame { pointer-events: none; }
+.ovl.t-eraser .sk-img-frame { pointer-events: all; cursor: cell; }
+.sk-mark image { opacity: .96; }
+.sk-mark.done image { opacity: .45; }
+.sk-ihd { position: absolute; width: calc(10px * var(--inv)); height: calc(10px * var(--inv)); margin: calc(-5px * var(--inv)) 0 0 calc(-5px * var(--inv)); background: #fff; border: calc(1.5px * var(--inv)) solid var(--accent); border-radius: calc(2px * var(--inv)); pointer-events: auto; }
+.sk-ihd.nw, .sk-ihd.se { cursor: nwse-resize; }
+.sk-ihd.ne, .sk-ihd.sw { cursor: nesw-resize; }

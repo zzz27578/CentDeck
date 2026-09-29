@@ -1,7 +1,8 @@
 // 编辑视图周边：页面标签（含视口选择）、底部工具坞、缩放、三灯判定卡、右键菜单、路径条
 import { icon } from '../core/icons.js';
 import { el, esc, toast, showMenu, promptDlg } from '../core/ui.js';
-import { PRESETS, getViewport, setViewport, autoSize } from '../core/viewport.js';
+import { PRESETS, MOBILE_PRESETS, getViewport, setViewport, autoSize } from '../core/viewport.js';
+import { comboFor, onKeymapChange } from '../core/keys.js';
 
 export function buildChrome(ed, wrap) {
   const app = ed.app;
@@ -32,6 +33,10 @@ export function buildChrome(ed, wrap) {
   function viewportMenu(anchor) {
     const cur = getViewport();
     const a = autoSize();
+    if (cur.device === 'mobile') {
+      showMenu([{ title: '按哪种手机排版' }, ...MOBILE_PRESETS.map((p) => ({ label: `${p.label} · ${p.w} × ${p.h}`, checked: cur.id === p.id, onClick: () => setViewport(p.id) }))], 0, 0, { anchor, minWidth: 260 });
+      return;
+    }
     showMenu([
       { title: '按哪种电脑屏幕排版（真实比例，再等比缩放显示）' },
       ...PRESETS.map((p) => ({
@@ -67,7 +72,7 @@ export function buildChrome(ed, wrap) {
     renderDock() {
       dock.innerHTML = '';
       const add = (t) => {
-        const b = el(`<button class="icon-btn" data-tool="${t.id}" data-tip="${esc(t.tip || t.label)}" data-kbd="${esc(t.kbd || '')}" data-tip-place="top">${icon(t.icon, 19)}</button>`);
+        const b = el(`<button class="icon-btn" data-tool="${t.id}" data-tip="${esc(t.tip || t.label)}" data-kbd="${esc(comboFor('tool.' + t.id, t.kbd || ''))}" data-tip-place="top">${icon(t.icon, 19)}</button>`);
         b.onclick = () => ed.setTool(t.id);
         dock.appendChild(b);
       };
@@ -88,6 +93,7 @@ export function buildChrome(ed, wrap) {
     },
   };
   api.renderDock();
+  const off = onKeymapChange(() => { if (dock.isConnected) api.renderDock(); else off(); });
   return api;
 }
 
@@ -138,7 +144,7 @@ export function openContextMenu(ed, x, y, onElement) {
   if (!onElement || !info) {
     showMenu([
       { label: '在这里新建文本框', icon: 'text', onClick: () => ed.addTextBoxAt(x, y) },
-      { label: '切到交互（像真实浏览）', icon: 'hand', kbd: 'I', onClick: () => ed.setTool('interact') },
+      { label: '切到交互（像真实浏览）', icon: 'hand', kbd: comboFor('tool.interact', 'E'), onClick: () => ed.setTool('interact') },
       '-',
       { label: '适应屏幕', icon: 'fit', kbd: 'Shift+1', onClick: () => ed.stage.fit(true) },
       { label: '实际大小 100%', icon: 'zoomIn', kbd: 'Ctrl+0', onClick: () => ed.stage.actual() },
@@ -151,6 +157,7 @@ export function openContextMenu(ed, x, y, onElement) {
     info.hasText && !info.generated ? { label: '改文字', icon: 'text', kbd: 'Enter', onClick: () => ed.editTextOf(info.element, null) } : null,
     { label: '选择外面一层', icon: 'parent', kbd: 'Shift+Enter', onClick: () => ed.selectParent() },
     '-',
+    { label: '@ 引用到助手', icon: 'at', hint: '让 AI 准确知道你说的是这一块', onClick: () => app.agent.addRef({ kind: 'element', page: ed.page, selector: info.selector, line: info.line, title: `${(app.project().pages.find((p) => p.file === ed.page) || {}).title || ed.page} · ${ed.describe(info)}` }) },
     { label: '贴便签（任务 / 长期规则）…', icon: 'sticky', onClick: () => app.notes && app.notes.addFor(info) },
     { label: '记成草图标记…', icon: 'marks', onClick: () => app.sketch && app.sketch.markElement(info) },
     !info.generated ? { label: `在源码里看（第 ${info.line} 行）`, icon: 'code', onClick: () => app.openPanel('codeview') } : null,

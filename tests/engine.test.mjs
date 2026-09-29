@@ -74,5 +74,21 @@ const txt = (src, e, k) => { const [a, b] = e.textNodes[k]; return src.slice(a, 
   ok(applyEdit(src, { kind: 'textNode', target: h2.loc, index: 0, oldText: '别的', newText: 'x' }).light === 'red', '原文不一致 → 红灯');
 }
 
+// 9. 只对手机生效：写进 @media，元素加 data-cd 标记（有唯一 id 就用 id），再次修改会更新同一条规则
+{
+  const src = '<!doctype html><html><head><title>t</title></head><body><h1 id="hero-title">标题</h1><p>段落</p></body></html>';
+  let p = parse(src);
+  let r = applyEdit(src, { kind: 'style', target: find(p, 'h1').loc, props: { 'font-size': '28px' }, media: 767 });
+  ok(r.light === 'green' && r.newSource.includes('@media (max-width: 767px)') && r.newSource.includes('#hero-title { font-size: 28px !important; }'), '手机样式：有 id 用 #id');
+  p = parse(r.newSource);
+  r = applyEdit(r.newSource, { kind: 'move', target: find(p, 'p').loc, dx: 0, dy: 12, media: 767 });
+  const v = /data-cd="(e[0-9a-z]+)"/.exec(r.newSource);
+  ok(v && r.newSource.includes(`[data-cd="${v[1]}"] { translate: 0px 12px !important; }`), '手机样式：没 id 加 data-cd 标记');
+  p = parse(r.newSource);
+  r = applyEdit(r.newSource, { kind: 'move', target: find(p, 'p').loc, dx: 0, dy: 8, media: 767 });
+  ok(r.newSource.includes('translate: 0px 20px !important;') && (r.newSource.match(/ data-cd="/g) || []).length === 1, '手机样式：再次挪动在原规则上累加');
+  ok(!/<h1[^>]*style=/.test(r.newSource), '手机样式：不碰电脑版的行内样式');
+}
+
 console.log(`引擎测试：${pass} 通过，${fail} 失败`);
 process.exit(fail ? 1 : 0);

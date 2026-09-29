@@ -2,7 +2,8 @@
 import { el, esc, toast, openModal, copyText } from '../core/ui.js';
 import { parse } from '../engine/parse.js';
 
-const TYPE = { pen: '圈画', arrow: '箭头指向', rect: '框选区域', ellipse: '圈出重点', note: '便签', ghost: '想挪到新位置', verdict: '手动修改受阻' };
+const TYPE = { pen: '圈画', arrow: '箭头指向', rect: '框选区域', ellipse: '圈出重点', note: '便签', image: '参考图', verdict: '手动修改受阻' };
+const typeOf = (m) => (m.intent === 'move' ? '想挪到新位置' : TYPE[m.type] || m.type);
 
 export async function exportTaskSheet(app) {
   const proj = app.project();
@@ -14,12 +15,10 @@ export async function exportTaskSheet(app) {
     return cache.get(page);
   };
   const L = [`# 任务单 · ${proj.name}`, '', `> 由 CentDeck 草图标记生成，共 ${list.length} 条。每条都标了代码位置；请只改相关片段，别的不动。`, ''];
-  let n = 0;
   for (const pg of proj.pages) {
     const ms = list.filter((m) => m.page === pg.file);
     for (const m of ms) {
-      n++;
-      L.push(`## ${n}. ${TYPE[m.type] || m.type} · ${pg.title}（\`${pg.file}\`）`, '');
+      L.push(`## #${m.no} ${typeOf(m)} · ${pg.title}（\`${pg.file}\`）`, '');
       const src = m.anchor && m.anchor.selector ? await srcOf(m.page) : '';
       if (src) {
         const info = parse(src).bySelector(m.anchor.selector);
@@ -31,7 +30,9 @@ export async function exportTaskSheet(app) {
         }
       }
       if (m.meta) L.push(`- 位置：${m.meta}`);
-      if (m.type === 'ghost' && m.pts) L.push(`- 意图：把这个元素挪到新位置（向右 ${Math.round(m.pts[1][0])}px、向下 ${Math.round(m.pts[1][1])}px，按屏幕 ${m.vp ? m.vp.w + '×' + m.vp.h : ''} 估算），请用合适的排版方式实现，不要用绝对定位硬塞`);
+      const vp = m.vp ? `（按 ${m.vp.w}×${m.vp.h} 的屏幕估算）` : '';
+      if (m.intent === 'move' && m.pts) L.push(`- 意图：把这个元素挪到箭头指的位置，向右 ${Math.round(m.pts[1][0] - m.pts[0][0])}px、向下 ${Math.round(m.pts[1][1] - m.pts[0][1])}px${vp}；请用合适的排版方式实现，不要用绝对定位硬塞`);
+      if (m.type === 'image' && m.pts) L.push(`- 素材：\`assets/${m.asset}\`，请把这张图放进页面，位置和大小参考标记（约 ${Math.round(Math.abs(m.pts[1][0] - m.pts[0][0]))}×${Math.round(Math.abs(m.pts[1][1] - m.pts[0][1]))}px，左上角在页面 ${Math.round(m.pts[0][0])}, ${Math.round(m.pts[0][1])}）${vp}`);
       L.push(`- 要求：${m.text || '（没写，按标记的图意理解）'}`, '');
     }
   }

@@ -68,3 +68,32 @@
 .tree-item .ico { color: var(--dim); }
 .tree-item small { color: var(--dim); margin-left: auto; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
 .tree-item.link .ico { color: var(--accent); }
+
+/* ---------- 总览右侧工具条、框选、画布批注 ---------- */
+.ov-tools { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); z-index: 12; display: flex; flex-direction: column; gap: 2px; padding: 5px; background: #fff; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow-2); }
+.ov-tools .icon-btn { width: 38px; height: 38px; border-radius: 10px; }
+.ov-tools .icon-btn.on { background: var(--accent); color: #fff; }
+.ov-host[data-tool=marquee], .ov-host[data-tool=marquee] .ov-mask { cursor: crosshair; }
+.ov-host[data-tool=pen], .ov-host[data-tool=pen] .ov-mask { cursor: crosshair; }
+.ov-host[data-tool=hand], .ov-host[data-tool=hand] .ov-mask, .ov-host[data-tool=hand] .ov-title { cursor: grab; }
+.ov-marquee { position: absolute; z-index: 7; border: calc(2px * var(--inv)) dashed var(--accent); background: rgba(79, 107, 255, .08); border-radius: calc(4px * var(--inv)); pointer-events: none; }
+.ov-marquee.done { transition: opacity .8s; opacity: 0; }
+.ov-ink { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; z-index: 6; pointer-events: none; }
+.ov-stroke { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: stroke; }
+.ov-host[data-tool=pen] .ov-stroke { pointer-events: none; }
+.ov-sub { cursor: grab; }
+
+/* ---------- 空白项目起始画面 ---------- */
+.ov-empty { position: absolute; inset: 0; z-index: 11; display: flex; align-items: center; justify-content: center; padding: 30px; }
+.ove-card { width: min(720px, 100%); padding: 30px 32px 24px; background: rgba(255, 255, 255, .96); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow-3); text-align: center; animation: vin .3s var(--ease); }
+.ove-badge { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 10px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
+.ove-card h2 { font-size: 26px; margin: 12px 0 6px; }
+.ove-card > p { color: var(--text-2); }
+.ove-prompt { margin: 18px 0 10px; border: 1px solid var(--line-2); border-radius: 14px; background: #fff; text-align: left; transition: border-color var(--fast), box-shadow var(--fast); }
+.ove-prompt:focus-within { border-color: #aebcff; box-shadow: 0 0 0 4px rgba(79, 107, 255, .1); }
+.ove-prompt textarea { display: block; width: 100%; padding: 14px 16px; border: 0; outline: 0; resize: none; background: none; font-size: 14.5px; line-height: 1.65; }
+.ove-opts { display: flex; align-items: center; gap: 8px; }
+.ove-opts .grow { flex: 1; }
+.ove-examples { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0 10px; text-align: left; }
+.ove-examples button { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text-2); font-size: 12.5px; line-height: 1.5; text-align: left; transition: border-color var(--fast), background var(--fast); }
+.ove-examples button:hover { border-color: #c9d1ff; background: var(--accent-soft); color: var(--accent-2); }

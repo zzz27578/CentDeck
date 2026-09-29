@@ -1,12 +1,15 @@
 // 总览：所有页面按真实桌面视口摊在无限画布上。连线从"具体的按钮/链接"连到目标页；
 // 弹窗等子页面画成挂在主页面下方的小卡片（虚线连到打开它的按钮）；长页面可展开成一格格的屏幕分镜。
 import { icon } from '../core/icons.js';
-import { el, esc, clamp, toast, showMenu } from '../core/ui.js';
+import { el, esc, clamp, toast, showMenu, promptDlg, confirmDlg } from '../core/ui.js';
 import { bindKey, isSpaceDown } from '../core/keys.js';
 import { getViewport } from '../core/viewport.js';
 import { instrument, parse } from '../engine/parse.js';
 import { withBase } from '../engine/frame.js';
 import { scanPage } from './scan.js';
+import { createCanvasTools } from './canvas-tools.js';
+import { onViewportChange } from '../core/viewport.js';
+import { renderEmpty } from './empty.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const SUB = 0.42;                 // 子页面卡片相对主页面的比例
@@ -17,6 +20,21 @@ export function createOverview(app) {
   let linkMode = localStorage.getItem('cd.ovLinks') || 'main', showSubs = localStorage.getItem('cd.ovSubs') !== '0';
   let VW = 1920, VH = 969;
   const byFile = (f) => pages.find((p) => p.file === f);
+  let offVp = null;
+  const tctx = {
+    host: null, world: null, cam: () => cam, select: (f) => select(f), redraw: () => drawLinks(),
+    toWorld: (x, y) => { const r = host.getBoundingClientRect(); return { x: (x - r.left - cam.x) / cam.z, y: (y - r.top - cam.y) / cam.z }; },
+    cards: () => pages.flatMap((p) => [{ file: p.file, title: p.title, x: p.x, y: p.y, w: VW, h: cardH(p), scale: 1 },
+      ...subs(p).map((pop, i) => { const sp = subPos(p, i); return { file: p.file, title: p.title, popup: pop.title, x: sp.x, y: sp.y, w: VW * SUB, h: VH * SUB, scale: SUB }; })]),
+  };
+  const tools = createCanvasTools(app, tctx);
+  // 弹窗子卡片的位置：默认排在所属页面下方，拖动后记住偏移
+  const subKey = (pop) => pop.id || pop.title;
+  function subPos(p, i) {
+    const pop = p.scan.popups[i];
+    const o = ((layout()[p.file] || {}).subs || {})[subKey(pop)] || { dx: 0, dy: 0 };
+    return { x: p.x + i * (VW * SUB + 60) + o.dx, y: p.y + cardH(p) + 150 + o.dy };
+  }
   const base = (file) => `/preview/${encodeURIComponent(app.project().id)}/${file.includes('/') ? file.slice(0, file.lastIndexOf('/') + 1) : ''}`;
   const layout = () => { const p = app.project(); if (!p.canvas || typeof p.canvas !== 'object') p.canvas = {}; return p.canvas; };
 
@@ -131,7 +149,7 @@ export function createOverview(app) {
     c.style.width = VW + 'px';
     c.style.height = cardH(p) + 'px';
     c.classList.toggle('on', selected === p.file);
-    (p.subCards || []).forEach((s, i) => { s.style.left = p.x + i * (VW * SUB + 60) + 'px'; s.style.top = p.y + cardH(p) + 150 + 'px'; });
+    (p.subCards || []).forEach((s, i) => { const sp = subPos(p, i); s.style.left = sp.x + 'px'; s.style.top = sp.y + 'px'; });
   }
   function buildSubs(p) {
     (p.subCards || []).forEach((s) => s.remove());
@@ -145,8 +163,9 @@ export function createOverview(app) {
       t.style.transform = `scale(${SUB})`;
       t.style.transformOrigin = '0 0';
       s.querySelector('.ov-body').appendChild(t);
-      s.addEventListener('pointerdown', (e) => { if (e.button === 0) select(p.file); });
+      s.addEventListener('pointerdown', (e) => dragSub(e, p, pop, s));
       s.addEventListener('dblclick', () => openEdit(p));
+      s.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); select(p.file); showMenu([{ title: pop.title }, { label: '@ 引用这个弹窗到助手', icon: 'at', onClick: () => refPage(p, pop.title) }, { label: '进入编辑', icon: 'edit', onClick: () => openEdit(p) }], e.clientX, e.clientY); });
       world.insertBefore(s, svg);
       p.subCards.push(s);
     });
@@ -232,6 +251,7 @@ export function createOverview(app) {
   function cardMenu(p, x, y) {
     showMenu([
       { title: p.title },
+      { label: '@ 引用到助手', icon: 'at', hint: '让 AI 知道你说的是这一页', onClick: () => refPage(p) },
       { label: '进入编辑', icon: 'edit', kbd: 'Enter', onClick: () => openEdit(p) },
       { label: '从这页开始放映', icon: 'play', onClick: () => app.present(p.file) },
       '-',
@@ -239,6 +259,7 @@ export function createOverview(app) {
       { label: '镜头对准这页', icon: 'target', kbd: 'Shift+2', onClick: () => flyTo(fitRect(blockRect(p))) },
       '-',
       { label: app.pageLocked(p.file) ? '解锁这页' : '锁定这页', icon: app.pageLocked(p.file) ? 'unlock' : 'lock', onClick: () => app.setPageLock(p.file, !app.pageLocked(p.file)) },
+      { label: '删除这页…', icon: 'trash', danger: true, onClick: () => removePage(p) },
     ], x, y);
   }
   function dragCard(e, p) {
@@ -346,7 +367,7 @@ export function createOverview(app) {
       subs(p).forEach((pop, i) => {
         const s = p.subCards && p.subCards[i];
         if (!s) return;
-        const sx = p.x + i * (VW * SUB + 60) + (VW * SUB) / 2, sy = p.y + cardH(p) + 150;
+        const sp = subPos(p, i), sx = sp.x + (VW * SUB) / 2, sy = sp.y;
         const cls = `pop ${selected && selected !== p.file ? 'dim' : ''}`;
         const maxLines = selected === p.file ? 99 : 2;   // 同一个弹窗有很多按钮（比如表格每行的"查看"）时只画两条，选中该页再全画
         pop.triggers.forEach((tr, k) => {
@@ -386,10 +407,13 @@ export function createOverview(app) {
       applyCam();
     }, { passive: false });
     host.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.ov-tools, .ov-empty')) return;
+      if (!isSpaceDown() && tools.down(e)) return;
       const onCard = e.target.closest('.ov-card, .ov-sub');
-      if (!(e.button === 1 || (e.button === 0 && (!onCard || isSpaceDown())))) return;
+      if (!(e.button === 1 || (e.button === 0 && (!onCard || isSpaceDown() || tools.tool === 'hand')))) return;
       e.preventDefault();
-      if (!onCard && e.button === 0) select(null);
+      if (onCard) e.stopPropagation();
+      if (!onCard && e.button === 0 && tools.tool === 'pointer') select(null);
       const sx = e.clientX, sy = e.clientY, ox = cam.x, oy = cam.y;
       host.classList.add('panning');
       const mv = (ev) => { cam.x = ox + ev.clientX - sx; cam.y = oy + ev.clientY - sy; applyCam(); };
@@ -398,15 +422,73 @@ export function createOverview(app) {
       window.addEventListener('pointerup', up, true);
     }, true);
     host.addEventListener('contextmenu', (e) => {
-      if (e.target.closest('.ov-card')) return;
+      if (e.target.closest('.ov-card, .ov-sub')) return;
+      if (tools.context(e)) return;
       e.preventDefault();
       showMenu([
+        { label: '新建页面…', icon: 'plus', onClick: addPage },
         { label: '看全部页面', icon: 'fit', kbd: 'Shift+1', onClick: fitAll },
         { label: '自动重新排版', icon: 'grid', onClick: relayout },
         '-',
         { label: showSubs ? '隐藏弹窗子页面' : '显示弹窗子页面', icon: 'popup', onClick: toggleSubs },
+        { label: '清除画布批注', icon: 'eraser', onClick: () => tools.clearInk() },
       ], e.clientX, e.clientY);
     });
+  }
+  // 右键 @：把这一页（或它的弹窗）作为参考放进助手输入框
+  function refPage(p, popup) {
+    app.agent.addRef({ kind: 'page', page: p.file, popup: popup || null, title: popup ? `${p.title} · ${popup}` : p.title });
+    app.toggleAgent(true);
+  }
+  async function addPage() {
+    const title = await promptDlg({ title: '新建页面', label: '页面名字', value: '新页面', okLabel: '创建' });
+    if (!title) return;
+    try {
+      const proj = await app.api.addPage(app.project().id, { title });
+      app.state.project.pages = proj.pages;
+      app.setView('overview', { force: true });
+    } catch { /* 已提示 */ }
+  }
+  async function removePage(p) {
+    const ok = await confirmDlg({ title: '删除页面', danger: true, okLabel: '删除', body: `删除「<b>${esc(p.title)}</b>」（${esc(p.file)}）？文件会先备份进版本历史。` });
+    if (!ok) return;
+    try {
+      const proj = await app.api.removePage(app.project().id, p.file);
+      app.state.project.pages = proj.pages;
+      app.bus.clearStacks();
+      app.setView('overview', { force: true });
+    } catch { /* 已提示 */ }
+  }
+  function dragSub(e, p, pop, node) {
+    if (e.button !== 0 || tools.tool !== 'pointer' || isSpaceDown()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    select(p.file);
+    const L = layout(), key = subKey(pop);
+    const entry = L[p.file] || (L[p.file] = { x: p.x, y: p.y });
+    entry.subs = entry.subs || {};
+    const o0 = entry.subs[key] ? { ...entry.subs[key] } : { dx: 0, dy: 0 };
+    const sx = e.clientX, sy = e.clientY;
+    let moved = false, now = o0;
+    const mv = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 3) return;
+      moved = true;
+      now = { dx: Math.round(o0.dx + (ev.clientX - sx) / cam.z), dy: Math.round(o0.dy + (ev.clientY - sy) / cam.z) };
+      entry.subs[key] = now;
+      placeCard(p);
+      drawLinks();
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', mv, true);
+      window.removeEventListener('pointerup', up, true);
+      if (!moved) return;
+      entry.subs[key] = o0;
+      app.bus.doMeta({ label: `摆放弹窗「${pop.title}」`, apply: () => { entry.subs[key] = now; }, revert: () => { entry.subs[key] = o0; const q = byFile(p.file); if (q) { placeCard(q); drawLinks(); } } });
+    };
+    window.addEventListener('pointermove', mv, true);
+    window.addEventListener('pointerup', up, true);
+    node.style.cursor = 'grabbing';
+    window.addEventListener('pointerup', () => { node.style.cursor = ''; }, { once: true });
   }
   const fitAll = () => pages.length && flyTo(fitRect(bounds()));
   function relayout() {
@@ -448,7 +530,10 @@ export function createOverview(app) {
       <span class="dock-sep"></span>
       <div class="seg"><button data-lm="main" data-tip="每两页之间只画一条主线">主要连线</button><button data-lm="all" data-tip="每个按钮 / 链接都画出来">全部连线</button></div>
       <button class="dock-toggle" data-a="subs" data-tip="弹窗等子页面挂在主页面下方">${icon('popup', 15)}子页面</button>
-      <button class="dock-toggle" data-a="layout" data-tip="按跳转关系重新摆放">${icon('grid', 15)}整理</button></div>`);
+      <button class="dock-toggle" data-a="layout" data-tip="按跳转关系重新摆放">${icon('grid', 15)}整理</button>
+      <span class="dock-sep"></span>
+      <button class="dock-toggle" data-a="add" data-tip="新建一个空白页面">${icon('plus', 15)}新页面</button>
+      <button class="dock-toggle" data-a="style" data-tip="配色、字号、圆角：挑一套或让助手出几套">${icon('palette', 15)}风格</button></div>`);
     wrap.appendChild(toolbar);
     const zoom = el(`<div class="zoom-dock"><button class="icon-btn" data-z="out">${icon('minus', 16)}</button><button class="zoom-val" data-z="fit" data-tip="看全部">20%</button><button class="icon-btn" data-z="in">${icon('plus', 16)}</button></div>`);
     wrap.appendChild(zoom);
@@ -461,11 +546,18 @@ export function createOverview(app) {
     toolbar.querySelector('[data-a=fit]').onclick = fitAll;
     toolbar.querySelector('[data-a=subs]').onclick = toggleSubs;
     toolbar.querySelector('[data-a=layout]').onclick = relayout;
+    toolbar.querySelector('[data-a=add]').onclick = addPage;
+    toolbar.querySelector('[data-a=style]').onclick = () => app.openPanel(app.activePanel() === 'tokens' ? null : 'tokens');
+    tctx.host = host;
+    tctx.world = world;
+    tools.mount(wrap);
+    offVp = onViewportChange(() => app.setView('overview', { force: true }));
     toolbar.querySelectorAll('[data-lm]').forEach((b) => { b.onclick = () => { linkMode = b.dataset.lm; localStorage.setItem('cd.ovLinks', linkMode); syncToolbar(); drawLinks(); }; });
     syncToolbar();
     bindCanvas();
-    app.setHint('滚轮缩放 · 拖空白处平移 · 拖页面标题摆位置 · 双击页面进入编辑 · 右键更多');
-    app.setStatusRight(`视口 ${VW}×${VH}`);
+    app.setHint('滚轮缩放 · 拖空白处平移 · 拖页面标题摆位置 · 双击页面进入编辑 · 框选工具把一块区域引用给助手 · 右键更多');
+    app.setStatusRight(`${vp.device === 'mobile' ? '手机' : '电脑'} ${VW}×${VH}`);
+    if (!app.project().pages.length) { renderEmpty(app, host, { addPage }); return; }
     const proj = app.project();
     const set = new Set(proj.pages.map((p) => p.file));
     const L = layout();
@@ -485,6 +577,7 @@ export function createOverview(app) {
     if (!app.activePanel()) app.openPanel('structure');
   }
   function leave() {
+    if (offVp) { offVp(); offVp = null; }
     cancelAnimationFrame(raf);
     host = world = svg = toolbar = null;
     pages = [];
@@ -523,8 +616,8 @@ export function createOverview(app) {
   });
 
   const inOv = () => app.state.view === 'overview' && !!host;
-  bindKey('Shift+1', { label: '看全部页面', group: '总览', when: inOv, run: fitAll });
-  bindKey('Shift+2', { label: '镜头对准选中页', group: '总览', when: () => inOv() && !!selected, run: () => flyTo(fitRect(blockRect(byFile(selected)))) });
+  bindKey('Shift+1', { id: 'ov.fit', label: '看全部页面', group: '总览', when: inOv, run: fitAll });
+  bindKey('Shift+2', { id: 'ov.focus', label: '镜头对准选中页', group: '总览', when: () => inOv() && !!selected, run: () => flyTo(fitRect(blockRect(byFile(selected)))) });
   bindKey('Enter', { label: '进入编辑选中页', group: '总览', when: () => inOv() && !!selected, run: () => openEdit(byFile(selected)) });
   bindKey('Esc', { hidden: true, when: () => inOv() && !!selected, run: () => select(null) });
   bus.on('source', () => { /* 编辑写回后回到总览会重新读取 */ });

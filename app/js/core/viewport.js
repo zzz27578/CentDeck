@@ -24,22 +24,45 @@ export function autoSize() {
   return { w: Math.round(sw), h: clamp(Math.round(avail - chrome), 480, 3000) };
 }
 
-function read() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || { id: 'auto' }; } catch { return { id: 'auto' }; }
+// 手机尺寸（都不超过 767px，这样"只改手机版"写进 @media (max-width: 767px) 正好对得上）
+export const MOBILE_PRESETS = [
+  { id: 'iphone15', label: 'iPhone 15 / 14', w: 393, h: 852 },
+  { id: 'android', label: '常见安卓手机', w: 412, h: 915 },
+  { id: 'iphonese', label: 'iPhone SE', w: 375, h: 667 },
+  { id: 'small', label: '小屏安卓', w: 360, h: 780 },
+];
+export const MOBILE_MAX = 767;
+const DEV_KEY = 'cd.device', MKEY = 'cd.mobileVp';
+
+function read(key = KEY) {
+  try { return JSON.parse(localStorage.getItem(key)) || { id: 'auto' }; } catch { return { id: 'auto' }; }
 }
+export const getDevice = () => (localStorage.getItem(DEV_KEY) === 'mobile' ? 'mobile' : 'desktop');
 
 export function getViewport() {
+  if (getDevice() === 'mobile') {
+    const m = read(MKEY);
+    const p = MOBILE_PRESETS.find((x) => x.id === m.id) || MOBILE_PRESETS[0];
+    return { ...p, device: 'mobile' };
+  }
   const pref = read();
-  if (pref.id === 'custom' && pref.w && pref.h) return { id: 'custom', label: '自定义', w: pref.w, h: pref.h };
+  if (pref.id === 'custom' && pref.w && pref.h) return { id: 'custom', label: '自定义', w: pref.w, h: pref.h, device: 'desktop' };
   const p = PRESETS.find((x) => x.id === pref.id) || PRESETS[0];
-  if (p.id === 'auto') return { ...p, ...autoSize() };
-  return { ...p };
+  if (p.id === 'auto') return { ...p, ...autoSize(), device: 'desktop' };
+  return { ...p, device: 'desktop' };
 }
 
+// 先复制一份再逐个通知：回调里重建视图会注册新的监听，直接遍历 Set 会把新加的也调用一遍，陷入死循环
+const notify = () => { const v = getViewport(); [...listeners].forEach((fn) => fn(v)); };
 export function setViewport(id, w, h) {
-  localStorage.setItem(KEY, JSON.stringify(id === 'custom' ? { id, w, h } : { id }));
-  const v = getViewport();
-  listeners.forEach((fn) => fn(v));
+  if (getDevice() === 'mobile') localStorage.setItem(MKEY, JSON.stringify({ id }));
+  else localStorage.setItem(KEY, JSON.stringify(id === 'custom' ? { id, w, h } : { id }));
+  notify();
+}
+export function setDevice(d) {
+  if (d === getDevice()) return;
+  localStorage.setItem(DEV_KEY, d === 'mobile' ? 'mobile' : 'desktop');
+  notify();
 }
 export function onViewportChange(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 

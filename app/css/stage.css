@@ -140,26 +140,11 @@
 .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
 .range-row .val { width: 42px; text-align: right; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 
-/* ---------- 放映 ---------- */
-.present-host { position: absolute; inset: 0; background: #16181d; display: flex; flex-direction: column; }
-.present-host .pv-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
-.present-host .device { box-shadow: 0 20px 70px rgba(0, 0, 0, .5); }
-.pv-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
-.pv-top { position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 16px; color: #d6d9e0; background: linear-gradient(rgba(10, 12, 16, .75), transparent); transition: opacity .3s; pointer-events: none; }
-.pv-top b { color: #fff; margin-right: 8px; }
-.pv-top span { color: #8f96a3; font-size: 12px; }
-.pv-top .grow { flex: 1; }
-.pv-capsule { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: 14px; background: rgba(30, 33, 40, .88); backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0, 0, 0, .4); transition: opacity .3s, transform .3s var(--ease); }
-.pv-capsule .icon-btn { color: #cfd3db; width: 36px; height: 36px; }
-.pv-capsule .icon-btn:hover { background: rgba(255, 255, 255, .1); color: #fff; }
-.pv-capsule .icon-btn.on { background: #e5484d; color: #fff; }
-.pv-capsule .dock-sep { width: 1px; height: 20px; background: rgba(255, 255, 255, .15); margin: 0 4px; }
-.present-host.idle .pv-top, .present-host.idle .pv-capsule { opacity: 0; }
-.present-host.idle .pv-capsule { transform: translate(-50%, 10px); }
-.ico.flip { transform: scaleX(-1); }
-.pv-annot { position: absolute; inset: 0; z-index: 4; cursor: crosshair; background: rgba(229, 72, 77, .05); }
-.pv-annot-tip { position: absolute; left: 50%; top: 16px; transform: translateX(-50%) scale(var(--inv, 1)); transform-origin: 50% 0; padding: 6px 14px; border-radius: 99px; background: #e5484d; color: #fff; font-size: 13px; white-space: nowrap; }
-.pv-box { position: absolute; display: none; border: 3px solid #e5484d; border-radius: 4px; background: rgba(229, 72, 77, .08); }
+/* ---------- 放映：全屏、100% 真实比例、没有任何工具条 ---------- */
+body.presenting .topbar, body.presenting .rail, body.presenting .drawer, body.presenting .inspector,
+body.presenting .agent, body.presenting .statusbar, body.presenting .agent-float { display: none !important; }
+.present-host { position: fixed; inset: 0; z-index: 9000; background: #fff; }
+.pv-full { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 
 /* ---------- 源码 / 素材 面板 ---------- */
 .code-view { margin: 0; padding: 6px 0 20px; font: 11.5px/1.7 ui-monospace, Consolas, monospace; color: #3b4150; overflow-x: auto; }
@@ -179,3 +164,5 @@
 .drawer-body.drop { background: var(--accent-soft); outline: 2px dashed var(--accent); outline-offset: -8px; }
 .stage-wrap > * { animation: viewIn .26s var(--ease); }
 @keyframes viewIn { from { opacity: 0; } }
+.ed-empty { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-2); }
+.ed-empty b { font-size: 18px; color: var(--text); }

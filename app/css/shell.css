@@ -20,6 +20,8 @@ body.wb #app { height: 100vh; display: flex; flex-direction: column; }
 .tb-page { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px 0 10px; border-radius: 8px; color: var(--text-2); max-width: 260px; }
 .tb-page:hover { background: rgba(20, 24, 40, .05); color: var(--text); }
 .tb-page span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-center { display: flex; align-items: center; gap: 10px; }
+.dev-switch > button { height: 30px; padding: 0 11px; }
 .view-switch { position: relative; display: flex; padding: 3px; background: var(--bg-2); border-radius: 11px; }
 .view-switch .pill { position: absolute; top: 3px; bottom: 3px; left: 3px; border-radius: 8px; background: #fff; box-shadow: var(--shadow-1); transition: transform var(--mid) var(--ease), width var(--mid) var(--ease); }
 .view-switch button { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 16px; border-radius: 8px; color: var(--text-2); font-weight: 500; transition: color var(--fast); }

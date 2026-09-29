@@ -1,186 +1,182 @@
-// 助手对话框（骨架）：右侧可召唤（Ctrl+K）、可拖宽；大输入框 + 左下角"+"上传 + 模型 + 思考强度。
-// 第一步不接模型：发送后只在对话里记下来，并说明第二步会怎么发。
-import { icon } from '../core/icons.js';
-import { el, esc, uid, showMenu, toast } from '../core/ui.js';
-
-const MODELS = [
-  { title: '推荐' },
-  { id: 'auto', label: '自动分档', hint: '按任务大小选：小改用经济档，设计规划用专家档' },
-  { title: '经济档（便宜、快）' },
-  { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5' },
-  { id: 'deepseek', label: 'DeepSeek', hint: '待接入' },
-  { id: 'qwen', label: '通义千问', hint: '待接入' },
-  { title: '专家档（能力强）' },
-  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
-  { id: 'claude-opus-4-7', label: 'Claude Opus 4.7' },
-  { id: 'gpt', label: 'GPT（OpenAI）', hint: '待接入' },
-  { id: 'gemini', label: 'Gemini（Google）', hint: '待接入' },
-  { title: '其它' },
-  { id: 'local', label: '本地模型（Ollama 等）', hint: '免费，能力较弱' },
-];
-const THINK = [
-  { id: 'off', label: '不思考', hint: '最快最省，适合改字换色' },
-  { id: 'low', label: '浅想', hint: '小范围调整' },
-  { id: 'mid', label: '适中', hint: '日常推荐' },
-  { id: 'high', label: '深想', hint: '改版、复杂交互' },
-  { id: 'max', label: '最深', hint: '整体诊断、规划整站' },
-];
-const EXAMPLES = ['把首页大标题改得更有冲击力，别超过 12 个字', '让三张功能卡片一样高，间距统一', '给价格页加一个"常见问题"版块', '整体看看哪里不协调，列一份修改清单'];
+// 助手管理：右侧停靠的主窗口 + 任意多个悬浮窗口（多助手协作的壳）。
+// 拖标题栏就能把停靠的助手拽出来变成悬浮窗；把悬浮窗拖到屏幕最右边松手就停靠回去。
+// 右键 @、框选、导入体检等处的引用和提示词，会送到你最近用过的那个助手窗口。
+import { el, showMenu } from '../core/ui.js';
+import { createSession } from './session.js';
 
 export function createAgent(app) {
-  let box = null, open = localStorage.getItem('cd.agentOpen') === '1';
+  let dockHost = null, dockInner = null, docked = null, active = null;
+  let open = localStorage.getItem('cd.agentOpen') === '1';
   let width = +localStorage.getItem('cd.agentW') || 400;
-  let model = localStorage.getItem('cd.model') || 'auto', think = localStorage.getItem('cd.think') || 'mid';
-  let atts = [], ctxChips = [], msgs = [];
-  const labelOf = (list, id) => (list.find((x) => x.id === id) || {}).label || id;
+  let skills = [], settings = null, seq = 1;
+  const floats = new Map(); // session → 窗口元素
+  const sessions = [];
 
+  fetch('/app/skills/index.json').then((r) => r.json()).then((j) => { skills = j; }).catch(() => {});
+  const loadSettings = () => app.api.getSettings({ toast: false }).then((x) => { settings = x; sessions.forEach((s) => s.paintPickers()); }).catch(() => {});
+  loadSettings();
+  app.bus.on('settings', loadSettings);
+
+  function newSession(name) {
+    const s = createSession(app, mgr, { name: name || (seq === 1 ? '助手' : `助手 ${seq}`) });
+    seq++;
+    sessions.push(s);
+    return s;
+  }
+
+  // ---------- 停靠区 ----------
   function mount(host) {
-    box = host;
-    box.style.setProperty('--agent-w', width + 'px');
-    box.innerHTML = `<div class="agent-inner">
-      <div class="agent-resize" data-tip="拖动改宽度" data-tip-place="left"></div>
-      <div class="agent-head">${icon('sparkle', 17)}<b>助手</b><span class="chip">第二步接入模型</span><span class="grow"></span>
-        <button class="icon-btn sm" data-a="new" data-tip="新对话">${icon('plus', 16)}</button>
-        <button class="icon-btn sm" data-a="close" data-tip="收起" data-kbd="Ctrl+K">${icon('close', 15)}</button></div>
-      <div class="agent-msgs"></div>
-      <div class="agent-composer">
-        <div class="comp-chips"></div>
-        <textarea rows="3" placeholder="想改什么？直接说，或者 @ 一个元素、页面、模型…\nEnter 发送 · Shift+Enter 换行"></textarea>
-        <div class="comp-bar">
-          <button class="icon-btn sm" data-a="plus" data-tip="添加文件、图片或引用">${icon('plus', 18)}</button>
-          <button class="comp-pick" data-a="model" data-tip="选模型">${icon('brain', 14)}<span></span>${icon('chevDown', 12)}</button>
-          <button class="comp-pick" data-a="think" data-tip="思考强度：越深越慢也越贵">${icon('sparkle', 14)}<span></span>${icon('chevDown', 12)}</button>
-          <span class="grow"></span>
-          <button class="comp-send" data-a="send" data-tip="发送" data-kbd="Enter">${icon('send', 17)}</button>
-        </div>
-        <input type="file" multiple hidden>
-      </div></div>`;
-    const q = (s) => box.querySelector(s);
-    const ta = q('textarea'), fileIpt = q('input[type=file]');
-    const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(260, Math.max(76, ta.scrollHeight)) + 'px'; };
-    ta.addEventListener('input', grow);
-    ta.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
-      if (e.key === 'Escape') { e.stopPropagation(); ta.blur(); }
-    });
-    ta.addEventListener('keyup', (e) => { if (e.key === '@') mentionMenu(ta); });
-    q('[data-a=send]').onclick = send;
-    q('[data-a=close]').onclick = () => toggle(false);
-    q('[data-a=new]').onclick = () => { msgs = []; atts = []; ctxChips = []; renderMsgs(); renderChips(); };
-    q('[data-a=model]').onclick = (e) => showMenu(MODELS.map((m) => (m.title ? m : { label: m.label, hint: m.hint, checked: m.id === model, onClick: () => { model = m.id; localStorage.setItem('cd.model', model); syncPickers(); } })), 0, 0, { anchor: e.currentTarget, minWidth: 260 });
-    q('[data-a=think]').onclick = (e) => showMenu([{ title: '思考强度' }, ...THINK.map((t) => ({ label: t.label, hint: t.hint, checked: t.id === think, onClick: () => { think = t.id; localStorage.setItem('cd.think', think); syncPickers(); } }))], 0, 0, { anchor: e.currentTarget, minWidth: 220 });
-    q('[data-a=plus]').onclick = (e) => {
-      const info = app.view() === 'edit' && app.editor.selection;
-      showMenu([
-        { label: '上传文件或图片', icon: 'upload', hint: '参考图、截图、文档都可以', onClick: () => fileIpt.click() },
-        { label: info ? `引用选中元素 ${app.editor.describe(info)}` : '引用选中元素（先在编辑里选一个）', icon: 'target', disabled: !info, onClick: () => addCtx({ kind: 'element', label: app.editor.describe(info), data: { page: app.state.page, selector: info.selector, line: info.line } }) },
-        { label: '引用当前页面', icon: 'file', disabled: !app.state.page, onClick: () => addCtx({ kind: 'page', label: pageTitle(app.state.page), data: { page: app.state.page } }) },
-        { label: '引用全部草图标记', icon: 'marks', onClick: () => addCtx({ kind: 'marks', label: `${(app.project().marks || []).filter((m) => !m.done).length} 条草图标记` }) },
-      ], 0, 0, { anchor: e.currentTarget, minWidth: 280 });
-    };
-    fileIpt.onchange = () => { [...fileIpt.files].forEach(addFile); fileIpt.value = ''; };
-    box.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); box.classList.add('drop'); } });
-    box.addEventListener('dragleave', (e) => { if (!box.contains(e.relatedTarget)) box.classList.remove('drop'); });
-    box.addEventListener('drop', (e) => { e.preventDefault(); box.classList.remove('drop'); [...(e.dataTransfer.files || [])].forEach(addFile); });
-    q('.agent-resize').addEventListener('pointerdown', (e) => {
+    dockHost = host;
+    host.style.setProperty('--agent-w', width + 'px');
+    host.innerHTML = '<div class="agent-inner"><div class="agent-resize" data-tip="拖动改宽度" data-tip-place="left"></div></div>';
+    dockInner = host.firstElementChild;
+    dockInner.firstElementChild.addEventListener('pointerdown', resizeDock);
+    if (!docked && !floats.size) docked = newSession();
+    if (docked) dockInner.appendChild(docked.root);
+    floats.forEach((w) => document.body.appendChild(w));
+    setOpen(open && !!docked, false);
+  }
+  function resizeDock(e) {
+    e.preventDefault();
+    const sx = e.clientX, w0 = width;
+    dockHost.classList.add('resizing');
+    const mv = (ev) => { width = Math.max(320, Math.min(760, w0 + sx - ev.clientX)); dockHost.style.setProperty('--agent-w', width + 'px'); };
+    const up = () => { dockHost.classList.remove('resizing'); localStorage.setItem('cd.agentW', width); window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); };
+    window.addEventListener('pointermove', mv, true);
+    window.addEventListener('pointerup', up, true);
+  }
+  function setOpen(v, save = true) {
+    open = v;
+    if (dockHost) dockHost.classList.toggle('open', v);
+    const b = document.getElementById('tb-agent');
+    if (b) b.classList.toggle('on', v || [...floats.values()].some((w) => !w.hidden));
+    if (save) localStorage.setItem('cd.agentOpen', v ? '1' : '0');
+    if (v && docked) docked.focus();
+    else if (docked) docked.blur();
+  }
+
+  // ---------- 悬浮窗 ----------
+  function floatWin(s, r) {
+    const w = el(`<div class="agent-float"><div class="af-body"></div><i class="af-resize" data-tip="拖动改大小"></i></div>`);
+    const box = r || { x: innerWidth - width - 60, y: 90, w: width, h: Math.min(640, innerHeight - 170) };
+    Object.assign(w.style, { left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px' });
+    w.firstElementChild.appendChild(s.root);
+    w.querySelector('.af-resize').addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const sx = e.clientX, w0 = width;
-      box.classList.add('resizing');
-      const mv = (ev) => { width = Math.max(320, Math.min(720, w0 + sx - ev.clientX)); box.style.setProperty('--agent-w', width + 'px'); };
-      const up = () => { box.classList.remove('resizing'); localStorage.setItem('cd.agentW', width); window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); };
+      const sx = e.clientX, sy = e.clientY, w0 = w.offsetWidth, h0 = w.offsetHeight;
+      const mv = (ev) => { w.style.width = Math.max(320, w0 + ev.clientX - sx) + 'px'; w.style.height = Math.max(300, h0 + ev.clientY - sy) + 'px'; };
+      const up = () => { window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); };
       window.addEventListener('pointermove', mv, true);
       window.addEventListener('pointerup', up, true);
     });
-    syncPickers();
-    renderMsgs();
-    renderChips();
-    setOpen(open, false);
+    document.body.appendChild(w);
+    floats.set(s, w);
+    return w;
   }
-  const pageTitle = (f) => ((app.project().pages.find((p) => p.file === f) || {}).title || f);
-
-  function syncPickers() {
-    if (!box) return;
-    box.querySelector('[data-a=model] span').textContent = labelOf(MODELS, model);
-    box.querySelector('[data-a=think] span').textContent = labelOf(THINK, think);
+  function undock(s, at) {
+    if (docked !== s) return;
+    docked = null;
+    setOpen(false);
+    floatWin(s, at);
+    s.paintPickers();
   }
-  function addCtx(c) { if (!ctxChips.some((x) => x.label === c.label)) ctxChips.push({ id: uid('c'), ...c }); renderChips(); focus(); }
-  function addFile(f) {
-    const a = { id: uid('f'), name: f.name, size: f.size, type: f.type, url: /^image\//.test(f.type) ? URL.createObjectURL(f) : null };
-    atts.push(a);
-    renderChips();
-  }
-  function renderChips() {
-    if (!box) return;
-    const host = box.querySelector('.comp-chips');
-    host.innerHTML = '';
-    const all = [...ctxChips.map((c) => ({ ...c, ctx: true })), ...atts];
-    host.hidden = !all.length;
-    all.forEach((c) => {
-      const chip = el(`<span class="comp-chip ${c.ctx ? 'ctx' : ''}">${c.url ? `<img src="${c.url}" alt="">` : icon(c.ctx ? (c.kind === 'element' ? 'target' : c.kind === 'marks' ? 'marks' : 'file') : 'paperclip', 13)}
-        <span>${esc(c.ctx ? c.label : c.name)}</span>${c.size ? `<small>${Math.max(1, Math.round(c.size / 1024))}KB</small>` : ''}<button data-tip="移除">${icon('close', 11)}</button></span>`);
-      chip.querySelector('button').onclick = () => { ctxChips = ctxChips.filter((x) => x.id !== c.id); atts = atts.filter((x) => x.id !== c.id); renderChips(); };
-      host.appendChild(chip);
-    });
-  }
-  function renderMsgs() {
-    if (!box) return;
-    const host = box.querySelector('.agent-msgs');
-    host.innerHTML = '';
-    if (!msgs.length) {
-      const empty = el(`<div class="agent-empty"><div class="ae-mark">${icon('sparkle', 26)}</div><h3>想改哪里，直接说</h3>
-        <p>小改动（改字、挪位置、换颜色）自己在页面上动手就行，不花钱；说不清的、要动结构的交给我。</p><div class="ae-examples"></div></div>`);
-      EXAMPLES.forEach((t) => { const b = el(`<button>${esc(t)}</button>`); b.onclick = () => { const ta = box.querySelector('textarea'); ta.value = t; ta.dispatchEvent(new Event('input')); focus(); }; empty.querySelector('.ae-examples').appendChild(b); });
-      host.appendChild(empty);
-      return;
-    }
-    msgs.forEach((m) => {
-      const b = el(`<div class="msg ${m.role}"><div class="msg-body"></div></div>`);
-      b.querySelector('.msg-body').innerHTML = m.html;
-      host.appendChild(b);
-    });
-    host.scrollTop = host.scrollHeight;
-  }
-  function send() {
-    const ta = box.querySelector('textarea');
-    const text = ta.value.trim();
-    if (!text && !atts.length) return;
-    const chips = [...ctxChips, ...atts].map((c) => `<span class="chip">${esc(c.label || c.name)}</span>`).join(' ');
-    msgs.push({ role: 'user', html: `${esc(text).replace(/\n/g, '<br>')}${chips ? `<div class="msg-chips">${chips}</div>` : ''}` });
-    msgs.push({ role: 'sys', html: `<b>还没接入模型</b>（第二步）。接入后，这句话会连同${ctxChips.length ? '你引用的元素、代码行' : '当前页面的相关片段'}一起，用 <b>${esc(labelOf(MODELS, model))}</b> · 思考「${esc(labelOf(THINK, think))}」发送。<br>现在可以先用草图标记写下要求，再从任务单复制给任意 AI。` });
-    ta.value = '';
-    ta.dispatchEvent(new Event('input'));
-    atts = []; ctxChips = [];
-    renderChips();
-    renderMsgs();
-  }
-  function mentionMenu(ta) {
-    const info = app.view() === 'edit' && app.editor.selection;
-    const insert = (t) => { const i = ta.selectionStart; ta.value = ta.value.slice(0, i) + t + ' ' + ta.value.slice(i); ta.focus(); ta.selectionStart = ta.selectionEnd = i + t.length + 1; };
-    showMenu([
-      { title: '@ 指定对象' },
-      info ? { label: '选中的元素', hint: app.editor.describe(info), icon: 'target', onClick: () => { insert('选中元素'); addCtx({ kind: 'element', label: app.editor.describe(info), data: { selector: info.selector } }); } } : null,
-      ...app.project().pages.map((p) => ({ label: p.title, hint: p.file, icon: 'file', onClick: () => { insert(p.title); addCtx({ kind: 'page', label: p.title, data: { page: p.file } }); } })),
-      '-',
-      { label: '经济档', icon: 'brain', onClick: () => insert('经济档') },
-      { label: '专家档', icon: 'brain', onClick: () => insert('专家档') },
-    ], 0, 0, { anchor: ta, minWidth: 240 });
-  }
-  function focus() { const ta = box && box.querySelector('textarea'); if (ta) setTimeout(() => ta.focus(), 60); }
-  function setOpen(v, save = true) {
-    open = v;
-    if (box) box.classList.toggle('open', v);
-    const b = document.getElementById('tb-agent');
-    if (b) b.classList.toggle('on', v);
-    if (save) localStorage.setItem('cd.agentOpen', v ? '1' : '0');
-    if (v) focus();
-    else if (box && box.contains(document.activeElement)) document.activeElement.blur();
-  }
-  function toggle(force) { setOpen(force == null ? !open : !!force); }
-  app.bus.on('project', () => { msgs = []; atts = []; ctxChips = []; });
-  function prefill(text) {
+  function dock(s) {
+    const w = floats.get(s);
+    const r = w ? w.getBoundingClientRect() : null;
+    if (w) { w.remove(); floats.delete(s); }
+    if (docked && docked !== s) { const prev = docked; docked = null; floatWin(prev, r && { x: r.left, y: r.top, w: r.width, h: r.height }); prev.paintPickers(); }
+    docked = s;
+    dockInner.appendChild(s.root);
+    s.paintPickers();
     setOpen(true);
-    const ta = box && box.querySelector('textarea');
-    if (ta) { ta.value = text; ta.dispatchEvent(new Event('input')); }
   }
-  return { mount, toggle, addCtx, prefill };
+
+  // 拖标题栏：停靠的拽出来变悬浮；悬浮的拖到最右边停靠
+  document.addEventListener('pointerdown', (e) => {
+    const head = e.target.closest && e.target.closest('.ag-head');
+    if (!head || e.button !== 0 || e.target.closest('button')) return;
+    const s = sessions.find((x) => x.root.contains(head));
+    if (!s) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY;
+    let w = floats.get(s), ox = w ? w.offsetLeft : 0, oy = w ? w.offsetTop : 0, hint = null;
+    const mv = (ev) => {
+      if (!w) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 24) return;
+        undock(s, { x: ev.clientX - 120, y: ev.clientY - 20, w: Math.min(width, 440), h: Math.min(620, innerHeight - 160) });
+        w = floats.get(s);
+        ox = w.offsetLeft; oy = w.offsetTop;
+      }
+      w.style.left = Math.max(0, Math.min(innerWidth - 120, ox + ev.clientX - sx)) + 'px';
+      w.style.top = Math.max(0, Math.min(innerHeight - 40, oy + ev.clientY - sy)) + 'px';
+      const near = ev.clientX > innerWidth - 40 && !!app.state.project;
+      if (near && !hint) { hint = el('<div class="agent-dock-hint"><span>松手停靠到右侧</span></div>'); document.body.appendChild(hint); }
+      if (!near && hint) { hint.remove(); hint = null; }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', mv, true);
+      window.removeEventListener('pointerup', up, true);
+      if (hint) { hint.remove(); dock(s); }
+    };
+    window.addEventListener('pointermove', mv, true);
+    window.addEventListener('pointerup', up, true);
+  });
+
+  // ---------- 给会话用的接口 ----------
+  const target = () => (active && sessions.includes(active) ? active : docked || sessions[0]);
+  function show(s) {
+    if (s === docked) setOpen(true);
+    else { const w = floats.get(s); if (w) w.hidden = false; }
+  }
+  const mgr = {
+    setActive(s) { active = s; sessions.forEach((x) => x.root.classList.toggle('active', x === s && sessions.length > 1)); },
+    isDocked: (s) => s === docked,
+    toggleDock: (s) => (s === docked ? undock(s) : dock(s)),
+    newWindow() {
+      const s = newSession();
+      const n = floats.size;
+      floatWin(s, { x: Math.max(20, innerWidth - width - 100 - n * 28), y: 110 + n * 28, w: Math.min(width, 440), h: Math.min(600, innerHeight - 200) });
+      mgr.setActive(s);
+      s.focus();
+    },
+    close(s) {
+      if (s === docked) { setOpen(false); return; }
+      const w = floats.get(s);
+      if (w) { w.remove(); floats.delete(s); }
+      sessions.splice(sessions.indexOf(s), 1);
+      if (!sessions.length) { docked = newSession(); dockInner.appendChild(docked.root); }
+      if (active === s) active = null;
+    },
+    skills: () => skills,
+    skill: (id) => skills.find((k) => k.id === id) || { id, name: id, icon: 'book' },
+    modelLabel(id) {
+      if (id === 'auto') return '自动分档';
+      const [pid, model] = String(id).split(':');
+      return model || pid;
+    },
+    modelMenu(anchor, cur, pick) {
+      const items = [{ title: '推荐' }, { label: '自动分档', hint: '小改用经济档，出方案用专家档', checked: cur === 'auto', onClick: () => pick('auto') }];
+      const on = settings ? settings.providers.filter((p) => p.enabled && p.models.length) : [];
+      on.forEach((p) => { items.push({ title: p.name }); p.models.forEach((m) => items.push({ label: m, checked: cur === `${p.id}:${m}`, onClick: () => pick(`${p.id}:${m}`) })); });
+      if (!on.length) items.push({ title: '还没有启用任何模型' });
+      items.push('-', { label: '模型与接口设置…', icon: 'settings', onClick: () => app.openSettings() });
+      showMenu(items, 0, 0, { anchor, minWidth: 260 });
+    },
+  };
+
+  // ---------- 对外 ----------
+  function toggle(force) {
+    if (docked) { setOpen(force == null ? !open : !!force); return; }
+    const anyShown = [...floats.values()].some((w) => !w.hidden);
+    const want = force == null ? !anyShown : !!force;
+    floats.forEach((w) => { w.hidden = !want; });
+    setOpen(false, false);
+  }
+  app.bus.on('project', () => sessions.forEach((s) => s.reset()));
+  return {
+    mount, toggle,
+    addRef(r) { const s = target(); show(s); s.addRef(r); },
+    prefill(text, o) { const s = target(); show(s); s.prefill(text, o); },
+    newWindow: () => mgr.newWindow(),
+  };
 }

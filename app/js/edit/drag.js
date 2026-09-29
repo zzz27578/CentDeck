@@ -7,6 +7,13 @@ const NAMES = { section: '版块', header: '页眉', footer: '页脚', nav: '导
 const T_SCREEN = 6;
 
 const tr = (v) => { const p = String(v || '').split(/\s+/).map(parseFloat); return [p[0] || 0, p[1] || 0]; };
+// 预览一律用 !important 写在元素上：这样"只对手机生效"的 @media 规则（也带 !important）不会挡住拖动效果
+const PROPS = ['translate', 'scale', 'width', 'height'];
+const saveInline = (e) => PROPS.map((k) => [k, e.style.getPropertyValue(k), e.style.getPropertyPriority(k)]);
+const restoreInline = (e, saved) => saved.forEach(([k, v, pr]) => { if (v) e.style.setProperty(k, v, pr); else e.style.removeProperty(k); });
+const setImp = (e, k, v) => e.style.setProperty(k, v, 'important');
+export const curTranslate = (win, e) => { const v = win.getComputedStyle(e).translate; return v && v !== 'none' ? tr(v) : [0, 0]; };
+export { saveInline, restoreInline, setImp };
 const arrowX = (d) => (d >= 0 ? '→ ' : '← ') + Math.abs(d);
 const arrowY = (d) => (d >= 0 ? '↓ ' : '↑ ') + Math.abs(d);
 
@@ -75,7 +82,7 @@ export function startMove(ed, info0, e0, onClick) {
     const contR = cont ? ed.pageRect(cont) : null;
     if (contR) refs.push(contR);
     st = {
-      r0: ed.pageRect(elm), t0: tr(elm.style.translate), inline0: elm.style.translate,
+      r0: ed.pageRect(elm), t0: curTranslate(ed.frame.win, elm), inline0: saveInline(elm),
       cont, contR, index: buildIndex(refs), peers, list: containerList(ed, elm),
     };
     ov.place(ov.origin, st.r0);
@@ -115,7 +122,7 @@ export function startMove(ed, info0, e0, onClick) {
     if (!e.altKey) res = snapMove(m, st.index, st.peers, T_SCREEN / z, { lockX, lockY });
     dx = Math.round(mx + res.dx);
     dy = Math.round(my + res.dy);
-    elm.style.translate = `${st.t0[0] + dx}px ${st.t0[1] + dy}px`;
+    setImp(elm, 'translate', `${st.t0[0] + dx}px ${st.t0[1] + dy}px`);
     const cx = r0.x + dx + r0.w / 2, cy = r0.y + dy + r0.h / 2;
     crossed = containerAt(st.list, cx, cy) !== (st.cont || null);
     ov.range.classList.toggle('out', crossed);
@@ -127,15 +134,15 @@ export function startMove(ed, info0, e0, onClick) {
   }, () => {
     if (!st) { if (st === null && onClick) onClick(); return; }
     finishVisuals();
-    if (!dx && !dy) { elm.style.translate = st.inline0; return; }
+    if (!dx && !dy) { restoreInline(elm, st.inline0); return; }
     if (crossed) {
-      elm.style.translate = st.inline0;
+      restoreInline(elm, st.inline0);
       ed.onMoveCrossed(info, dx, dy, st.cont);
       return;
     }
-    ed.commitMove(info, dx, dy, () => { elm.style.translate = st.inline0; });
+    ed.commitMove(info, dx, dy, () => restoreInline(elm, st.inline0));
   }, () => {
-    if (st) { elm.style.translate = st.inline0; finishVisuals(); }
+    if (st) { restoreInline(elm, st.inline0); finishVisuals(); }
   });
 }
 
@@ -146,9 +153,9 @@ export function startResize(ed, info, hd, e0) {
   const ov = ed.ov, win = ed.frame.win;
   const cs = win.getComputedStyle(elm);
   const r0 = ed.pageRect(elm);
-  const saved = { scale: elm.style.scale, translate: elm.style.translate, width: elm.style.width, height: elm.style.height };
-  const s0 = parseFloat(elm.style.scale) || parseFloat(cs.scale) || 1;
-  let [tx, ty] = tr(elm.style.translate);
+  const saved = saveInline(elm);
+  const s0 = parseFloat(cs.scale) || 1;
+  let [tx, ty] = curTranslate(win, elm);
   const corner = hd.length === 2;
   const sx = hd.includes('e') ? 1 : hd.includes('w') ? -1 : 0;
   const sy = hd.includes('s') ? 1 : hd.includes('n') ? -1 : 0;
@@ -171,7 +178,7 @@ export function startResize(ed, info, hd, e0) {
     if (sx) tx += ax - cx;
     if (sy) ty += ay - cy;
     if (corner && !sx) tx += ax - cx;
-    elm.style.translate = `${Math.round(tx)}px ${Math.round(ty)}px`;
+    setImp(elm, 'translate', `${Math.round(tx)}px ${Math.round(ty)}px`);
   };
 
   track((e) => {
@@ -189,7 +196,7 @@ export function startResize(ed, info, hd, e0) {
       }
       k = Math.min(6, Math.max(0.1, k));
       s = Math.round(s0 * k * 1000) / 1000;
-      elm.style.scale = String(s);
+      setImp(elm, 'scale', String(s));
       anchorFix();
       ov.showPill(`等比缩放 ${Math.round(s * 100)}%`, p.x + 14, p.y + 14);
     } else if (sx) {
@@ -197,7 +204,7 @@ export function startResize(ed, info, hd, e0) {
       if (!e.altKey) edge += snapEdge(edge, index.xs, T);
       const vis = Math.abs(edge - ax);
       newW = Math.max(8, Math.round(cssW + (vis / s0 - layoutW)));
-      elm.style.width = newW + 'px';
+      setImp(elm, 'width', newW + 'px');
       anchorFix();
       ov.showPill(`宽 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
     } else {
@@ -205,7 +212,7 @@ export function startResize(ed, info, hd, e0) {
       if (!e.altKey) edge += snapEdge(edge, index.ys, T);
       const vis = Math.abs(edge - ay);
       newH = Math.max(8, Math.round(cssH + (vis / s0 - layoutH)));
-      elm.style.height = newH + 'px';
+      setImp(elm, 'height', newH + 'px');
       anchorFix();
       ov.showPill(`高 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
     }
@@ -214,7 +221,7 @@ export function startResize(ed, info, hd, e0) {
   }, () => {
     ov.clearGuides(); ov.hidePill(); ov.sel.classList.remove('dragging');
     ed.dragging = false; ed.setHint('');
-    const restore = () => Object.assign(elm.style, saved);
+    const restore = () => restoreInline(elm, saved);
     if (!moved) return;
     const props = {};
     const t = (Math.round(tx) || Math.round(ty)) ? `${Math.round(tx)}px ${Math.round(ty)}px` : null;
@@ -223,7 +230,7 @@ export function startResize(ed, info, hd, e0) {
     const label = corner ? `缩放到 ${Math.round(s * 100)}%` : newW != null ? `宽度改为 ${newW}px` : `高度改为 ${newH}px`;
     ed.commitStyle(info, props, label, restore);
   }, () => {
-    Object.assign(elm.style, saved);
+    restoreInline(elm, saved);
     ov.clearGuides(); ov.hidePill(); ov.sel.classList.remove('dragging');
     ed.dragging = false; ed.setHint('');
   });

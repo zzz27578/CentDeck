@@ -91,7 +91,7 @@ app.setView = async (v, opts = {}) => {
   document.body.dataset.view = v;
   const wrap = app.refs.stageWrap;
   wrap.innerHTML = '';
-  app.refs.inspector.classList.toggle('open', v === 'edit');
+  if (v !== 'edit') app.refs.inspector.classList.remove('open');
   app.setHint('');
   app.setStatusRight('');
   app.setCrumbs(null);
