@@ -116,6 +116,75 @@ function occurrences(raw, needle) {
   return out;
 }
 
+// ---------- 文字段：元素"直接包含"的每一段文字在源码里的范围 ----------
+// 与浏览器 DOM 里该元素的直接文本节点一一对应（注释、子元素、脚本把文字切成多段）
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
+const RAW_TAGS = new Set(['script', 'style', 'textarea', 'title', 'xmp']);
+const SEG_RE = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/g;
+
+export function textSegments(source, info) {
+  const segs = [];
+  const from = info.openEnd, to = info.closeStart;
+  if (info.isVoid || to <= from) return segs;
+  SEG_RE.lastIndex = from;
+  let depth = 0, textStart = from, m;
+  while ((m = SEG_RE.exec(source)) && m.index < to) {
+    if (depth === 0 && m.index > textStart) segs.push([textStart, m.index]);
+    if (m[2]) {
+      const tag = m[2].toLowerCase();
+      if (m[1]) depth = Math.max(0, depth - 1);
+      else if (RAW_TAGS.has(tag)) {
+        const end = source.indexOf('</' + tag, SEG_RE.lastIndex);
+        SEG_RE.lastIndex = end < 0 ? to : Math.min(to, source.indexOf('>', end) + 1 || to);
+      } else if (!VOID_TAGS.has(tag) && !m[4]) depth++;
+    }
+    textStart = SEG_RE.lastIndex;
+  }
+  if (depth === 0 && textStart < to) segs.push([textStart, to]);
+  return segs;
+}
+
+// 实体解码 + 位置对照表：map[i] = 解码后第 i 个字符在原文里的起点；map[len] = 原文长度
+const ENT = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: '\u00a0', copy: '©', reg: '®', trade: '™', hellip: '…',
+  mdash: '—', ndash: '–', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', middot: '·', times: '×', divide: '÷',
+  laquo: '«', raquo: '»', bull: '•', yen: '¥', euro: '€', pound: '£', cent: '¢', sect: '§', deg: '°', plusmn: '±',
+  para: '¶', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', zwj: '\u200d', zwnj: '\u200c', shy: '\u00ad',
+  larr: '←', rarr: '→', uarr: '↑', darr: '↓', harr: '↔', hearts: '♥', AMP: '&', LT: '<', GT: '>', QUOT: '"',
+};
+export function decodeMap(raw) {
+  let text = '';
+  const map = [];
+  for (let i = 0; i < raw.length;) {
+    const c = raw[i];
+    if (c === '\r') { text += '\n'; map.push(i); i += raw[i + 1] === '\n' ? 2 : 1; continue; }
+    if (c === '&') {
+      const m = /^&(#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z][a-zA-Z0-9]*);/.exec(raw.slice(i, i + 14));
+      if (m) {
+        const b = m[1];
+        let ch = null;
+        if (b[0] === '#') {
+          const cp = b[1] === 'x' || b[1] === 'X' ? parseInt(b.slice(2), 16) : parseInt(b.slice(1), 10);
+          if (cp > 0 && cp < 0x110000) ch = String.fromCodePoint(cp);
+        } else if (ENT[b]) ch = ENT[b];
+        if (ch != null) {
+          for (let k = 0; k < ch.length; k++) map.push(i);
+          text += ch;
+          i += m[0].length;
+          continue;
+        }
+      }
+    }
+    text += c;
+    map.push(i);
+    i++;
+  }
+  map.push(raw.length);
+  return { text, map };
+}
+const encText = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u00a0/g, '&nbsp;');
+const isLow = (code) => code >= 0xdc00 && code <= 0xdfff;
+
 function curTranslate(info) {
   const v = getStyleProp(info, 'translate');
   if (!v) return [0, 0];
@@ -187,9 +256,33 @@ export function applyEdit(source, edit, opts = {}) {
   }
   const at = x => x + '（第 ' + info.line + ' 行 <' + info.tag + '>）';
 
-  let newSource = null, scopeClass = null, note = null;
+  let newSource = null, scopeClass = null, note = null, lineAt = null;
 
-  if (edit.kind === 'text') {
+  if (edit.kind === 'textNode') {
+    // —— 改某一段文字（混合内容也可以）：只替换真正变了的那几个字符 ——
+    const segs = textSegments(source, info);
+    const k = edit.index;
+    if (!(k >= 0 && k < segs.length)) return fail(at('这段文字') + '在代码里定位不到（页面结构可能被浏览器自动纠正或被脚本改过），不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    let [a, b] = segs[k];
+    if (k === 0 && /^(pre|textarea|listing)$/.test(info.tag)) { if (source[a] === '\r') a++; if (source[a] === '\n') a++; }
+    const { text, map } = decodeMap(source.slice(a, b));
+    const oldT = String(edit.oldText == null ? '' : edit.oldText);
+    const newT = String(edit.newText == null ? '' : edit.newText);
+    if (text !== oldT) return fail(at('这段文字') + '在代码里的原文和页面上显示的不一致（可能由脚本改写），不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    if (!newT.trim() && info.textOnly) return fail('不能把文字全部删空：那等于删掉内容；要删整个元素请用"删除"。', { selector: info.selector, line: info.line });
+    if (oldT === newT) return fail('文字没有变化。', { selector: info.selector, line: info.line, unchanged: true });
+    const lim = Math.min(oldT.length, newT.length);
+    let p = 0;
+    while (p < lim && oldT[p] === newT[p]) p++;
+    let s = 0;
+    while (s < lim - p && oldT[oldT.length - 1 - s] === newT[newT.length - 1 - s]) s++;
+    if (p > 0 && isLow(oldT.charCodeAt(p))) p--;
+    if (s > 0 && isLow(oldT.charCodeAt(oldT.length - s))) s--;
+    const rs = a + map[p], re = a + map[oldT.length - s];
+    newSource = source.slice(0, rs) + encText(newT.slice(p, newT.length - s)) + source.slice(re);
+    lineAt = parsed.lineOf(rs);
+    if (info.jsDynamic) note = '这一块被页面脚本引用：代码里的文字已改好，但页面运行时脚本仍可能改写它。';
+  } else if (edit.kind === 'text') {
     // —— 改字 ——
     const nt = String(edit.newText == null ? '' : edit.newText);
     if (/\r|\n/.test(nt)) return fail('新文字里不允许换行：换行会改变行数，无法做到"只改那一行"。', { selector: info.selector, line: info.line });
@@ -284,7 +377,7 @@ export function applyEdit(source, edit, opts = {}) {
     newSource,
     affected: affected.length ? affected : undefined,
     changed,
-    line: info.line, endLine: info.endLine, selector: info.selector,
+    line: lineAt || info.line, endLine: info.endLine, selector: info.selector,
     note: note || undefined
   };
 }

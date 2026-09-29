@@ -1,0 +1,44 @@
+/* sketch.css —— 草图标记层 */
+.sk-host { left: 0; top: 0; width: 0; height: 0; transition: opacity var(--mid); }
+.sk-host.hidden { opacity: 0; pointer-events: none; }
+.sk-host.hidden * { pointer-events: none !important; }
+.sk-svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
+.sk-mark { pointer-events: none; }
+.sk-mark .sk-hit { pointer-events: stroke; cursor: pointer; }
+.ovl.t-draw .sk-mark .sk-hit, .ovl.t-note .sk-mark .sk-hit, .ovl.t-text .sk-mark .sk-hit { pointer-events: none; }
+.ovl.t-eraser .sk-mark .sk-hit { pointer-events: stroke; cursor: cell; }
+.sk-mark.done { opacity: .38; }
+.sk-mark.sel > :not(.sk-hit) { filter: drop-shadow(0 0 3px rgba(79, 107, 255, .9)); }
+.sk-live { opacity: .85; }
+.sk-html { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.sk-pin {
+  position: absolute; display: flex; align-items: center; gap: 6px; transform: translate(-50%, -50%) scale(var(--inv)); transform-origin: 0 0;
+  pointer-events: auto; cursor: pointer; white-space: nowrap; transition: filter var(--fast);
+}
+.sk-pin b {
+  width: 22px; height: 22px; border-radius: 50% 50% 50% 4px; background: var(--c, #e5484d); color: #fff; font-size: 11.5px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0, 0, 0, .25), 0 0 0 2px #fff;
+}
+.sk-pin span { max-width: 220px; overflow: hidden; text-overflow: ellipsis; padding: 2px 8px; border-radius: 6px; background: rgba(255, 255, 255, .95); color: var(--text); font-size: 12px; box-shadow: var(--shadow-1); }
+.sk-pin.done { opacity: .5; }
+.sk-pin.auto b { border-radius: 5px; }
+.sk-pin.drift b { outline: 2px dashed #f5a524; outline-offset: 2px; }
+.sk-pin.sel b { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent); }
+.ovl.t-draw .sk-pin, .ovl.t-text .sk-pin { pointer-events: none; }
+.sk-card {
+  position: absolute; width: 300px; padding: 10px; background: #fff; border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow-3);
+  transform: scale(var(--inv)); transform-origin: 0 0; pointer-events: auto; animation: vin .2s var(--ease); cursor: default;
+}
+.skc-head { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; font-weight: 600; font-size: 12.5px; }
+.skc-head i { width: 10px; height: 10px; border-radius: 50%; }
+.skc-head small { font-weight: 400; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-card textarea { font-size: 12.5px; }
+.skc-acts { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+.skc-acts .grow { flex: 1; }
+.skc-colors { display: flex; gap: 5px; }
+.skc-colors button { width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+.skc-colors button.on { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--accent); }
+.sk-dot { width: 20px; height: 20px; border-radius: 50% 50% 50% 4px; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+.ovl.passthru * { pointer-events: none !important; }
+.ov-sel.editing { border-style: dashed; box-shadow: none; }
+.ov-sel.editing .hd, .ov-sel.editing .ov-tag, .ov-sel.editing .ov-size { display: none; }

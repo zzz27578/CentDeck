@@ -1,0 +1,70 @@
+/* overview.css —— 总览画布 */
+.ov-host { cursor: default; }
+.ov-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.ov-card, .ov-sub {
+  position: absolute; background: #fff; box-shadow: 0 0 0 calc(1px * var(--inv)) rgba(20, 24, 40, .12), 0 calc(8px * var(--inv)) calc(30px * var(--inv)) rgba(20, 24, 40, .14);
+  transition: box-shadow var(--fast);
+}
+.ov-card.on { box-shadow: 0 0 0 calc(3px * var(--inv)) var(--accent), 0 calc(10px * var(--inv)) calc(40px * var(--inv)) rgba(79, 107, 255, .25); }
+.ov-card:hover:not(.on) { box-shadow: 0 0 0 calc(2px * var(--inv)) rgba(79, 107, 255, .55), 0 calc(8px * var(--inv)) calc(30px * var(--inv)) rgba(20, 24, 40, .16); }
+.ov-body { position: absolute; inset: 0; overflow: hidden; }
+.ov-tile { position: absolute; left: 0; border: 0; pointer-events: none; background: #fff; }
+.ov-mask { position: absolute; inset: 0; cursor: pointer; }
+.ov-sub { border-radius: calc(6px * var(--inv)); overflow: visible; }
+.ov-sub .ov-body { border-radius: inherit; }
+.ov-title {
+  position: absolute; left: 0; bottom: 100%; margin-bottom: calc(10px * var(--inv)); transform: scale(var(--inv)); transform-origin: 0 100%;
+  display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 13px; color: var(--text-2); cursor: grab; padding: 3px 4px; border-radius: 7px;
+}
+.ov-title:hover { background: rgba(255, 255, 255, .7); }
+.ov-title b { color: var(--text); font-size: 14px; }
+.ov-title.sub b { font-size: 13px; }
+.ov-title.sub .ico { color: #8b5cf6; }
+.ov-file { color: var(--dim); font-size: 12px; }
+.ov-tbtn { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 7px; font-size: 12px; color: var(--text-2); background: #fff; box-shadow: var(--shadow-1); opacity: 0; transition: opacity var(--fast); }
+.ov-card:hover .ov-tbtn, .ov-card.on .ov-tbtn { opacity: 1; }
+.ov-tbtn:hover { color: var(--accent); }
+.ov-svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; z-index: 5; }
+.ov-link { fill: none; stroke: #9aa2b1; stroke-width: 1.8; vector-effect: non-scaling-stroke; transition: stroke var(--fast), opacity var(--fast); }
+.ov-link.nav { stroke-dasharray: 3 5; stroke: #b4bac6; }
+.ov-link.hot { stroke: var(--accent); stroke-width: 2.6; }
+.ov-link.dim { opacity: .18; }
+.ov-link.pop { stroke: #8b5cf6; stroke-dasharray: 7 6; stroke-width: 2; }
+.ov-link.pop.weak { opacity: .35; }
+.ov-link.redirect { stroke: #d68a00; stroke-dasharray: 8 6; stroke-width: 2; }
+.ov-link.anchor { stroke: #16a34a; stroke-width: 2; }
+.ov-head { fill: #9aa2b1; }
+.ov-head.hot { fill: var(--accent); }
+.ov-head.dim { opacity: .18; }
+.ov-head.redirect { fill: #d68a00; }
+.ov-head.anchor { fill: #16a34a; }
+.ov-dot { fill: #fff; stroke: #9aa2b1; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.ov-dot.hot { stroke: var(--accent); }
+.ov-dot.pop { stroke: #8b5cf6; }
+.ov-dot.dim { opacity: .2; }
+.ov-label {
+  position: absolute; z-index: 6; transform: translate(-50%, -50%) scale(var(--inv)); display: flex; align-items: center; gap: 4px;
+  white-space: nowrap; padding: 3px 9px; border-radius: 99px; background: #fff; color: var(--text-2); font-size: 12px; box-shadow: var(--shadow-2); pointer-events: none;
+}
+.ov-label.hot { color: var(--accent); }
+.ov-label.pop { color: #7c4ee4; }
+.ov-label.redirect { color: #b57500; }
+.ov-label.anchor { color: #13843f; }
+.ov-trig {
+  position: absolute; z-index: 6; width: 20px; height: 20px; margin: -10px 0 0 -10px; transform: scale(var(--inv)); transform-origin: 50% 50%;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #8b5cf6; color: #fff; box-shadow: 0 0 0 2px #fff, var(--shadow-1);
+}
+.ov-toolbar { position: absolute; left: 14px; top: 14px; z-index: 12; display: flex; align-items: center; gap: 4px; padding: 4px; background: #fff; border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow-1); }
+.ov-toolbar .dock-sep { width: 1px; height: 20px; background: var(--line); margin: 0 3px; }
+
+/* 结构树 */
+.tree-page { border-bottom: 1px solid var(--line); padding: 4px 0 8px; }
+.tree-page.on { background: linear-gradient(90deg, var(--accent-soft), transparent 70%); }
+.tree-head { display: flex; align-items: center; gap: 7px; padding: 8px 10px 4px 14px; cursor: pointer; }
+.tree-head .grow { flex: 1; }
+.tree-head b { font-size: 13px; }
+.tree-item { display: flex; align-items: center; gap: 7px; padding: 4px 12px 4px 34px; color: var(--text-2); font-size: 12px; cursor: pointer; border-radius: 6px; margin: 0 6px; }
+.tree-item:hover { background: var(--panel-2); color: var(--text); }
+.tree-item .ico { color: var(--dim); }
+.tree-item small { color: var(--dim); margin-left: auto; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+.tree-item.link .ico { color: var(--accent); }

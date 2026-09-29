@@ -269,6 +269,15 @@ async function handle(req, res) {
     return;
   }
 
+  m = pathname.match(/^\/tpl\/([^/]+)(\/.*)?$/);
+  if (m) {
+    if (method !== 'GET') throw new ApiError(405, '模板预览只支持 GET');
+    const tid = decodeURIComponent(m[1]);
+    store.assertValidId(tid, '模板 ID');
+    serveStatic(res, path.join(store.TEMPLATES_DIR, tid), m[2] || '', '模板文件');
+    return;
+  }
+
   if (pathname.startsWith('/api/')) throw new ApiError(404, '接口不存在');
   throw new ApiError(404, '页面不存在');
 }

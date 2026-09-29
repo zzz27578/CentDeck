@@ -1,0 +1,45 @@
+/* agent.css —— 助手对话框 */
+.agent { width: 0; flex: none; overflow: hidden; background: #fff; border-left: 1px solid var(--line); transition: width var(--mid) var(--ease); position: relative; z-index: 16; }
+.agent.open { width: var(--agent-w, 400px); }
+.agent.resizing { transition: none; user-select: none; }
+.agent.drop::after { content: '松开鼠标，把文件加进对话'; position: absolute; inset: 10px; border: 2px dashed var(--accent); border-radius: 14px; background: rgba(238, 241, 255, .92); display: flex; align-items: center; justify-content: center; color: var(--accent); font-weight: 600; }
+.agent-inner { width: var(--agent-w, 400px); height: 100%; display: flex; flex-direction: column; position: relative; }
+.agent-resize { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; cursor: ew-resize; z-index: 2; }
+.agent-resize:hover { background: linear-gradient(90deg, rgba(79, 107, 255, .35), transparent); }
+.agent-head { height: 48px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
+.agent-head .ico:first-child { color: var(--accent); }
+.agent-head .grow { flex: 1; }
+.agent-msgs { flex: 1; overflow: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; }
+.agent-empty { margin: auto 0; text-align: center; padding: 10px 6px 30px; }
+.ae-mark { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 16px; background: linear-gradient(135deg, #eef1ff, #f3ecff); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+.agent-empty h3 { font-size: 16px; margin-bottom: 6px; }
+.agent-empty p { color: var(--text-2); line-height: 1.7; font-size: 12.5px; margin-bottom: 16px; }
+.ae-examples { display: flex; flex-direction: column; gap: 7px; text-align: left; }
+.ae-examples button { padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text-2); font-size: 12.5px; text-align: left; transition: border-color var(--fast), background var(--fast), color var(--fast); }
+.ae-examples button:hover { border-color: #c9d1ff; background: var(--accent-soft); color: var(--accent-2); }
+.msg { display: flex; animation: vin .22s var(--ease); }
+.msg.user { justify-content: flex-end; }
+.msg-body { max-width: 88%; padding: 10px 13px; border-radius: 14px; line-height: 1.7; font-size: 13px; }
+.msg.user .msg-body { background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
+.msg.sys .msg-body { background: var(--panel-2); color: var(--text-2); border: 1px solid var(--line); border-bottom-left-radius: 5px; font-size: 12.5px; }
+.msg-chips { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+.msg.user .chip { background: rgba(255, 255, 255, .2); color: #fff; }
+.agent-composer { flex: none; margin: 0 12px 12px; border: 1px solid var(--line-2); border-radius: 16px; background: #fff; box-shadow: var(--shadow-1); transition: border-color var(--fast), box-shadow var(--fast); }
+.agent-composer:focus-within { border-color: #aebcff; box-shadow: 0 0 0 4px rgba(79, 107, 255, .1); }
+.agent-composer textarea { display: block; width: 100%; min-height: 76px; max-height: 260px; resize: none; border: 0; outline: 0; padding: 12px 14px 4px; font-size: 13.5px; line-height: 1.65; background: transparent; }
+.agent-composer textarea::placeholder { color: #a3a9b6; }
+.comp-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px 0; }
+.comp-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; height: 26px; padding: 0 4px 0 8px; border-radius: 8px; background: var(--bg-2); font-size: 12px; color: var(--text-2); }
+.comp-chip.ctx { background: var(--accent-soft); color: var(--accent-2); }
+.comp-chip img { width: 18px; height: 18px; border-radius: 4px; object-fit: cover; }
+.comp-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 190px; }
+.comp-chip small { color: var(--dim); }
+.comp-chip button { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: var(--dim); }
+.comp-chip button:hover { background: rgba(0, 0, 0, .07); color: var(--text); }
+.comp-bar { display: flex; align-items: center; gap: 4px; padding: 6px 8px 8px; }
+.comp-bar .grow { flex: 1; }
+.comp-pick { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 8px; border-radius: 8px; font-size: 12px; color: var(--text-2); max-width: 150px; }
+.comp-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comp-pick:hover { background: rgba(20, 24, 40, .06); color: var(--text); }
+.comp-send { width: 32px; height: 32px; border-radius: 10px; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(79, 107, 255, .35); transition: transform var(--fast), background var(--fast); }
+.comp-send:hover { background: var(--accent-2); transform: translateY(-1px); }
