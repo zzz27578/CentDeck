@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>手动修改演示 · 前端工作台</title>
+  <style>
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { height: 100%; margin: 0; }
+    body { display: grid; grid-template-rows: auto 1fr; overflow: hidden; font: 13px/1.5 "Microsoft YaHei", "PingFang SC", sans-serif; color: #1f2430; background: #f3f4f7; }
+    select, input, button, textarea { font: inherit; }
+
+    .top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 14px; background: #fff; border-bottom: 1px solid #e3e5ea; }
+    .brand { margin-right: 4px; font-size: 15px; font-weight: 700; }
+    .label { color: #8a8fa3; }
+    .spacer { flex: 1; }
+    .seg { display: inline-flex; padding: 2px; border-radius: 8px; background: #eef0f4; }
+    .seg button { padding: 5px 12px; border: 0; border-radius: 6px; background: transparent; color: #5b6275; cursor: pointer; }
+    .seg button.on { background: #fff; color: #1f2430; font-weight: 600; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+    .count { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: #e17055; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+    .btn { padding: 5px 11px; border: 1px solid #d5d8e0; border-radius: 7px; background: #fff; cursor: pointer; }
+    .btn:hover { border-color: #4c7dff; color: #4c7dff; }
+    .btn.on, .btn.primary { border-color: #4c7dff; background: #4c7dff; color: #fff; }
+    .btn.sm { padding: 2px 8px; font-size: 12px; }
+    .btn.danger:hover { border-color: #e74c3c; color: #e74c3c; }
+    .btn:disabled, .seg button:disabled { opacity: .45; cursor: not-allowed; }
+    #writeMode { padding: 4px 6px; border: 1px solid #d5d8e0; border-radius: 7px; }
+
+    main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr); min-height: 0; }
+    .left { display: grid; grid-template-rows: minmax(0, 1fr) 250px; min-height: 0; border-right: 1px solid #e3e5ea; }
+    #stage { display: flex; justify-content: center; min-height: 0; padding: 12px; overflow: auto; background: #dfe2e8; }
+    #frame { width: 100%; height: 100%; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 4px 18px rgba(0, 0, 0, .14); }
+    #stage.mobile #frame { flex: 0 0 auto; border: 8px solid #1f2430; border-radius: 24px; }
+
+    .dock { display: grid; grid-template-columns: 1fr 1.3fr .85fr; min-height: 0; background: #fff; border-top: 1px solid #e3e5ea; }
+    .pane { min-height: 0; padding: 10px 12px; overflow: auto; border-right: 1px solid #eef0f4; }
+    .pane h4 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; color: #8a8fa3; font-size: 12px; font-weight: 600; }
+    .empty { color: #8a8fa3; }
+
+    .v-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+    .v-head i { width: 12px; height: 12px; border-radius: 50%; background: #aab0bf; }
+    .v-green .v-head { color: #1e9e57; } .v-green .v-head i { background: #2ecc71; }
+    .v-yellow .v-head { color: #b07d00; } .v-yellow .v-head i { background: #f5b301; }
+    .v-red .v-head { color: #c0392b; } .v-red .v-head i { background: #e74c3c; }
+    .v-bad .v-head { color: #7d3c98; } .v-bad .v-head i { background: #8e44ad; }
+    .v-gray .v-head { color: #6b7286; }
+    .v-title { margin: 6px 0 4px; font-size: 14px; font-weight: 600; }
+    .v-detail { color: #5b6275; white-space: pre-line; }
+    .v-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .v-actions button { padding: 3px 10px; border: 1px solid #d5d8e0; border-radius: 6px; background: #fff; cursor: pointer; }
+    .v-actions button:hover { border-color: #4c7dff; color: #4c7dff; }
+
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+    .k { color: #8a8fa3; }
+    #propTarget { margin-bottom: 4px; padding: 4px 8px; border-radius: 6px; background: #f5f6f9; font: 12px/1.5 Consolas, monospace; word-break: break-all; }
+    #propGen { color: #c0392b; font-size: 12px; }
+    input[type=number] { width: 62px; padding: 3px 6px; border: 1px solid #d5d8e0; border-radius: 6px; }
+    #pFontFamily, #tier { padding: 3px 6px; border: 1px solid #d5d8e0; border-radius: 6px; }
+    #pColor { width: 36px; height: 26px; padding: 0 2px; border: 1px solid #d5d8e0; border-radius: 6px; background: #fff; }
+    #pScale { width: 130px; }
+
+    #sketchTools { margin-bottom: 6px; }
+    .mark { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px dashed #eef0f4; }
+    .mark .bd { flex: 0 0 22px; height: 22px; border-radius: 50%; background: #e17055; color: #fff; font-size: 12px; font-weight: 700; line-height: 22px; text-align: center; }
+    .mark.auto .bd { background: #c0392b; }
+    .mk-body { flex: 1; min-width: 0; }
+    .mk-desc { font-size: 12px; }
+    .mark input { width: 100%; margin-top: 3px; padding: 3px 6px; border: 1px solid #d5d8e0; border-radius: 6px; font-size: 12px; }
+    .mark > button { border: 0; background: none; color: #aab0bf; font-size: 16px; cursor: pointer; }
+    .foot { position: sticky; bottom: -10px; margin-bottom: -10px; padding: 6px 0 10px; background: #fff; }
+
+    #log { margin: 0; padding: 0; list-style: none; font-size: 12px; }
+    #log li { padding: 4px 0; border-bottom: 1px dashed #eef0f4; }
+    #log b { margin-right: 4px; color: #8a8fa3; font-weight: 400; }
+    #log em { color: #1e9e57; font-style: normal; }
+
+    .right { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: #1e2130; color: #d7dae6; }
+    .code-head { padding: 8px 12px; border-bottom: 1px solid #33384d; background: #262a3b; }
+    .code-head b { color: #fff; }
+    #codeSummary { color: #9aa0bd; font-size: 12px; }
+    #code { position: relative; padding: 6px 0; overflow: auto; font: 12px/1.65 Consolas, "Courier New", monospace; }
+    .ln { display: flex; padding-right: 12px; white-space: pre; }
+    .ln .no { flex: 0 0 46px; padding-right: 12px; color: #5d6380; text-align: right; user-select: none; }
+    .ln.sel { background: rgba(76, 125, 255, .2); }
+    .ln.sel .no { color: #8fb0ff; }
+    .ln.chg { background: rgba(46, 204, 113, .24); }
+    .ln.chg .no { color: #6fe39f; }
+    .ct { color: #ff8fab; }
+    .cs { color: #ffd479; }
+
+    .modal { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgba(15, 18, 34, .45); }
+    .modal-box { width: min(780px, 92vw); max-height: 88vh; padding: 18px 22px; overflow: auto; border-radius: 12px; background: #fff; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); }
+    .modal-box h2 { margin: 0 0 8px; font-size: 18px; }
+    .modal-box h3 { display: flex; align-items: center; gap: 8px; margin: 16px 0 4px; font-size: 14px; }
+    .modal-box h3 i { width: 12px; height: 12px; border-radius: 50%; }
+    .modal-box ul { margin: 4px 0; padding-left: 20px; }
+    .modal-box li { margin: 3px 0; }
+    .rule { padding: 8px 12px; border-radius: 8px; background: #f5f6f9; }
+    #taskText { width: 100%; height: 46vh; padding: 10px; border: 1px solid #d5d8e0; border-radius: 8px; font: 12px/1.6 Consolas, "Microsoft YaHei", monospace; resize: vertical; }
+    #taskStats { margin: 8px 0; color: #5b6275; }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="brand">手动修改演示</span>
+    <div class="seg" id="pageTabs"><button data-page="simple">简单页</button><button data-page="complex">复杂页（带动画）</button></div>
+    <div class="seg" id="modeTabs"><button data-mode="direct">直接修改</button><button data-mode="sketch">草图模式<span class="count" id="markCount" hidden>0</span></button></div>
+    <label id="writeModeWrap"><span class="label">写回方式</span>
+      <select id="writeMode">
+        <option value="safe">安全写回（推荐）</option>
+        <option value="absolute">错误示范 A：拔出队伍</option>
+        <option value="shared">错误示范 B：改共用样式</option>
+        <option value="transform">错误示范 C：和动画抢通道</option>
+      </select>
+    </label>
+    <div class="seg" id="deviceTabs"><button data-device="desktop">电脑</button><button data-device="mobile">手机</button></div>
+    <span class="spacer"></span>
+    <button class="btn" id="btnUndo" title="Ctrl+Z">撤销</button>
+    <button class="btn" id="btnRerender" title="完全按右边的代码重新画一遍页面">按代码重新渲染</button>
+    <button class="btn" id="btnReset">重置本页</button>
+    <button class="btn primary" id="btnHelp">判定规则</button>
+  </div>
+
+  <main>
+    <div class="left">
+      <div id="stage"><iframe id="frame" title="网页预览"></iframe></div>
+      <div class="dock">
+        <section class="pane">
+          <h4>判定</h4>
+          <div id="verdict" class="verdict v-gray"></div>
+        </section>
+        <section class="pane">
+          <div id="paneDirect">
+            <h4>属性面板 <button class="btn sm" id="btnAddText">＋ 文本框</button></h4>
+            <div id="propEmpty" class="empty">单击页面上的元素选中它。<br>选中后：再按住拖动 · 双击改字 · 方向键微调 · Delete 删除 · Ctrl+Z 撤销</div>
+            <div id="propBody" hidden>
+              <div id="propTarget"></div>
+              <div id="propGen" hidden>程序生成的元素：可以双击改字（工具会去数据清单里找原文）；拖动会转成草图标记。</div>
+              <div class="row">
+                <span class="k">字号</span>
+                <button class="btn sm" id="pFontMinus">A-</button><input id="pFontSize" type="number" min="8" max="200"><button class="btn sm" id="pFontPlus">A+</button>
+                <button class="btn sm" id="pBold">加粗</button>
+              </div>
+              <div class="row">
+                <span class="k">字体</span>
+                <select id="pFontFamily">
+                  <option value="">跟随原样式</option>
+                  <option value="'Microsoft YaHei', 'PingFang SC', sans-serif">微软雅黑</option>
+                  <option value="'SimSun', 'Songti SC', serif">宋体</option>
+                  <option value="'KaiTi', 'STKaiti', serif">楷体</option>
+                  <option value="'SimHei', 'Heiti SC', sans-serif">黑体</option>
+                  <option value="Georgia, 'Times New Roman', serif">英文衬线</option>
+                  <option value="Consolas, 'Courier New', monospace">等宽</option>
+                </select>
+                <span class="k">颜色</span><input id="pColor" type="color">
+              </div>
+              <div class="row"><span class="k">视觉缩放</span><input id="pScale" type="range" min="50" max="200" step="5"><span id="pScaleVal">100%</span></div>
+              <div class="row">
+                <span class="k">偏移</span>X <input id="pX" type="number"> Y <input id="pY" type="number">
+                <button class="btn sm danger" id="pDelete">删除</button>
+              </div>
+            </div>
+          </div>
+          <div id="paneSketch" hidden>
+            <h4>草图工具（只画在页面上方，不改代码）</h4>
+            <div class="seg" id="sketchTools">
+              <button data-tool="ghost" class="on">虚影拖动</button><button data-tool="pen">画笔</button><button data-tool="arrow">箭头</button><button data-tool="box">框选</button><button data-tool="note">便签</button>
+            </div>
+            <div id="marksList"></div>
+            <div class="row foot">
+              <select id="tier"><option value="eco">经济档模型</option><option value="pro">专家档模型</option></select>
+              <button class="btn primary" id="btnTask">生成交给 AI 的任务单</button>
+              <button class="btn" id="btnClearMarks">清空</button>
+            </div>
+          </div>
+        </section>
+        <section class="pane">
+          <h4>改动记录</h4>
+          <ul id="log"></ul>
+        </section>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="code-head"><b>index.html</b> <span class="label">（这就是页面的全部代码）</span><div id="codeSummary"></div></div>
+      <div id="code"></div>
+    </div>
+  </main>
+
+  <div class="modal" id="helpModal" hidden>
+    <div class="modal-box">
+      <h2>哪些改动直接写回，哪些要交给 AI</h2>
+      <p class="rule">一条原则：能说成“<b>这一个元素的这一项改成多少</b>”，并且找得到它在代码里的位置，就直接写回，不花钱；要动结构，或者找不到它在代码里的原文，就转成草图标记，攒一批交给 AI。</p>
+      <h3><i style="background:#2ecc71"></i>绿灯：直接写回，0 花费</h3>
+      <ul>
+        <li>改字、增删字（字数变化没有让别人挪位）</li>
+        <li>字号、字体、颜色、粗细（没有让别人挪位）</li>
+        <li>小幅微调位置：只加 translate，不挤别人，也不碰动画</li>
+        <li>视觉缩放：只加 scale</li>
+      </ul>
+      <h3><i style="background:#f5b301"></i>黄灯：照样直接写回，但先告诉你连带影响</h3>
+      <ul>
+        <li>字变多、字变大：后面的内容往下让（网页“排队”的正常现象）</li>
+        <li>挪得远：原位置留空，可能盖住别人、跑出区域，换屏幕后可能错位</li>
+        <li>新增浮动文本框：不挤别人，但可能盖住别人</li>
+        <li>删除：后面的内容往上补位</li>
+        <li>改的是数据清单里的字（比如商品名）：所有用到它的地方一起变</li>
+      </ul>
+      <h3><i style="background:#e74c3c"></i>红灯：不直接写回，自动转成草图标记，攒一批交给 AI</h3>
+      <ul>
+        <li>跨区域拖动（从一块搬到另一块）：要剪切整段代码，属于改结构</li>
+        <li>程序临时拼出来的字（比如“¥”加上价格数字），代码里找不到原文</li>
+        <li>代码里有多处一模一样的文字，不确定该改哪一处</li>
+        <li>改排列方式（三列变两列、横排变竖排），或者要求“换屏幕也对齐”</li>
+        <li>画面里没法细分的内容（3D、小游戏、视频画面）</li>
+      </ul>
+      <h3><i style="background:#8e44ad"></i>错误示范（顶部“写回方式”里切换）</h3>
+      <ul>
+        <li>A 拔出队伍：挪动时改成绝对定位。原座位空了，后面的内容补位；手机上更乱</li>
+        <li>B 改共用样式：写进大家共用的规则。只想改一个，同类元素却一起变</li>
+        <li>C 和动画抢通道：挪动写进 transform。动画把挪动盖掉，松手后弹回去</li>
+      </ul>
+      <p class="empty">演示版没有接入任何 AI 模型，“任务单”展示的是将要发给 AI 的内容。</p>
+      <div class="modal-foot"><button class="btn primary" data-close>知道了</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="taskModal" hidden>
+    <div class="modal-box">
+      <h2>交给 AI 的任务单</h2>
+      <div id="taskStats"></div>
+      <textarea id="taskText" readonly></textarea>
+      <div class="modal-foot">
+        <button class="btn" id="btnCopyTask">复制任务单</button>
+        <button class="btn primary" data-close>关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="pages.js"></script>
+  <script src="core.js"></script>
+  <script src="edit.js"></script>
+  <script src="sketch.js"></script>
+  <script>WB.init();</script>
+</body>
+</html>
