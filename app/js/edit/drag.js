@@ -15,7 +15,7 @@ function collectRefs(ed, elm, scope) {
   const w = ed.frame.win, vh = w.innerHeight;
   const view = { y1: w.scrollY - vh, y2: w.scrollY + vh * 2 };
   const refs = [];
-  const all = scope.querySelectorAll('[data-loc]');
+  const all = scope.querySelectorAll('[data-cd-loc]');
   for (let i = 0; i < all.length && refs.length < 360; i++) {
     const o = all[i];
     if (o === elm || o.contains(elm) || elm.contains(o)) continue;
@@ -26,7 +26,7 @@ function collectRefs(ed, elm, scope) {
   const par = elm.parentElement && elm.parentElement !== ed.frame.doc.body ? ed.pageRect(elm.parentElement) : null;
   if (par) refs.push(par);
   const peers = [...(elm.parentElement ? elm.parentElement.children : [])]
-    .filter((o) => o !== elm && o.hasAttribute('data-loc'))
+    .filter((o) => o !== elm && o.hasAttribute('data-cd-loc'))
     .map((o) => ed.pageRect(o)).filter((r) => r.w > 1 && r.h > 1);
   return { refs, peers };
 }

@@ -99,7 +99,7 @@ export function setupAssets(app) {
     const own = hit && ed.frame.owner(hit);
     if (!own) { toast('没有落在页面内容上', 'err'); return; }
     if (own.tagName === 'IMG') { replaceImage(name, ed.frame.locOf(own)); return; }
-    const box = own.closest('section[data-loc],main[data-loc],article[data-loc],div[data-loc],header[data-loc],footer[data-loc]') || own;
+    const box = own.closest('section[data-cd-loc],main[data-cd-loc],article[data-cd-loc],div[data-cd-loc],header[data-cd-loc],footer[data-cd-loc]') || own;
     insertImage(name, ed.frame.locOf(box));
   });
 

@@ -18,7 +18,7 @@ export function setupLayers(app) {
         const walk = (k, d) => (kids.get(k) || []).forEach((e) => {
           if (e.tag === 'br' || (d > 0 && ['path', 'circle', 'rect', 'stop', 'line', 'polyline', 'g', 'defs', 'linearGradient', 'text', 'ellipse', 'textPath'].includes(e.tag))) return;
           const t = e.textOnly && e.text.trim() ? e.text.trim().slice(0, 18) : '';
-          rows.push(`<div class="list-row layer ${sel && sel.loc === e.loc ? 'on' : ''}" data-loc="${e.loc}" style="padding-left:${10 + d * 13}px">
+          rows.push(`<div class="list-row layer ${sel && sel.loc === e.loc ? 'on' : ''}" data-cd-loc="${e.loc}" style="padding-left:${10 + d * 13}px">
             <span class="chip" style="width:22px;justify-content:center;padding:0">${ICON[e.type] || '块'}</span>
             <div class="grow"><div class="t1">&lt;${esc(e.tag)}&gt;${e.classes && e.classes[0] ? `<span style="color:var(--dim)">.${esc(e.classes[0])}</span>` : ''} ${esc(t)}</div></div>
             <span class="t2">${e.line}</span></div>`);
@@ -26,9 +26,9 @@ export function setupLayers(app) {
         });
         walk(-1, 0);
         host.innerHTML = rows.join('') || '<div class="empty">这一页没有元素</div>';
-        host.querySelectorAll('[data-loc]').forEach((r) => {
+        host.querySelectorAll('[data-cd-loc]').forEach((r) => {
           r.onclick = () => {
-            const loc = +r.dataset.loc;
+            const loc = +r.dataset.cdLoc;
             ed.select(loc);
             const n = ed.frame.elByLoc(loc);
             if (n) n.scrollIntoView({ block: 'center', behavior: 'smooth' });

@@ -5,6 +5,7 @@ import { el, esc, clamp, toast, showMenu } from '../core/ui.js';
 import { bindKey, isSpaceDown } from '../core/keys.js';
 import { getViewport } from '../core/viewport.js';
 import { instrument, parse } from '../engine/parse.js';
+import { withBase } from '../engine/frame.js';
 import { scanPage } from './scan.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -87,11 +88,8 @@ export function createOverview(app) {
 
   // ---------- 卡片 ----------
   function tileSrc(p, scrollY, openLoc) {
-    let s = instrument(p.src, p.parsed);
-    const inj = `<base href="${base(p.file)}"><style>html{scroll-behavior:auto!important}</style>`;
-    const m = /<head[^>]*>/i.exec(s);
-    s = m ? s.slice(0, m.index + m[0].length) + inj + s.slice(m.index + m[0].length) : inj + s;
-    const open = openLoc == null ? '' : `var e=document.querySelector('[data-loc="${openLoc}"]');if(e){e.hidden=false;e.removeAttribute('hidden');if(e.tagName==='DIALOG'&&!e.open){try{e.showModal()}catch(x){e.setAttribute('open','')}}['open','show','active','is-open','is-active','visible'].forEach(function(c){e.classList.add(c)});if(getComputedStyle(e).display==='none')e.style.display='flex';e.style.visibility='visible';e.style.opacity='1';}`;
+    const s = withBase(instrument(p.src, p.parsed), base(p.file), '<style>html{scroll-behavior:auto!important}</style>');
+    const open = openLoc == null ? '' : `var e=document.querySelector('[data-cd-loc="${openLoc}"]');if(e){e.hidden=false;e.removeAttribute('hidden');if(e.tagName==='DIALOG'&&!e.open){try{e.showModal()}catch(x){e.setAttribute('open','')}}['open','show','active','is-open','is-active','visible'].forEach(function(c){e.classList.add(c)});if(getComputedStyle(e).display==='none')e.style.display='flex';e.style.visibility='visible';e.style.opacity='1';}`;
     return s + `<script>addEventListener('load',function(){try{${open}scrollTo(0,${Math.round(scrollY)})}catch(x){}});<\/script>`;
   }
   function makeTile(p, y, openLoc, onload) {
@@ -161,7 +159,7 @@ export function createOverview(app) {
       p.rects = {};
       const want = new Set([...p.scan.links.map((l) => l.loc), ...p.scan.anchors.flatMap((a) => [a.loc, a.to]), ...p.scan.popups.flatMap((x) => [x.loc, ...x.triggers.map((t) => t.loc)]), ...p.scan.sections.map((s) => s.loc)]);
       want.forEach((loc) => {
-        const n = d.querySelector(`[data-loc="${loc}"]`);
+        const n = d.querySelector(`[data-cd-loc="${loc}"]`);
         if (!n) return;
         const r = n.getBoundingClientRect();
         if (r.width || r.height) p.rects[loc] = { x: r.left + w.scrollX, y: r.top + w.scrollY, w: r.width, h: r.height };
@@ -181,10 +179,10 @@ export function createOverview(app) {
       try {
         const d = f.contentDocument, w = f.contentWindow;
         w.alert = w.confirm = w.prompt = () => true;
-        const pops = p.scan.popups.map((x) => ({ x, el: d.querySelector(`[data-loc="${x.loc}"]`) })).filter((o) => o.el);
+        const pops = p.scan.popups.map((x) => ({ x, el: d.querySelector(`[data-cd-loc="${x.loc}"]`) })).filter((o) => o.el);
         const shown = (e) => { const cs = w.getComputedStyle(e); return !e.hidden && cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().width > 0; };
         const snap = () => pops.map((o) => ({ o, hidden: o.el.hidden, cls: o.el.className, style: o.el.getAttribute('style') }));
-        const clickables = [...d.querySelectorAll('button[data-loc], a[data-loc][href^="#"], [role=button][data-loc], [onclick][data-loc], input[type=button][data-loc]')]
+        const clickables = [...d.querySelectorAll('button[data-cd-loc], a[data-cd-loc][href^="#"], [role=button][data-cd-loc], [onclick][data-cd-loc], input[type=button][data-cd-loc]')]
           .filter((c) => !pops.some((o) => o.el.contains(c))).slice(0, 60);
         const start = w.location.href;
         for (const c of clickables) {
@@ -193,7 +191,7 @@ export function createOverview(app) {
           try { c.click(); } catch { /* 忽略 */ }
           if (w.location.href !== start) break;
           pops.forEach((o, i) => {
-            if (!was[i] && shown(o.el) && !o.x.triggers.some((t) => t.loc === +c.getAttribute('data-loc'))) o.x.triggers.push({ loc: +c.getAttribute('data-loc'), text: (c.textContent || '').trim().slice(0, 30) });
+            if (!was[i] && shown(o.el) && !o.x.triggers.some((t) => t.loc === +c.getAttribute('data-cd-loc'))) o.x.triggers.push({ loc: +c.getAttribute('data-cd-loc'), text: (c.textContent || '').trim().slice(0, 30) });
           });
           before.forEach((s) => { s.o.el.hidden = s.hidden; s.o.el.className = s.cls; if (s.style == null) s.o.el.removeAttribute('style'); else s.o.el.setAttribute('style', s.style); });
         }

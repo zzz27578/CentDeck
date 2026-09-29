@@ -43,3 +43,25 @@
 .comp-pick:hover { background: rgba(20, 24, 40, .06); color: var(--text); }
 .comp-send { width: 32px; height: 32px; border-radius: 10px; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(79, 107, 255, .35); transition: transform var(--fast), background var(--fast); }
 .comp-send:hover { background: var(--accent-2); transform: translateY(-1px); }
+
+/* ---------- 模型与接口设置 ---------- */
+.set-modal .modal-body { padding: 0; }
+.set-wrap { display: grid; grid-template-columns: 210px 1fr; min-height: 380px; border-top: 1px solid var(--line); }
+.set-nav { padding: 10px 8px; border-right: 1px solid var(--line); background: var(--panel-2); display: flex; flex-direction: column; gap: 2px; }
+.set-item { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 8px; text-align: left; color: var(--text-2); font-size: 12.5px; }
+.set-item:hover { background: rgba(20, 24, 40, .05); }
+.set-item.on { background: #fff; color: var(--text); box-shadow: var(--shadow-1); }
+.set-item span { flex: 1; display: flex; align-items: center; gap: 6px; }
+.on-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.set-main { padding: 16px 20px 18px; }
+.set-main h3 { font-size: 15px; margin-bottom: 8px; }
+.set-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.set-field { display: grid; gap: 6px; margin: 12px 0; font-size: 12.5px; color: var(--text-2); }
+.set-key { display: flex; gap: 6px; }
+.set-foot { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; }
+.switch input { display: none; }
+.switch span { position: relative; width: 34px; height: 20px; border-radius: 99px; background: var(--line-2); transition: background var(--fast); }
+.switch span::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-1); transition: transform var(--fast); }
+.switch input:checked + span { background: var(--accent); }
+.switch input:checked + span::after { transform: translateX(14px); }

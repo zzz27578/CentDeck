@@ -1,483 +1,156 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>数据仪表盘 · 沐云管理后台</title>
-<style id="cd-tokens">:root{
-  --brand:#4f46e5; --brand-dark:#3730a3; --bg:#f4f5fb; --card:#ffffff;
-  --text:#1e2233; --muted:#84899e; --line:#e6e8f4; --sidebar:#16192b;
-  --success:#16a34a; --warning:#d97706; --danger:#dc2626; --info:#0284c7;
-  --radius:12px; --radius-sm:6px; --radius-md:10px; --radius-pill:999px;
-  --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:18px; --fs-title:22px; --fs-num:28px;
-  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>海川运营台 · 数据概览</title>
+  <style id="cd-tokens">:root{
+  --brand:#0f766e; --brand-deep:#115e59; --accent:#f59e0b;
+  --bg:#f4f6f8; --text:#1f2937; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
+  --fs-s:12px; --fs-m:14px; --fs-body:15px; --fs-h3:18px; --fs-h2:24px; --fs-h1:30px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:32px; --sp-5:48px;
+  --radius-s:6px; --radius:12px; --radius-l:18px;
 }</style>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs-md);line-height:1.6}
-a{text-decoration:none;color:inherit}
-.layout{display:flex;min-height:100vh}
-/* ---------- 侧边栏 ---------- */
-.sidebar{width:224px;flex-shrink:0;background:var(--sidebar);color:#c9cddb;display:flex;flex-direction:column;padding:var(--sp-5) var(--sp-3)}
-.brand{display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-2) var(--sp-5);border-bottom:1px solid rgba(255,255,255,.08)}
-.brand-name{font-size:var(--fs-lg);font-weight:700;color:#fff}
-.brand-sub{font-size:var(--fs-xs);color:var(--muted)}
-.nav-group{font-size:var(--fs-xs);color:#5d6278;margin:var(--sp-5) var(--sp-2) var(--sp-2)}
-.nav-item{display:flex;align-items:center;gap:var(--sp-2);padding:10px var(--sp-3);border-radius:var(--radius-md);font-size:var(--fs-md);margin-bottom:var(--sp-1);transition:background .2s,transform .2s}
-.nav-item:hover{background:rgba(255,255,255,.08);transform:translateX(3px)}
-.nav-item.active{background:var(--brand);color:#fff;font-weight:600}
-.nav-tag{margin-left:auto;font-size:var(--fs-xs);color:#5d6278;border:1px solid #2c3045;border-radius:var(--radius-pill);padding:0 var(--sp-2)}
-.side-user{margin-top:auto;display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3);background:rgba(255,255,255,.05);border-radius:var(--radius)}
-.side-user .avatar{width:36px;height:36px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
-.side-user .name{font-size:var(--fs-sm);color:#fff}
-.side-user .role{font-size:var(--fs-xs);color:var(--muted)}
-/* ---------- 主区域 ---------- */
-.main{flex:1;padding:var(--sp-6) var(--sp-7);max-width:1240px}
-.topbar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-4);margin-bottom:var(--sp-6)}
-.topbar h1{font-size:var(--fs-title)}
-.topbar .sub{color:var(--muted);font-size:var(--fs-sm)}
-.top-actions{display:flex;gap:var(--sp-3)}
-.btn{display:inline-flex;align-items:center;gap:var(--sp-2);border:none;cursor:pointer;font-family:inherit;font-size:var(--fs-md);padding:10px var(--sp-4);border-radius:var(--radius-md);transition:transform .15s,box-shadow .15s,background .15s}
-.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,34,51,.12)}
-.btn:active{transform:translateY(0)}
-.btn-primary{background:var(--brand);color:#fff}
-.btn-primary:hover{background:var(--brand-dark)}
-.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
-/* ---------- 统计卡片 ---------- */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-5);margin-bottom:var(--sp-6)}
-.stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-5);animation:fadeUp .6s ease both;transition:transform .2s,box-shadow .2s}
-.stat-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(79,70,229,.10)}
-.stat-head{display:flex;align-items:center;gap:var(--sp-3);color:var(--muted);font-size:var(--fs-sm)}
-.stat-icon{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center}
-.stat-num{font-size:var(--fs-num);font-weight:700;margin:var(--sp-2) 0}
-.stat-delta{font-size:var(--fs-xs);border-radius:var(--radius-pill);padding:2px var(--sp-2)}
-.up{color:var(--success);background:rgba(22,163,74,.12)}
-.down{color:var(--danger);background:rgba(220,38,38,.10)}
-/* ---------- 通用面板 ---------- */
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-6);animation:fadeUp .7s ease both}
-.panel h2{font-size:var(--fs-xl);margin-bottom:var(--sp-1)}
-.panel h3{font-size:var(--fs-lg);margin-bottom:var(--sp-1)}
-.panel .desc{color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-5)}
-.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-5);margin-bottom:var(--sp-6)}
-.chart-box svg{width:100%;height:auto;display:block}
-.legend{display:flex;gap:var(--sp-5);font-size:var(--fs-xs);color:var(--muted);margin-top:var(--sp-3)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:var(--sp-1)}
-/* 图表动画 */
-.bar{transform-box:fill-box;transform-origin:bottom;animation:barGrow .9s cubic-bezier(.22,1,.36,1) both}
-.line-path{stroke-dasharray:1400;stroke-dashoffset:1400;animation:lineDraw 1.8s ease-out .3s forwards}
-.line-dot{animation:fadeUp .5s ease both}
-.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:var(--sp-2);animation:pulse 1.6s ease-in-out infinite}
-@keyframes barGrow{from{transform:scaleY(0)}}
-@keyframes lineDraw{to{stroke-dashoffset:0}}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.4}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-/* ---------- 底部：表格 + 动态 ---------- */
-.bottom-grid{display:grid;grid-template-columns:3fr 2fr;gap:var(--sp-5)}
-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
-th{text-align:left;color:var(--muted);font-weight:500;padding:var(--sp-3) var(--sp-2);border-bottom:2px solid var(--line)}
-td{padding:var(--sp-3) var(--sp-2);border-bottom:1px solid var(--line)}
-tbody tr{transition:background .15s}
-tbody tr:hover{background:var(--bg)}
-.tag{display:inline-block;font-size:var(--fs-xs);padding:2px var(--sp-3);border-radius:var(--radius-pill);font-weight:600}
-.tag-warning{color:var(--warning);background:rgba(217,119,6,.12)}
-.tag-info{color:var(--info);background:rgba(2,132,199,.12)}
-.tag-success{color:var(--success);background:rgba(22,163,74,.12)}
-.tag-danger{color:var(--danger);background:rgba(220,38,38,.10)}
-.tag-muted{color:var(--muted);background:rgba(132,137,158,.14)}
-.more-link{display:inline-block;margin-top:var(--sp-4);color:var(--brand);font-size:var(--fs-sm);font-weight:600}
-.more-link:hover{text-decoration:underline}
-/* 实时动态 js-list */
-.feed{list-style:none}
-.feed li{display:flex;gap:var(--sp-2);padding:var(--sp-3) 0;border-bottom:1px dashed var(--line);font-size:var(--fs-sm);animation:fadeUp .5s ease both}
-.feed li:last-child{border-bottom:none}
-.feed-kind{flex-shrink:0;font-size:var(--fs-xs);color:var(--brand);background:rgba(79,70,229,.10);border-radius:var(--radius-pill);padding:0 var(--sp-2);height:22px;line-height:22px}
-.feed-time{flex-shrink:0;color:var(--muted);font-size:var(--fs-xs);margin-left:auto;padding-top:2px}
-.note-box{margin-top:var(--sp-5);background:var(--bg);border:1px dashed var(--line);border-radius:var(--radius-md);padding:var(--sp-4)}
-.note-box h4{font-size:var(--fs-sm);margin-bottom:var(--sp-1)}
-.note-box p{font-size:var(--fs-xs);color:var(--muted)}
-/* ---------- 弹窗 ---------- */
-.modal{display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center}
-.modal.show{display:flex}
-.modal-mask{position:absolute;inset:0;background:rgba(15,17,30,.5)}
-.modal-card{position:relative;background:var(--card);border-radius:var(--radius);width:440px;max-width:92vw;padding:var(--sp-6);animation:modalIn .28s cubic-bezier(.22,1,.36,1)}
-@keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
-.modal-card h3{font-size:var(--fs-xl);margin-bottom:var(--sp-1)}
-.modal-card .desc{color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-5)}
-.form-row{margin-bottom:var(--sp-4)}
-.form-row label{display:block;font-size:var(--fs-sm);margin-bottom:var(--sp-1);color:var(--text)}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:10px var(--sp-3);border:1px solid var(--line);border-radius:var(--radius-md);font-family:inherit;font-size:var(--fs-md);color:var(--text);background:#fff}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:2px solid rgba(79,70,229,.35);border-color:var(--brand)}
-.form-row textarea{resize:vertical;min-height:72px}
-.modal-actions{display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)}
-/* ---------- 页脚 ---------- */
-.page-footer{margin-top:var(--sp-7);text-align:center;color:var(--muted);font-size:var(--fs-xs)}
-@media (max-width:980px){.stat-grid,.chart-grid,.bottom-grid{grid-template-columns:1fr}.sidebar{display:none}.main{padding:var(--sp-5)}}
-</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: var(--fs-body); }
+    a { color: inherit; text-decoration: none; }
+    .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+    .sidebar { background: #0b2b29; color: #cfe7e4; padding: var(--sp-3) var(--sp-2); display: flex; flex-direction: column; gap: 4px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: #fff; margin: 0 8px var(--sp-3); }
+    .menu-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-s); font-size: var(--fs-m); }
+    .menu-item:hover { background: rgba(255, 255, 255, .06); }
+    .menu-item.active { background: var(--brand); color: #fff; }
+    .main { padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-3); align-content: start; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; }
+    .topbar h1 { font-size: var(--fs-h1); }
+    .topbar p { color: var(--muted); font-size: var(--fs-m); }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius-s); border: 1px solid var(--border); background: #fff; font: inherit; font-size: var(--fs-m); cursor: pointer; }
+    .btn-primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); }
+    .stat-card span { color: var(--muted); font-size: var(--fs-m); }
+    .stat-card b { display: block; font-size: 28px; margin: 4px 0; }
+    .trend { font-size: var(--fs-s); font-weight: 600; }
+    .trend.up { color: #059669; }
+    .trend.down { color: #dc2626; }
+    .grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--sp-2); }
+    .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3); }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-2); }
+    .panel-head h2 { font-size: var(--fs-h3); }
+    .tabs { display: flex; gap: 4px; padding: 3px; background: #f1f3f5; border-radius: var(--radius-s); }
+    .tabs button { border: 0; background: none; padding: 5px 12px; border-radius: 4px; font: inherit; font-size: var(--fs-s); cursor: pointer; color: var(--muted); }
+    .tabs button.on { background: #fff; color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+    .chart { width: 100%; height: 220px; }
+    .chart .line { fill: none; stroke: var(--brand); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 900; animation: draw 1.6s ease forwards; }
+    @keyframes draw { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+    .feed { list-style: none; display: grid; gap: 12px; }
+    .feed li { display: flex; gap: 10px; font-size: var(--fs-m); }
+    .feed .dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+    .feed small { display: block; color: var(--muted); }
+    dialog { border: 0; border-radius: var(--radius-l); padding: var(--sp-4); width: min(460px, 92vw); box-shadow: 0 30px 70px rgba(0, 0, 0, .3); }
+    dialog::backdrop { background: rgba(15, 23, 42, .45); }
+    dialog h3 { font-size: 20px; margin-bottom: var(--sp-2); }
+    .field { display: grid; gap: 6px; margin-bottom: var(--sp-2); font-size: var(--fs-m); }
+    .field input, .field select { padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-s); font: inherit; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: var(--sp-1); }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { flex-direction: row; overflow-x: auto; padding: var(--sp-1); }
+      .brand { display: none; }
+      .main { padding: var(--sp-2); }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-<div class="layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="32" height="32" rx="9" fill="#4f46e5"/>
-        <path d="M11 24.5v-7M18 24.5V12M25 24.5v-4.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-      </svg>
-      <div>
-        <div class="brand-name">沐云商城</div>
-        <div class="brand-sub">经营管理后台</div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="#14b8a6"/><path d="M6 18c4-6 7-6 8-2s4 4 8-2" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>
+        海川运营台
       </div>
-    </div>
-    <p class="nav-group">工作台</p>
-    <a class="nav-item active" href="index.html">
-      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".45"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor"/></svg>
-      数据总览
-    </a>
-    <a class="nav-item" href="orders.html">
-      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="1.5" width="11" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 5.5h5M5.5 8.5h5M5.5 11.5h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      订单管理
-    </a>
-    <p class="nav-group">更多模块</p>
-    <a class="nav-item" href="#reports" title="演示模板未包含该页面">
-      统计报表
-      <span class="nav-tag">待上线</span>
-    </a>
-    <a class="nav-item" href="#customers" title="演示模板未包含该页面">
-      客户管理
-      <span class="nav-tag">待上线</span>
-    </a>
-    <a class="nav-item" href="#settings" title="演示模板未包含该页面">
-      系统设置
-      <span class="nav-tag">待上线</span>
-    </a>
-    <div class="side-user">
-      <div class="avatar">岚</div>
-      <div>
-        <div class="name">苏映岚</div>
-        <div class="role">店铺运营主管</div>
-      </div>
-    </div>
-  </aside>
-  <main class="main">
-    <header class="topbar">
-      <div>
-        <h1>数据总览</h1>
-        <p class="sub">早安，映岚。今天是 2026 年 9 月 29 日 星期二，店铺各项运转良好。</p>
-      </div>
-      <div class="top-actions">
-        <button type="button" class="btn btn-ghost">导出报表</button>
-        <button type="button" class="btn btn-primary" id="openModalBtn">＋ 新建订单</button>
-      </div>
-    </header>
-    <section class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon" style="background:rgba(79,70,229,.12)">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="8" fill="none" stroke="#4f46e5" stroke-width="2"/><path d="M10 5.5v9M7.2 8.2c0-1.2 1.2-2 2.8-2s2.8.7 2.8 1.8c0 2.6-5.6 1.4-5.6 4 0 1.1 1.2 1.8 2.8 1.8s2.8-.8 2.8-2" fill="none" stroke="#4f46e5" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </div>
-          今日销售额
-        </div>
-        <div class="stat-num">¥24,380</div>
-        <span class="stat-delta up">较昨日 +12.6%</span>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon" style="background:rgba(2,132,199,.12)">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 4.5h2.2l1.6 8.2a1.4 1.4 0 0 0 1.4 1.1h6a1.4 1.4 0 0 0 1.4-1.1l.9-4.7H6" fill="none" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="17" r="1.3" fill="#0284c7"/><circle cx="15" cy="17" r="1.3" fill="#0284c7"/></svg>
-          </div>
-          今日订单量
-        </div>
-        <div class="stat-num">486 单</div>
-        <span class="stat-delta up">较昨日 +8.2%</span>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon" style="background:rgba(22,163,74,.12)">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="7" r="3.2" fill="none" stroke="#16a34a" stroke-width="1.8"/><path d="M4 16.5c.8-3 3.2-4.5 6-4.5s5.2 1.5 6 4.5" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round"/></svg>
-          </div>
-          新增客户
-        </div>
-        <div class="stat-num">152 人</div>
-        <span class="stat-delta up">较昨日 +5.4%</span>
-      </div>
-      <div class="stat-card">
-        <div class="stat-head">
-          <div class="stat-icon" style="background:rgba(217,119,6,.12)">
-            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 15.5 8 10l3 2.5 5-7" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 5.5h3v3" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          支付转化率
-        </div>
-        <div class="stat-num">3.8%</div>
-        <span class="stat-delta down">较昨日 -1.2%</span>
-        <p style="margin-top:8px;font-size:12px;color:var(--muted)">受凌晨系统维护影响，已恢复正常。</p>
-      </div>
-    </section>
-    <section class="chart-grid">
-      <div class="panel">
-        <h3>近 7 日销售额</h3>
-        <p class="desc">单位：元；周六受「秋日焕新」活动拉动达到峰值。</p>
-        <div class="chart-box">
-          <svg viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="近 7 日销售额柱状图">
-            <defs>
-              <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#6d64f0"/><stop offset="1" stop-color="#4f46e5"/>
-              </linearGradient>
-            </defs>
-            <line x1="42" y1="158" x2="545" y2="158" stroke="#eef0f8" stroke-width="1"/>
-            <line x1="42" y1="97" x2="545" y2="97" stroke="#eef0f8" stroke-width="1"/>
-            <line x1="42" y1="35" x2="545" y2="35" stroke="#eef0f8" stroke-width="1"/>
-            <text x="36" y="162" text-anchor="end" font-size="11" fill="#84899e">2k</text>
-            <text x="36" y="101" text-anchor="end" font-size="11" fill="#84899e">4k</text>
-            <text x="36" y="39" text-anchor="end" font-size="11" fill="#84899e">6k</text>
-            <line x1="42" y1="220" x2="545" y2="220" stroke="#d9dcee" stroke-width="1.5"/>
-            <rect class="bar" x="52"  y="122" width="36" height="98"  rx="6" fill="url(#barFill)" style="animation-delay:.05s"/>
-            <rect class="bar" x="122" y="94"  width="36" height="126" rx="6" fill="url(#barFill)" style="animation-delay:.12s"/>
-            <rect class="bar" x="192" y="103" width="36" height="117" rx="6" fill="url(#barFill)" style="animation-delay:.19s"/>
-            <rect class="bar" x="262" y="60"  width="36" height="160" rx="6" fill="url(#barFill)" style="animation-delay:.26s"/>
-            <rect class="bar" x="332" y="75"  width="36" height="145" rx="6" fill="url(#barFill)" style="animation-delay:.33s"/>
-            <rect class="bar" x="402" y="32"  width="36" height="188" rx="6" fill="#f59e0b" style="animation-delay:.40s"/>
-            <rect class="bar" x="472" y="48"  width="36" height="172" rx="6" fill="url(#barFill)" style="animation-delay:.47s"/>
-            <text x="70"  y="114" text-anchor="middle" font-size="11" fill="#1e2233">3200</text>
-            <text x="140" y="86"  text-anchor="middle" font-size="11" fill="#1e2233">4100</text>
-            <text x="210" y="95"  text-anchor="middle" font-size="11" fill="#1e2233">3800</text>
-            <text x="280" y="52"  text-anchor="middle" font-size="11" fill="#1e2233">5200</text>
-            <text x="350" y="67"  text-anchor="middle" font-size="11" fill="#1e2233">4700</text>
-            <text x="420" y="24"  text-anchor="middle" font-size="11" fill="#b45309">6100</text>
-            <text x="490" y="40"  text-anchor="middle" font-size="11" fill="#1e2233">5600</text>
-            <text x="70"  y="240" text-anchor="middle" font-size="12" fill="#84899e">周一</text>
-            <text x="140" y="240" text-anchor="middle" font-size="12" fill="#84899e">周二</text>
-            <text x="210" y="240" text-anchor="middle" font-size="12" fill="#84899e">周三</text>
-            <text x="280" y="240" text-anchor="middle" font-size="12" fill="#84899e">周四</text>
-            <text x="350" y="240" text-anchor="middle" font-size="12" fill="#84899e">周五</text>
-            <text x="420" y="240" text-anchor="middle" font-size="12" fill="#b45309">周六</text>
-            <text x="490" y="240" text-anchor="middle" font-size="12" fill="#84899e">周日</text>
-          </svg>
-        </div>
-        <div class="legend">
-          <span>
-            <i style="background:#4f46e5"></i>日常销售
-          </span>
-          <span>
-            <i style="background:#f59e0b"></i>活动峰值
-          </span>
-        </div>
-      </div>
-      <div class="panel">
-        <h3>近 30 日访问趋势</h3>
-        <p class="desc">单位：人次 / 每 3 日取样；换季上新后稳步爬升。</p>
-        <div class="chart-box">
-          <svg viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="近 30 日访问趋势折线图">
-            <defs>
-              <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#4f46e5" stop-opacity=".22"/><stop offset="1" stop-color="#4f46e5" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            <line x1="42" y1="163" x2="545" y2="163" stroke="#eef0f8" stroke-width="1"/>
-            <line x1="42" y1="106" x2="545" y2="106" stroke="#eef0f8" stroke-width="1"/>
-            <line x1="42" y1="49" x2="545" y2="49" stroke="#eef0f8" stroke-width="1"/>
-            <text x="36" y="167" text-anchor="end" font-size="11" fill="#84899e">1k</text>
-            <text x="36" y="110" text-anchor="end" font-size="11" fill="#84899e">2k</text>
-            <text x="36" y="53"  text-anchor="end" font-size="11" fill="#84899e">3k</text>
-            <line x1="42" y1="220" x2="545" y2="220" stroke="#d9dcee" stroke-width="1.5"/>
-            <path d="M50,220 L50,116 L103,98 L157,107 L210,85 L263,94 L317,73 L370,81 L423,57 L477,47 L530,33 L530,220 Z" fill="url(#areaFill)"/>
-            <path class="line-path" d="M50,116 L103,98 L157,107 L210,85 L263,94 L317,73 L370,81 L423,57 L477,47 L530,33" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle class="line-dot" cx="50"  cy="116" r="4" fill="#fff" stroke="#4f46e5" stroke-width="2.5" style="animation-delay:.5s"/>
-            <circle class="line-dot" cx="210" cy="85"  r="4" fill="#fff" stroke="#4f46e5" stroke-width="2.5" style="animation-delay:.9s"/>
-            <circle class="line-dot" cx="370" cy="81"  r="4" fill="#fff" stroke="#4f46e5" stroke-width="2.5" style="animation-delay:1.3s"/>
-            <circle class="line-dot" cx="530" cy="33"  r="5" fill="#4f46e5" stroke="#fff" stroke-width="2.5" style="animation-delay:1.7s"/>
-            <text x="535" y="20" text-anchor="end" font-size="11" fill="#4f46e5">3,280</text>
-            <text x="50"  y="240" text-anchor="middle" font-size="12" fill="#84899e">09-20</text>
-            <text x="210" y="240" text-anchor="middle" font-size="12" fill="#84899e">09-23</text>
-            <text x="370" y="240" text-anchor="middle" font-size="12" fill="#84899e">09-26</text>
-            <text x="530" y="240" text-anchor="middle" font-size="12" fill="#84899e">09-29</text>
-          </svg>
-        </div>
-        <div class="legend">
-          <span>
-            <i style="background:#4f46e5"></i>店铺访客
-          </span>
-          <span>日均 2,410 人次</span>
-        </div>
-      </div>
-    </section>
-    <section class="bottom-grid">
-      <div class="panel">
-        <h2>最新订单</h2>
-        <p class="desc">实时同步自各销售渠道，最近 6 笔如下。</p>
-        <table>
-          <thead>
-            <tr>
-              <th>订单号</th>
-              <th>客户</th>
-              <th>商品</th>
-              <th>金额</th>
-              <th>状态</th>
-              <th>时间</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>M20260929052</td>
-              <td>陈晓雯</td>
-              <td>无线降噪耳机 Pro</td>
-              <td>¥899.00</td>
-              <td>
-                <span class="tag tag-warning">待付款</span>
-              </td>
-              <td>10:42</td>
-            </tr>
-            <tr>
-              <td>M20260929051</td>
-              <td>李昊然</td>
-              <td>智能音箱 Air</td>
-              <td>¥329.00</td>
-              <td>
-                <span class="tag tag-info">已发货</span>
-              </td>
-              <td>10:18</td>
-            </tr>
-            <tr>
-              <td>M20260929050</td>
-              <td>王梓涵</td>
-              <td>人体工学椅</td>
-              <td>¥1,299.00</td>
-              <td>
-                <span class="tag tag-success">已完成</span>
-              </td>
-              <td>09:57</td>
-            </tr>
-            <tr>
-              <td>M20260929049</td>
-              <td>赵启铭</td>
-              <td>云享会员年卡</td>
-              <td>¥198.00</td>
-              <td>
-                <span class="tag tag-danger">退款中</span>
-              </td>
-              <td>09:31</td>
-            </tr>
-            <tr>
-              <td>M20260929048</td>
-              <td>孙若彤</td>
-              <td>恒温咖啡杯</td>
-              <td>¥160.00</td>
-              <td>
-                <span class="tag tag-info">已发货</span>
-              </td>
-              <td>09:12</td>
-            </tr>
-            <tr>
-              <td>M20260929047</td>
-              <td>周雨桐</td>
-              <td>便携榨汁杯</td>
-              <td>¥99.00</td>
-              <td>
-                <span class="tag tag-muted">已取消</span>
-              </td>
-              <td>08:55</td>
-            </tr>
-          </tbody>
-        </table>
-        <a class="more-link" href="orders.html">查看全部订单 →</a>
-      </div>
-      <div class="panel">
-        <h2>
-          <span class="live-dot"></span>实时动态
-        </h2>
-        <p class="desc">系统消息自动汇总，无需手动刷新。</p>
-        <ul id="js-list" class="feed"></ul>
-        <div class="note-box">
-          <h4>演示说明</h4>
-          <p>本列表由页面底部脚本中的数组逐条渲染生成，源文件里找不到消息文字对应的 HTML，可用于测试编辑器的"程序生成内容"提示。</p>
-        </div>
-      </div>
-    </section>
-    <footer class="page-footer">
-      <p>© 2026 沐云商城 · 经营管理后台演示模板 · 数据均为演示样例</p>
-    </footer>
-  </main>
-</div>
+      <a class="menu-item active" href="index.html">数据概览</a>
+      <a class="menu-item" href="orders.html">订单管理</a>
+      <a class="menu-item" href="#settings" title="演示模板里没有这一页">系统设置</a>
+    </aside>
 
-<div class="modal" id="orderModal" hidden>
-  <div class="modal-mask" id="modalMask"></div>
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <h3 id="modalTitle">新建订单</h3>
-    <p class="desc">为客户手工补录一笔订单，保存后进入待付款列表。</p>
-    <form id="orderForm">
-      <div class="form-row">
-        <label for="fCustomer">客户姓名</label>
-        <input type="text" id="fCustomer" name="customer" placeholder="例如：陈晓雯" autocomplete="off">
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h1>早上好，陈经理</h1>
+          <p>今天是 9 月 30 日，昨日共有 <strong>1,284</strong> 笔新订单。</p>
+        </div>
+        <button class="btn btn-primary" id="new-order">＋ 新建订单</button>
       </div>
-      <div class="form-row">
-        <label for="fProduct">商品</label>
-        <select id="fProduct" name="product">
-          <option value="无线降噪耳机 Pro">无线降噪耳机 Pro · ¥899.00</option>
-          <option value="智能音箱 Air">智能音箱 Air · ¥329.00</option>
-          <option value="人体工学椅">人体工学椅 · ¥1,299.00</option>
-          <option value="云享会员年卡">云享会员年卡 · ¥198.00</option>
-          <option value="恒温咖啡杯">恒温咖啡杯 · ¥160.00</option>
+
+      <div class="stats">
+        <div class="stat-card"><span>今日营收</span><b>¥ 86,420</b><em class="trend up">↑ 12.4%</em></div>
+        <div class="stat-card"><span>订单数</span><b>1,284</b><em class="trend up">↑ 8.1%</em></div>
+        <div class="stat-card"><span>退款率</span><b>1.8%</b><em class="trend down">↑ 0.3%</em></div>
+        <div class="stat-card"><span>新客户</span><b>312</b><em class="trend up">↑ 21%</em></div>
+      </div>
+
+      <div class="grid-2">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>营收趋势</h2>
+            <div class="tabs" id="range-tabs">
+              <button class="on">近 7 天</button>
+              <button>近 30 天</button>
+            </div>
+          </div>
+          <svg class="chart" viewBox="0 0 600 220" preserveAspectRatio="none">
+            <g stroke="#eef0f3"><line x1="0" y1="55" x2="600" y2="55"/><line x1="0" y1="110" x2="600" y2="110"/><line x1="0" y1="165" x2="600" y2="165"/></g>
+            <path class="line" d="M0 170 L100 140 L200 150 L300 96 L400 110 L500 60 L600 72"/>
+          </svg>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>实时动态</h2><a href="orders.html" style="color: var(--brand); font-size: 13px;">全部订单 →</a></div>
+          <ul class="feed" id="js-list"></ul>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="order-dialog">
+    <h3>新建订单</h3>
+    <form method="dialog">
+      <label class="field">客户名称<input placeholder="例如：青禾书店"></label>
+      <label class="field">商品
+        <select>
+          <option>年度会员</option>
+          <option>季度会员</option>
         </select>
-      </div>
-      <div class="form-row">
-        <label for="fRemark">收货备注</label>
-        <textarea id="fRemark" name="remark" placeholder="选填：收货时间、包装要求等"></textarea>
-      </div>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-ghost" id="cancelModalBtn">取消</button>
-        <button type="submit" class="btn btn-primary">保存订单</button>
+      </label>
+      <div class="dialog-actions">
+        <button class="btn" value="cancel">取消</button>
+        <button class="btn btn-primary" value="ok">创建</button>
       </div>
     </form>
-  </div>
-</div>
+  </dialog>
 
-<script>
-(function () {
-  // 实时动态：由数组渲染，源码中没有对应 HTML
-  var feeds = [
-    { kind: "订单", text: "陈晓雯提交订单 M20260929052，金额 ¥899.00，等待支付。", time: "3 分钟前" },
-    { kind: "库存", text: "「便携榨汁杯」库存低于 20 件，建议及时补货。", time: "18 分钟前" },
-    { kind: "售后", text: "赵启铭的年卡退款申请已转人工审核，请今日内处理。", time: "42 分钟前" },
-    { kind: "活动", text: "「秋日焕新」满减活动券已核销 1,238 张，核销率 61%。", time: "1 小时前" },
-    { kind: "系统", text: "凌晨 02:00 例行维护已完成，支付通道运行正常。", time: "今天 07:30" }
-  ];
-  var list = document.getElementById("js-list");
-  function appendFeed(item, toTop) {
-    var li = document.createElement("li");
-    var kind = document.createElement("span");
-    kind.className = "feed-kind";
-    kind.textContent = item.kind;
-    var text = document.createElement("span");
-    text.textContent = item.text;
-    var time = document.createElement("span");
-    time.className = "feed-time";
-    time.textContent = item.time;
-    li.appendChild(kind);
-    li.appendChild(text);
-    li.appendChild(time);
-    if (toTop && list.firstChild) { list.insertBefore(li, list.firstChild); }
-    else { list.appendChild(li); }
-  }
-  feeds.forEach(function (item) { appendFeed(item, false); });
-
-  // 弹窗：按钮显示 / 遮罩与取消隐藏
-  var modal = document.getElementById("orderModal");
-  var openBtn = document.getElementById("openModalBtn");
-  var cancelBtn = document.getElementById("cancelModalBtn");
-  var mask = document.getElementById("modalMask");
-  var form = document.getElementById("orderForm");
-  function openModal() { modal.hidden = false; modal.classList.add("show"); }
-  function closeModal() { modal.classList.remove("show"); modal.hidden = true; }
-  openBtn.addEventListener("click", openModal);
-  cancelBtn.addEventListener("click", closeModal);
-  mask.addEventListener("click", closeModal);
-  form.addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var customer = document.getElementById("fCustomer").value.trim() || "新客户";
-    var product = document.getElementById("fProduct").value;
-    appendFeed({ kind: "订单", text: customer + " 的「" + product + "」手工补录单已保存为草稿。", time: "刚刚" }, true);
-    form.reset();
-    closeModal();
-  });
-})();
-</script>
+  <script>
+    var events = [
+      { who: "青禾书店", what: "下单 年度会员 ×3", time: "2 分钟前" },
+      { who: "岚山咖啡", what: "申请退款 ¥ 299", time: "11 分钟前" },
+      { who: "星桥互娱", what: "续费 企业版", time: "35 分钟前" }
+    ];
+    var feed = document.getElementById("js-list");
+    events.forEach(function (ev) {
+      var li = document.createElement("li");
+      li.innerHTML = '<i class="dot"></i><div>' + ev.who + " " + ev.what + "<small>" + ev.time + "</small></div>";
+      feed.appendChild(li);
+    });
+    document.getElementById("new-order").addEventListener("click", function () {
+      document.getElementById("order-dialog").showModal();
+    });
+    document.querySelectorAll("#range-tabs button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll("#range-tabs button").forEach(function (x) { x.classList.toggle("on", x === b); });
+      });
+    });
+  </script>
 </body>
 </html>

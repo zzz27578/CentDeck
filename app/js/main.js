@@ -1,5 +1,5 @@
 // main.js —— 入口：应用上下文、打开项目、视图切换（总览/编辑/放映）、锁定、插件装配
-import { api } from './core/api.js';
+import { api, setApiErrorHandler } from './core/api.js';
 import { createBus } from './core/bus.js';
 import { toastError } from './core/ui.js';
 import { renderHome } from './shell/home.js';
@@ -9,6 +9,8 @@ import { createEditor } from './edit/editor.js';
 import { createPresent } from './present/present.js';
 import { setupSketch } from './sketch/sketch.js';
 import { createAgent } from './agent/agent.js';
+import { openSettings } from './agent/settings.js';
+import { showKeyHelp } from './core/keys.js';
 import { setupLayers } from './panels/layers.js';
 import { setupNotes } from './panels/notes.js';
 import { setupAssets } from './panels/assets.js';
@@ -16,6 +18,7 @@ import { setupTokens } from './panels/tokens.js';
 import { setupHistory } from './panels/history.js';
 import { setupCodeview } from './panels/codeview.js';
 
+setApiErrorHandler(toastError);
 const bus = createBus({ api, onError: toastError });
 
 const app = {
@@ -76,7 +79,7 @@ app.openProject = async (id) => {
   buildShell(app);
   agent.mount(app.refs.agent);
   bus.emit('project', proj);
-  app.setView('overview');
+  await app.setView('overview');
 };
 
 app.setView = async (v, opts = {}) => {
@@ -128,6 +131,9 @@ views.present = createPresent(app);
 app.editor = views.edit;
 app.overview = views.overview;
 const agent = createAgent(app);
+app.agent = agent;
+app.openSettings = () => openSettings(app);
+app.showKeys = () => showKeyHelp(app);
 
 setupSketch(app);
 setupLayers(app);

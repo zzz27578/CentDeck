@@ -12,3 +12,6 @@ Thumbs.db
 # 用户项目内容不入库（仅保留 .gitkeep 占位）
 projects/*
 !projects/.gitkeep
+
+# 模型接口设置与密钥（只在本机）
+config.local/

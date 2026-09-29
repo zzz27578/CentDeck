@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>联系我们 · 云帆</title>
+  <style id="cd-tokens">:root{
+  --brand:#4f46e5; --brand-deep:#3730a3; --accent:#06b6d4;
+  --bg:#f7f8fc; --text:#1e2235; --muted:#5d6480; --card:#ffffff; --border:#e5e7f0;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:32px; --fs-h1:52px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:48px; --sp-5:88px;
+  --radius-s:8px; --radius:14px; --radius-l:24px;
+}</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-3); }
+    .site-header { background: #fff; border-bottom: 1px solid var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .logo { font-weight: 700; font-size: 20px; }
+    .nav-links { display: flex; gap: var(--sp-3); font-size: var(--fs-m); color: var(--muted); }
+    .nav-links a.active { color: var(--brand); }
+    .layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: var(--sp-4); padding: var(--sp-5) 0; }
+    .intro h1 { font-size: 40px; line-height: 1.3; }
+    .intro p { color: var(--muted); margin: var(--sp-2) 0 var(--sp-3); }
+    .contact-list { list-style: none; display: grid; gap: var(--sp-2); }
+    .contact-list li { display: flex; gap: var(--sp-2); align-items: center; padding: var(--sp-2); background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+    .contact-list b { display: block; }
+    .contact-list span { color: var(--muted); font-size: var(--fs-m); }
+    .form { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-l); padding: var(--sp-4); display: grid; gap: var(--sp-2); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+    label { display: grid; gap: 6px; font-size: var(--fs-m); font-weight: 600; }
+    input, select, textarea { padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-s); font: inherit; font-weight: 400; background: #fff; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid rgba(79, 70, 229, .25); border-color: var(--brand); }
+    .check { display: flex; gap: 8px; align-items: center; font-weight: 400; color: var(--muted); }
+    .btn { padding: 13px 24px; border: 0; border-radius: var(--radius-s); background: var(--brand); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .error { color: #dc2626; font-size: var(--fs-s); min-height: 18px; }
+    @media (max-width: 768px) {
+      .layout, .row { grid-template-columns: 1fr; }
+      .form { padding: var(--sp-3); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="index.html">云帆</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a href="pricing.html">价格</a>
+        <a class="active" href="contact.html">联系我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container layout">
+    <div class="intro">
+      <h1>和我们聊聊<br>你的团队</h1>
+      <p>告诉我们你的需求，顾问会在 <strong>1 个工作日</strong>内给出方案。</p>
+      <ul class="contact-list">
+        <li><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="#eef2ff"/><path d="M8 10h12v9H8z" fill="none" stroke="#4f46e5" stroke-width="2"/></svg><div><b>商务邮箱</b><span>hello@yunfan.example</span></div></li>
+        <li><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="#ecfeff"/><path d="M10 8h8v12h-8z" fill="none" stroke="#0891b2" stroke-width="2"/></svg><div><b>服务热线</b><span>400-800-1234（工作日 9:00 - 18:00）</span></div></li>
+      </ul>
+    </div>
+
+    <form class="form" id="contact-form" novalidate>
+      <div class="row">
+        <label>你的称呼<input id="f-name" placeholder="例如：王先生"></label>
+        <label>手机号<input id="f-phone" type="tel" placeholder="11 位手机号"></label>
+      </div>
+      <label>公司名称<input placeholder="选填"></label>
+      <label>感兴趣的方案
+        <select>
+          <option>专业版</option>
+          <option>企业版</option>
+          <option>还不确定</option>
+        </select>
+      </label>
+      <label>想了解什么<textarea rows="4" placeholder="比如：能不能和我们现在的 OA 系统打通？"></textarea></label>
+      <label class="check"><input type="checkbox" id="f-agree"> 我同意云帆的隐私政策</label>
+      <p class="error" id="f-error"></p>
+      <button class="btn" type="submit">提交需求</button>
+    </form>
+  </main>
+
+  <script>
+    document.getElementById("contact-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var err = document.getElementById("f-error");
+      if (!document.getElementById("f-name").value.trim()) { err.textContent = "请填写称呼"; return; }
+      if (!/^1\d{10}$/.test(document.getElementById("f-phone").value)) { err.textContent = "手机号格式不对"; return; }
+      if (!document.getElementById("f-agree").checked) { err.textContent = "请先同意隐私政策"; return; }
+      window.location.href = "thanks.html";
+    });
+  </script>
+</body>
+</html>

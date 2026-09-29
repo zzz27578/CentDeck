@@ -169,7 +169,7 @@ export function renderCrumbs(ed) {
     return;
   }
   const chain = [];
-  for (let n = ed.sel; n && n.tagName !== 'HTML'; n = n.parentElement) if (n === ed.sel || n.hasAttribute('data-loc') || n.tagName === 'BODY') chain.unshift(n);
+  for (let n = ed.sel; n && n.tagName !== 'HTML'; n = n.parentElement) if (n === ed.sel || n.hasAttribute('data-cd-loc') || n.tagName === 'BODY') chain.unshift(n);
   const box = el('<div class="crumbs"></div>');
   chain.forEach((n, i) => {
     const cls = n.classList && n.classList[0] ? '.' + n.classList[0] : '';

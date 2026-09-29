@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>提交成功 · 云帆</title>
+  <style id="cd-tokens">:root{
+  --brand:#4f46e5; --brand-deep:#3730a3; --accent:#06b6d4;
+  --bg:#f7f8fc; --text:#1e2235; --muted:#5d6480; --card:#ffffff; --border:#e5e7f0;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:32px; --fs-h1:52px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:48px; --sp-5:88px;
+  --radius-s:8px; --radius:14px; --radius-l:24px;
+}</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: grid; place-items: center; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: linear-gradient(160deg, #eef2ff, var(--bg) 60%); color: var(--text); }
+    .panel { width: min(480px, 90vw); padding: var(--sp-4); text-align: center; background: #fff; border-radius: var(--radius-l); box-shadow: 0 30px 60px rgba(30, 34, 53, .12); }
+    .check { width: 72px; height: 72px; margin: 0 auto var(--sp-3); border-radius: 50%; display: grid; place-items: center; background: #dcfce7; animation: pop .5s ease; }
+    @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+    h1 { font-size: 28px; }
+    p { color: var(--muted); margin: var(--sp-1) 0 var(--sp-3); line-height: 1.7; }
+    a { display: inline-block; padding: 11px 24px; border-radius: var(--radius-s); background: var(--brand); color: #fff; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="check"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#16a34a" stroke-width="4" stroke-linecap="round"><path d="M9 19l6 6 12-13"/></svg></div>
+    <h1>需求已收到</h1>
+    <p>顾问会在 1 个工作日内联系你。<br><span id="count">5</span> 秒后自动回到首页。</p>
+    <a href="index.html">现在就回首页</a>
+  </div>
+  <script>
+    var left = 5;
+    var timer = setInterval(function () {
+      left -= 1;
+      document.getElementById("count").textContent = left;
+      if (left <= 0) clearInterval(timer);
+    }, 1000);
+    setTimeout(function () {
+      window.location.href = "index.html";
+    }, 5000);
+  </script>
+</body>
+</html>

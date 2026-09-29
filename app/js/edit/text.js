@@ -8,11 +8,11 @@ function capture(e) {
     if (n.nodeType === 3) gaps[gaps.length - 1] += n.data;
     else if (n.nodeType === 1 || n.nodeType === 8) { anchors.push(n); gaps.push(''); }
   });
-  return { el: e, loc: +e.getAttribute('data-loc'), anchors, gaps };
+  return { el: e, loc: +e.getAttribute('data-cd-loc'), anchors, gaps };
 }
 function snapshot(root) {
   const items = [];
-  const walk = (e) => { if (e.hasAttribute('data-loc')) items.push(capture(e)); [...e.children].forEach(walk); };
+  const walk = (e) => { if (e.hasAttribute('data-cd-loc')) items.push(capture(e)); [...e.children].forEach(walk); };
   walk(root);
   return items;
 }

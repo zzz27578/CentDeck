@@ -130,13 +130,20 @@ function listProjects() {
   for (const entry of fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     try {
-      const meta = readJson(path.join(PROJECTS_DIR, entry.name, 'project.json'), '项目缺少 project.json');
+      const pdir = path.join(PROJECTS_DIR, entry.name);
+      const meta = readJson(path.join(pdir, 'project.json'), '项目缺少 project.json');
+      const pages = Array.isArray(meta.pages) ? meta.pages : [];
+      let updated = fs.statSync(path.join(pdir, 'project.json')).mtimeMs;
+      pages.forEach((p) => { try { updated = Math.max(updated, fs.statSync(path.join(pdir, p.file)).mtimeMs); } catch { /* 文件缺失时忽略 */ } });
       out.push({
         id: entry.name,
         name: meta.name || entry.name,
         template: meta.template || '',
+        kind: meta.kind || (meta.template ? 'template' : 'blank'),
         createdAt: meta.createdAt || '',
-        pages: Array.isArray(meta.pages) ? meta.pages : [],
+        updatedAt: new Date(updated).toISOString(),
+        marks: Array.isArray(meta.marks) ? meta.marks.filter((m) => !m.done).length : 0,
+        pages,
       });
     } catch {
       // 跳过无效项目目录
@@ -147,7 +154,34 @@ function listProjects() {
 
 // ---------- 项目 ----------
 
+// 项目 ID：英文名直接转成短横线格式；中文名用时间戳，避免都叫 project
+function newProjectId(name) {
+  const base = slugify(name) || 'p' + Date.now().toString(36);
+  let id = base;
+  for (let n = 2; fs.existsSync(path.join(PROJECTS_DIR, id)); n += 1) id = `${base}-${n}`;
+  return id;
+}
+
+function baseProject(id, name, extra) {
+  return {
+    id, name, template: '', type: '', description: '', createdAt: new Date().toISOString(),
+    pages: [], marks: [], notes: [], locks: { pages: [], elements: [] }, ...extra,
+  };
+}
+
+function createBlankProject(body) {
+  const name = String((body && body.name) || '').trim() || '未命名项目';
+  const id = newProjectId(name);
+  const dir = path.join(PROJECTS_DIR, id);
+  fs.mkdirSync(path.join(dir, '.centdeck', 'pristine'), { recursive: true });
+  const proj = baseProject(id, name, { kind: 'blank' });
+  writeJson(path.join(dir, 'project.json'), proj);
+  writeJson(path.join(dir, '.centdeck', 'pristine', 'project.json'), { pages: [] });
+  return proj;
+}
+
 function createProject(body) {
+  if (body && body.blank) return createBlankProject(body);
   const template = body && body.template;
   assertValidId(template, '模板 ID');
   const tDir = path.join(TEMPLATES_DIR, template);
@@ -159,30 +193,17 @@ function createProject(body) {
   let name = body && typeof body.name === 'string' ? body.name.trim() : '';
   if (!name) name = tMeta.name || template;
 
-  const base = slugify(name) || slugify(template) || 'project';
-  let id = base;
-  for (let n = 2; fs.existsSync(path.join(PROJECTS_DIR, id)); n += 1) {
-    id = `${base}-${n}`;
-  }
-
+  const id = newProjectId(slugify(name) ? name : template);
   const dir = path.join(PROJECTS_DIR, id);
   const excludeMeta = (nm) => nm === '.centdeck';
   copyDir(tDir, dir, excludeMeta);
   // 原始快照：完整复制模板，供一键还原使用
   copyDir(tDir, path.join(dir, '.centdeck', 'pristine'), excludeMeta);
 
-  const proj = {
-    id,
-    name,
-    template,
-    type: tMeta.type || '',
-    description: tMeta.description || '',
-    createdAt: new Date().toISOString(),
+  const proj = baseProject(id, name, {
+    kind: 'template', template, type: tMeta.type || '', description: tMeta.description || '',
     pages: Array.isArray(tMeta.pages) ? tMeta.pages : [],
-    marks: [],
-    notes: [],
-    locks: { pages: [], elements: [] },
-  };
+  });
   writeJson(path.join(dir, 'project.json'), proj);
   return proj;
 }
@@ -313,24 +334,20 @@ function resetProject(id) {
   if (!fs.existsSync(pristine)) {
     throw new ApiError(404, '原始快照缺失，无法一键还原');
   }
-  // 恢复全部页面
-  const pristinePages = path.join(pristine, 'pages');
-  if (fs.existsSync(pristinePages)) {
-    fs.rmSync(path.join(dir, 'pages'), { recursive: true, force: true });
-    copyDir(pristinePages, path.join(dir, 'pages'));
-  }
-  // 恢复设计规范
-  const pristineTokens = path.join(pristine, 'design', 'tokens.json');
-  if (fs.existsSync(pristineTokens)) {
-    fs.mkdirSync(path.join(dir, 'design'), { recursive: true });
-    fs.copyFileSync(pristineTokens, path.join(dir, 'design', 'tokens.json'));
-  }
-  // 清空标记/便签/锁定
+  // 除元数据外全部清掉，再从原始快照复制回来（模板、空白、导入三种项目通用）
   const projPath = path.join(dir, 'project.json');
   const proj = readJson(projPath, '项目缺少 project.json');
+  const pristineMetaPath = path.join(pristine, 'project.json');
+  const pristineMeta = fs.existsSync(pristineMetaPath) ? readJson(pristineMetaPath, '原始快照信息损坏') : { pages: proj.pages };
+  for (const name of fs.readdirSync(dir)) {
+    if (name !== '.centdeck' && name !== 'project.json') fs.rmSync(path.join(dir, name), { recursive: true, force: true });
+  }
+  copyDir(pristine, dir, (nm) => nm === 'project.json');
+  proj.pages = Array.isArray(pristineMeta.pages) ? pristineMeta.pages : [];
   proj.marks = [];
   proj.notes = [];
   proj.locks = { pages: [], elements: [] };
+  delete proj.canvas;
   writeJson(projPath, proj);
   // 删除全部历史
   fs.rmSync(path.join(dir, '.centdeck', 'history'), { recursive: true, force: true });
@@ -382,6 +399,161 @@ function saveAsset(id, body) {
   };
 }
 
+// ---------- 导入网页（单个 HTML、多个文件或整个文件夹） ----------
+const SKIP_RE = /(^|\/)(node_modules|\.git|\.centdeck|\.svn|__MACOSX)(\/|$)|(^|\/)\.[^/]*$/;
+const htmlTitle = (buf) => {
+  const m = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(buf.toString('utf8'));
+  return m ? m[1].replace(/\s+/g, ' ').trim().slice(0, 40) : '';
+};
+
+function importProject(body) {
+  const files = body && Array.isArray(body.files) ? body.files : [];
+  if (!files.length) throw new ApiError(400, '没有收到文件');
+  let items = files.map((f) => ({
+    rel: String(f.path || f.name || '').replace(/\\/g, '/').replace(/^\/+/, ''),
+    data: typeof f.dataBase64 === 'string' ? f.dataBase64 : '',
+  })).filter((f) => f.rel && !SKIP_RE.test(f.rel));
+  for (const f of items) {
+    if (f.rel.split('/').some((s) => s === '..' || s.includes(':'))) throw new ApiError(400, `文件路径不合法：${f.rel}`);
+  }
+  // 整个文件夹上传时路径都带着同一个外层文件夹名，去掉它
+  const firsts = new Set(items.map((f) => (f.rel.includes('/') ? f.rel.split('/')[0] : '')));
+  if (firsts.size === 1 && !firsts.has('')) items = items.map((f) => ({ ...f, rel: f.rel.slice(f.rel.indexOf('/') + 1) }));
+  const html = items.filter((f) => /\.html?$/i.test(f.rel));
+  if (!html.length) throw new ApiError(400, '里面没有 .html 网页文件');
+  const name = String((body && body.name) || '').trim() || html[0].rel.replace(/\.html?$/i, '');
+  const id = newProjectId(name);
+  const dir = path.join(PROJECTS_DIR, id);
+  fs.mkdirSync(dir, { recursive: true });
+  const titles = {};
+  for (const f of items) {
+    const target = safeJoin(dir, f.rel);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    const buf = Buffer.from(f.data, 'base64');
+    fs.writeFileSync(target, buf);
+    if (/\.html?$/i.test(f.rel)) titles[f.rel] = htmlTitle(buf);
+  }
+  const rank = (p) => (/^(index|home|default)\.html?$/i.test(p) ? 0 : /^[^/]+$/.test(p) ? 1 : 2);
+  const pages = html.map((f) => f.rel).sort((a, b) => rank(a) - rank(b) || a.split('/').length - b.split('/').length || a.localeCompare(b))
+    .slice(0, 80).map((file) => ({ file, title: titles[file] || file.split('/').pop().replace(/\.html?$/i, '') }));
+  const proj = baseProject(id, name, { kind: 'import', pages, description: `导入的网页（${items.length} 个文件）` });
+  writeJson(path.join(dir, 'project.json'), proj);
+  copyDir(dir, path.join(dir, '.centdeck', 'pristine'), (nm) => nm === '.centdeck');
+  return proj;
+}
+
+// ---------- 页面增删 ----------
+const BLANK_PAGE = (title) => `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title.replace(/[<>&]/g, '')}</title>
+  <style>
+    body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #1f2430; background: #fff; }
+    main { max-width: 960px; margin: 0 auto; padding: 72px 24px; }
+    h1 { font-size: 40px; margin: 0 0 16px; }
+    p { color: #5b6275; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>${title.replace(/[<>&]/g, '')}</h1>
+    <p>这是一个空白页面。可以让助手按你的描述生成内容，也可以用文字工具直接改这段话。</p>
+  </main>
+</body>
+</html>
+`;
+
+function addPage(id, body) {
+  const dir = projectDir(id);
+  const projPath = path.join(dir, 'project.json');
+  const proj = readJson(projPath, '项目缺少 project.json');
+  proj.pages = Array.isArray(proj.pages) ? proj.pages : [];
+  const title = String((body && body.title) || '').trim() || `新页面 ${proj.pages.length + 1}`;
+  const folder = proj.pages.length && !proj.pages.every((p) => p.file.startsWith('pages/')) ? '' : 'pages/';
+  let file = body && body.file ? String(body.file) : '';
+  if (!file) {
+    const slug = slugify(title) || 'page';
+    file = `${folder}${slug}.html`;
+    for (let n = 2; fs.existsSync(path.join(dir, file)); n += 1) file = `${folder}${slug}-${n}.html`;
+  }
+  const target = resolveProjectFile(dir, file);
+  if (fs.existsSync(target)) throw new ApiError(400, '同名文件已经存在');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, typeof body.content === 'string' ? body.content : BLANK_PAGE(title), 'utf8');
+  proj.pages.push({ file, title });
+  writeJson(projPath, proj);
+  return getProject(id);
+}
+
+function removePage(id, file) {
+  const dir = projectDir(id);
+  const projPath = path.join(dir, 'project.json');
+  const proj = readJson(projPath, '项目缺少 project.json');
+  const i = (proj.pages || []).findIndex((p) => p.file === file);
+  if (i < 0) throw new ApiError(404, '页面不存在');
+  const target = resolveProjectFile(dir, file);
+  if (fs.existsSync(target)) {
+    saveHistory(dir, file, fs.readFileSync(target, 'utf8'));
+    fs.rmSync(target, { force: true });
+  }
+  proj.pages.splice(i, 1);
+  writeJson(projPath, proj);
+  return getProject(id);
+}
+
+// ---------- 模型与接口设置（存在本机 config.local/，被 .gitignore 忽略；密钥永远不完整返回给浏览器） ----------
+const CONFIG_DIR = path.join(ROOT, 'config.local');
+const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json');
+const PROVIDERS = [
+  { id: 'anthropic', name: 'Anthropic（Claude）', baseUrl: 'https://api.anthropic.com', models: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] },
+  { id: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', models: [] },
+  { id: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com', models: [] },
+  { id: 'qwen', name: '通义千问（阿里云百炼）', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: [] },
+  { id: 'gemini', name: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com', models: [] },
+  { id: 'ollama', name: '本地模型（Ollama）', baseUrl: 'http://localhost:11434', models: [], noKey: true },
+  { id: 'custom', name: '自定义（兼容 OpenAI 接口）', baseUrl: '', models: [] },
+];
+function readSettingsRaw() {
+  try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch { return {}; }
+}
+function getSettings() {
+  const raw = readSettingsRaw();
+  const saved = raw.providers || {};
+  return {
+    providers: PROVIDERS.map((p) => {
+      const s = saved[p.id] || {};
+      const key = typeof s.apiKey === 'string' ? s.apiKey : '';
+      return {
+        id: p.id, name: p.name, noKey: !!p.noKey,
+        enabled: !!s.enabled, baseUrl: s.baseUrl != null ? s.baseUrl : p.baseUrl,
+        models: Array.isArray(s.models) && s.models.length ? s.models : p.models,
+        hasKey: !!key, keyHint: key ? '••••' + key.slice(-4) : '',
+      };
+    }),
+    roles: raw.roles || { economy: '', expert: '' },
+  };
+}
+function saveSettings(body) {
+  const raw = readSettingsRaw();
+  raw.providers = raw.providers || {};
+  (Array.isArray(body && body.providers) ? body.providers : []).forEach((p) => {
+    if (!PROVIDERS.some((d) => d.id === p.id)) return;
+    const cur = raw.providers[p.id] || {};
+    if (typeof p.enabled === 'boolean') cur.enabled = p.enabled;
+    if (typeof p.baseUrl === 'string') cur.baseUrl = p.baseUrl.trim();
+    if (Array.isArray(p.models)) cur.models = p.models.map(String).map((s) => s.trim()).filter(Boolean);
+    if (typeof p.apiKey === 'string' && p.apiKey.trim()) cur.apiKey = p.apiKey.trim();
+    if (p.apiKey === null) delete cur.apiKey;
+    raw.providers[p.id] = cur;
+  });
+  if (body && body.roles && typeof body.roles === 'object') raw.roles = { economy: String(body.roles.economy || ''), expert: String(body.roles.expert || '') };
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(raw, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
+  return getSettings();
+}
+
 // 删除项目：目录自包含（.centdeck 快照/历史都在里面），整体移除
 function deleteProject(id) {
   const dir = projectDir(id);
@@ -401,6 +573,11 @@ module.exports = {
   listTemplates,
   listProjects,
   createProject,
+  importProject,
+  addPage,
+  removePage,
+  getSettings,
+  saveSettings,
   getProject,
   saveProject,
   deleteProject,

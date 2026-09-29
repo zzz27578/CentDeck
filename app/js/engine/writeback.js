@@ -57,7 +57,8 @@ export function getStyleProp(info, prop) {
 
 // 只改这个元素开标签里的 style="..."，其余源码原样保留（移植 demo/core.js WB.setInlineStyle）
 export function setInlineStyle(source, info, props) {
-  const styleStr = joinPairs(applyProps(parseStyle(info.style), props));
+  // 属性值用双引号包着，值里的双引号（比如字体名）换成单引号，免得把属性截断
+  const styleStr = joinPairs(applyProps(parseStyle(info.style), props)).replace(/"/g, "'");
   const open = source.slice(info.openStart, info.openEnd);
   let out;
   const re = /\sstyle\s*=\s*("[^"]*"|'[^']*')/i;
@@ -116,33 +117,9 @@ function occurrences(raw, needle) {
   return out;
 }
 
-// ---------- 文字段：元素"直接包含"的每一段文字在源码里的范围 ----------
-// 与浏览器 DOM 里该元素的直接文本节点一一对应（注释、子元素、脚本把文字切成多段）
-const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
-const RAW_TAGS = new Set(['script', 'style', 'textarea', 'title', 'xmp']);
-const SEG_RE = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/g;
-
-export function textSegments(source, info) {
-  const segs = [];
-  const from = info.openEnd, to = info.closeStart;
-  if (info.isVoid || to <= from) return segs;
-  SEG_RE.lastIndex = from;
-  let depth = 0, textStart = from, m;
-  while ((m = SEG_RE.exec(source)) && m.index < to) {
-    if (depth === 0 && m.index > textStart) segs.push([textStart, m.index]);
-    if (m[2]) {
-      const tag = m[2].toLowerCase();
-      if (m[1]) depth = Math.max(0, depth - 1);
-      else if (RAW_TAGS.has(tag)) {
-        const end = source.indexOf('</' + tag, SEG_RE.lastIndex);
-        SEG_RE.lastIndex = end < 0 ? to : Math.min(to, source.indexOf('>', end) + 1 || to);
-      } else if (!VOID_TAGS.has(tag) && !m[4]) depth++;
-    }
-    textStart = SEG_RE.lastIndex;
-  }
-  if (depth === 0 && textStart < to) segs.push([textStart, to]);
-  return segs;
-}
+// ---------- 文字段：元素直接包含的每个文本节点在源码里的范围 ----------
+// 由 parse5 给出，顺序和浏览器 DOM 里的文本节点一一对应
+export function textSegments(source, info) { return info.textNodes || []; }
 
 // 实体解码 + 位置对照表：map[i] = 解码后第 i 个字符在原文里的起点；map[len] = 原文长度
 const ENT = {
@@ -263,8 +240,8 @@ export function applyEdit(source, edit, opts = {}) {
     const segs = textSegments(source, info);
     const k = edit.index;
     if (!(k >= 0 && k < segs.length)) return fail(at('这段文字') + '在代码里定位不到（页面结构可能被浏览器自动纠正或被脚本改过），不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
-    let [a, b] = segs[k];
-    if (k === 0 && /^(pre|textarea|listing)$/.test(info.tag)) { if (source[a] === '\r') a++; if (source[a] === '\n') a++; }
+    if (!segs[k]) return fail(at('这段文字') + '在代码里没有对应的位置，不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    const [a, b] = segs[k];
     const { text, map } = decodeMap(source.slice(a, b));
     const oldT = String(edit.oldText == null ? '' : edit.oldText);
     const newT = String(edit.newText == null ? '' : edit.newText);

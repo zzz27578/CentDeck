@@ -13,7 +13,11 @@ export class ApiError extends Error {
   }
 }
 
+let defaultOnError = null;
+export function setApiErrorHandler(fn) { defaultOnError = fn; }
+
 async function request(method, url, body, opts = {}) {
+  if (opts.toast !== false && !opts.withError && defaultOnError) opts = { ...opts, withError: defaultOnError };
   let res;
   try {
     res = await fetch(BASE + url, {
@@ -43,6 +47,12 @@ export const api = {
   listTemplates: (opts) => request('GET', '/api/templates', null, opts),
   listProjects: (opts) => request('GET', '/api/projects', null, opts),
   createProject: (template, name, opts) => request('POST', '/api/projects', { template, name }, opts),
+  createBlank: (name, opts) => request('POST', '/api/projects', { blank: true, name }, opts),
+  importProject: (name, files, opts) => request('POST', '/api/import', { name, files }, opts),
+  addPage: (id, page, opts) => request('POST', `/api/projects/${encodeURIComponent(id)}/pages`, page, opts),
+  removePage: (id, file, opts) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/pages?file=${encodeURIComponent(file)}`, null, opts),
+  getSettings: (opts) => request('GET', '/api/settings', null, opts),
+  saveSettings: (s, opts) => request('PUT', '/api/settings', s, opts),
   getProject: (id, opts) => request('GET', `/api/projects/${encodeURIComponent(id)}`, null, opts),
   saveProject: (id, proj, opts) => request('PUT', `/api/projects/${encodeURIComponent(id)}`, proj, opts),
   readFile: (id, path, opts) =>

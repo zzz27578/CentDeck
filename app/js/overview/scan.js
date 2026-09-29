@@ -83,7 +83,7 @@ export function scanPage(file, src, pageSet) {
       const before = body.slice(Math.max(0, m.index - 400), m.index);
       const dm = /setTimeout\s*\(\s*(?:function|\()/.test(before) ? /\}\s*,\s*(\d{2,6})\s*\)/.exec(body.slice(m.index, m.index + 240)) : null;
       const timer = dm ? +dm[1] : null;
-      const submit = /submit/.test(before);
+      const submit = /["']submit["']|onsubmit|\.submit\b/.test(body.slice(Math.max(0, m.index - 1600), m.index));
       out.redirects.push({ to, kind: timer ? 'timer' : submit ? 'submit' : 'script', delay: timer, line: p.lineOf(a + m.index) });
     }
   });

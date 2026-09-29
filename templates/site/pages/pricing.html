@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>价格方案 · 云帆</title>
+  <style id="cd-tokens">:root{
+  --brand:#4f46e5; --brand-deep:#3730a3; --accent:#06b6d4;
+  --bg:#f7f8fc; --text:#1e2235; --muted:#5d6480; --card:#ffffff; --border:#e5e7f0;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:32px; --fs-h1:52px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:48px; --sp-5:88px;
+  --radius-s:8px; --radius:14px; --radius-l:24px;
+}</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 var(--sp-3); }
+    .site-header { background: #fff; border-bottom: 1px solid var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .logo { font-weight: 700; font-size: 20px; }
+    .nav-links { display: flex; gap: var(--sp-3); font-size: var(--fs-m); color: var(--muted); }
+    .nav-links a.active { color: var(--brand); }
+    .btn { display: inline-flex; justify-content: center; padding: 11px 22px; border-radius: var(--radius-s); border: 1px solid transparent; font: inherit; font-size: var(--fs-m); font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-ghost { background: #fff; color: var(--brand); border-color: var(--brand); }
+    .page-head { padding: var(--sp-5) 0 var(--sp-4); text-align: center; }
+    .page-head h1 { font-size: 44px; }
+    .page-head p { color: var(--muted); margin-top: var(--sp-1); }
+    .billing { display: inline-flex; margin-top: var(--sp-3); padding: 4px; border-radius: 99px; background: #eceef6; }
+    .billing button { border: 0; background: none; padding: 8px 20px; border-radius: 99px; font: inherit; font-size: var(--fs-m); cursor: pointer; color: var(--muted); }
+    .billing button.on { background: #fff; color: var(--text); box-shadow: 0 2px 6px rgba(0, 0, 0, .08); }
+    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); align-items: start; }
+    .plan { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-l); padding: var(--sp-4) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+    .plan.featured { border: 2px solid var(--brand); box-shadow: 0 20px 40px rgba(79, 70, 229, .15); transform: translateY(-12px); }
+    .plan h2 { font-size: var(--fs-h3); }
+    .price { font-size: 40px; font-weight: 700; }
+    .price small { font-size: var(--fs-m); color: var(--muted); font-weight: 400; }
+    .plan ul { list-style: none; display: grid; gap: 6px; color: var(--muted); font-size: var(--fs-m); }
+    .plan li::before { content: "✓ "; color: var(--brand); font-weight: 700; }
+    .compare { margin: var(--sp-5) auto; width: 100%; border-collapse: collapse; background: #fff; border-radius: var(--radius); overflow: hidden; font-size: var(--fs-m); }
+    .compare th, .compare td { padding: 14px 18px; border-bottom: 1px solid var(--border); text-align: left; }
+    .compare th { background: #f1f3fa; }
+    .site-footer { padding: var(--sp-4) 0; color: var(--muted); font-size: var(--fs-m); text-align: center; }
+    .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(20, 24, 40, .5); }
+    .modal[hidden] { display: none; }
+    .modal-card { width: min(420px, 92vw); background: #fff; border-radius: var(--radius-l); padding: var(--sp-4) var(--sp-3) var(--sp-3); }
+    .modal-card h3 { font-size: 22px; margin-bottom: var(--sp-1); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--sp-1); margin-top: var(--sp-3); }
+    @media (max-width: 768px) {
+      .plans { grid-template-columns: 1fr; }
+      .plan.featured { transform: none; }
+      .page-head h1 { font-size: 32px; }
+      .compare { font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="index.html">云帆</a>
+      <nav class="nav-links">
+        <a href="index.html">首页</a>
+        <a class="active" href="pricing.html">价格</a>
+        <a href="contact.html">联系我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>简单透明的价格</h1>
+      <p>所有方案都包含 14 天专业版试用，随时可以升级或降级。</p>
+      <div class="billing" id="billing">
+        <button class="on" data-cycle="month">按月付</button>
+        <button data-cycle="year">按年付 · 省 20%</button>
+      </div>
+    </div>
+
+    <div class="plans">
+      <div class="plan">
+        <h2>免费版</h2>
+        <div class="price" data-month="0" data-year="0">¥0<small> / 人 / 月</small></div>
+        <ul>
+          <li>10 人以内的团队</li>
+          <li>5&nbsp;GB 存储空间</li>
+          <li>任务看板与协作文档</li>
+        </ul>
+        <button class="btn btn-ghost" data-plan="免费版">立即使用</button>
+      </div>
+      <div class="plan featured">
+        <h2>专业版</h2>
+        <div class="price" data-month="39" data-year="31">¥39<small> / 人 / 月</small></div>
+        <ul>
+          <li>不限人数</li>
+          <li>AI 会议纪要</li>
+          <li>100&nbsp;GB 存储空间</li>
+          <li>优先技术支持</li>
+        </ul>
+        <button class="btn btn-primary" data-plan="专业版">开始试用</button>
+      </div>
+      <div class="plan">
+        <h2>企业版</h2>
+        <div class="price">联系我们</div>
+        <ul>
+          <li>私有化部署</li>
+          <li>单点登录 &amp; 审计日志</li>
+          <li>专属客户成功经理</li>
+        </ul>
+        <button class="btn btn-ghost" data-plan="企业版">预约沟通</button>
+      </div>
+    </div>
+
+    <table class="compare">
+      <tr><th>功能</th><th>免费版</th><th>专业版</th><th>企业版</th></tr>
+      <tr><td>团队人数</td><td>10 人</td><td>不限</td><td>不限</td></tr>
+      <tr><td>AI 会议纪要</td><td>—</td><td>✓</td><td>✓</td></tr>
+      <tr><td>私有化部署</td><td>—</td><td>—</td><td>✓</td></tr>
+    </table>
+  </main>
+
+  <footer class="site-footer">还有疑问？<a href="contact.html" style="color: var(--brand);">联系销售顾问</a> · © 2026 云帆科技</footer>
+
+  <div class="modal" id="plan-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="plan-title">
+      <h3 id="plan-title">开通方案</h3>
+      <p>你选择了 <strong id="plan-name">专业版</strong>，下一步填写团队信息即可开通。</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-close>取消</button>
+        <a class="btn btn-primary" href="contact.html">填写团队信息</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var modal = document.getElementById("plan-modal");
+    document.querySelectorAll("[data-plan]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.getElementById("plan-name").textContent = btn.dataset.plan;
+        modal.hidden = false;
+      });
+    });
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal || e.target.hasAttribute("data-close")) modal.hidden = true;
+    });
+    document.querySelectorAll("#billing button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        document.querySelectorAll("#billing button").forEach(function (x) { x.classList.toggle("on", x === b); });
+        document.querySelectorAll(".price[data-month]").forEach(function (p) {
+          p.firstChild.textContent = "¥" + p.dataset[b.dataset.cycle];
+        });
+      });
+    });
+  </script>
+</body>
+</html>

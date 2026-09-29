@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>云帆 · 让团队协作像呼吸一样自然</title>
+  <style id="cd-tokens">:root{
+  --brand:#4f46e5; --brand-deep:#3730a3; --accent:#06b6d4;
+  --bg:#f7f8fc; --text:#1e2235; --muted:#5d6480; --card:#ffffff; --border:#e5e7f0;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:32px; --fs-h1:52px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:48px; --sp-5:88px;
+  --radius-s:8px; --radius:14px; --radius-l:24px;
+}</style>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: var(--fs-body); line-height: 1.7; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 var(--sp-3); }
+    .site-header { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 20px; }
+    .nav-links { display: flex; align-items: center; gap: var(--sp-3); }
+    .nav-link { color: var(--muted); font-size: var(--fs-m); transition: color .2s; }
+    .nav-link:hover, .nav-link.active { color: var(--brand); }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: var(--radius-s); border: 1px solid transparent; font: inherit; font-size: var(--fs-m); font-weight: 600; cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 20px rgba(79, 70, 229, .3); }
+    .btn-primary:hover { background: var(--brand-deep); }
+    .btn-ghost { background: transparent; color: var(--brand); border-color: var(--brand); }
+    .hero { padding: var(--sp-5) 0 var(--sp-4); background: radial-gradient(1200px 500px at 80% -10%, #e0e7ff, transparent), var(--bg); }
+    .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: var(--sp-4); align-items: center; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; background: #eef2ff; color: var(--brand); font-size: var(--fs-s); font-weight: 600; margin-bottom: var(--sp-2); }
+    .hero h1 { font-size: var(--fs-h1); line-height: 1.2; letter-spacing: -.5px; }
+    .hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--brand), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { margin: var(--sp-3) 0; color: var(--muted); font-size: 18px; }
+    .actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+    .hero-art { width: 100%; border-radius: var(--radius-l); box-shadow: 0 30px 60px rgba(30, 34, 53, .15); animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .stats { display: flex; justify-content: space-between; gap: var(--sp-3); margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .stat b { display: block; font-size: 28px; color: var(--brand); }
+    .stat span { color: var(--muted); font-size: var(--fs-m); }
+    section { padding: var(--sp-5) 0; }
+    .section-head { max-width: 640px; margin: 0 auto var(--sp-4); text-align: center; }
+    .section-head h2 { font-size: var(--fs-h2); margin-bottom: var(--sp-1); }
+    .section-head p { color: var(--muted); }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3); transition: transform .25s, box-shadow .25s; }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px rgba(30, 34, 53, .08); }
+    .card h3 { font-size: var(--fs-h3); margin: var(--sp-2) 0 var(--sp-1); }
+    .card p { color: var(--muted); font-size: var(--fs-m); }
+    .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand), var(--accent)); }
+    .case-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+    .case-list li { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3); }
+    .case-list .tag { display: inline-block; font-size: var(--fs-s); color: var(--brand); background: #eef2ff; padding: 2px 10px; border-radius: 99px; }
+    .quote { max-width: 760px; margin: 0 auto; text-align: center; font-size: 22px; line-height: 1.6; }
+    .quote cite { display: block; margin-top: var(--sp-2); font-size: var(--fs-m); font-style: normal; color: var(--muted); }
+    .faq { max-width: 760px; margin: 0 auto; display: grid; gap: var(--sp-2); }
+    .faq details { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-2) var(--sp-3); }
+    .faq summary { cursor: pointer; font-weight: 600; }
+    .faq details p { margin-top: var(--sp-1); color: var(--muted); }
+    .cta { text-align: center; padding: var(--sp-4); border-radius: var(--radius-l); background: linear-gradient(120deg, var(--brand), var(--accent)); color: #fff; }
+    .cta h2 { font-size: var(--fs-h2); }
+    .cta p { opacity: .9; margin: var(--sp-1) 0 var(--sp-3); }
+    .cta .btn-primary { background: #fff; color: var(--brand); }
+    .site-footer { padding: var(--sp-4) 0; border-top: 1px solid var(--border); color: var(--muted); font-size: var(--fs-m); }
+    .footer-row { display: flex; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+    .footer-row nav { display: flex; gap: var(--sp-3); }
+    .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(20, 24, 40, .5); }
+    .modal[hidden] { display: none; }
+    .modal-card { width: min(440px, 92vw); background: var(--card); border-radius: var(--radius-l); padding: var(--sp-4) var(--sp-3) var(--sp-3); box-shadow: 0 30px 80px rgba(0, 0, 0, .3); animation: pop .25s ease; }
+    @keyframes pop { from { transform: scale(.94); opacity: 0; } }
+    .modal-card h3 { font-size: 22px; }
+    .field { display: grid; gap: 6px; margin-top: var(--sp-2); font-size: var(--fs-m); }
+    .field input, .field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-s); font: inherit; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--sp-1); margin-top: var(--sp-3); }
+    .to-top { position: fixed; right: 24px; bottom: 24px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--text); color: #fff; font-size: 18px; cursor: pointer; opacity: .85; }
+    @media (max-width: 768px) {
+      .hero { padding-top: var(--sp-4); }
+      .hero-grid, .feature-grid, .case-list { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 34px; }
+      .nav-links .nav-link { display: none; }
+      .stats { flex-wrap: wrap; padding: var(--sp-3); }
+      .stat { width: calc(50% - 12px); }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="logo" href="index.html">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="9" fill="#4f46e5"/><path d="M8 20 15 8l7 12z" fill="#fff"/></svg>
+        云帆
+      </a>
+      <nav class="nav-links">
+        <a class="nav-link active" href="index.html">首页</a>
+        <a class="nav-link" href="#features">功能</a>
+        <a class="nav-link" href="pricing.html">价格</a>
+        <a class="nav-link" href="contact.html">联系我们</a>
+        <button class="btn btn-primary" data-open="demo-modal">预约演示</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <span class="badge">2026 新版 · AI 助理全面上线</span>
+            <h1>让团队协作<br>像呼吸一样 <em>自然</em></h1>
+            <p class="lead">云帆把<strong>任务、文档和会议</strong>放进同一个空间，信息不再散落在十个软件里。平均每人每周节省 <strong>6 小时</strong>。</p>
+            <div class="actions">
+              <a class="btn btn-primary" href="pricing.html">免费开始使用</a>
+              <a class="btn btn-ghost" href="#features">看看能做什么</a>
+            </div>
+          </div>
+          <img class="hero-art" alt="云帆产品界面示意" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 380'%3E%3Crect width='520' height='380' rx='24' fill='%23fff'/%3E%3Crect x='24' y='24' width='472' height='40' rx='10' fill='%23eef2ff'/%3E%3Crect x='24' y='88' width='140' height='268' rx='12' fill='%23f1f5f9'/%3E%3Crect x='184' y='88' width='312' height='150' rx='12' fill='%23e0e7ff'/%3E%3Cpath d='M204 210 264 170 324 188 384 132 476 150' stroke='%234f46e5' stroke-width='6' fill='none' stroke-linecap='round'/%3E%3Crect x='184' y='256' width='150' height='100' rx='12' fill='%234f46e5'/%3E%3Crect x='346' y='256' width='150' height='100' rx='12' fill='%23cffafe'/%3E%3C/svg%3E">
+        </div>
+        <div class="stats">
+          <div class="stat"><b>18,000+</b><span>团队正在使用</span></div>
+          <div class="stat"><b>99.95%</b><span>服务可用性</span></div>
+          <div class="stat"><b>6 小时</b><span>每人每周节省</span></div>
+          <div class="stat"><b>4.9 / 5</b><span>用户满意度</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <h2>一个空间，装下团队的全部工作</h2>
+          <p>从计划到复盘，每一步都有合适的工具，而且它们彼此相通。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card">
+            <div class="icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" stroke-width="2"><path d="M4 11l4 4 10-10"/></svg></div>
+            <h3>任务看板</h3>
+            <p>拖一拖就能排好优先级，进度一目了然，谁在做什么再也不用问。</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" stroke-width="2"><path d="M5 3h9l4 4v12H5z"/></svg></div>
+            <h3>协作文档</h3>
+            <p>多人同时编辑、评论与 @ 同事，版本历史自动保存，<a href="contact.html" style="color: var(--brand); font-weight: 600;">支持私有化部署</a>。</p>
+          </article>
+          <article class="card">
+            <div class="icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M11 6v5l3 2"/></svg></div>
+            <h3>会议纪要</h3>
+            <p>AI 自动整理要点和待办，会后五分钟，行动项已经分到每个人手里。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head">
+          <h2>他们都在用云帆</h2>
+          <p>覆盖互联网、制造、教育等行业的一线团队。</p>
+        </div>
+        <ul id="js-list" class="case-list"></ul>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <blockquote class="quote">
+          “上线三个月，我们的周会从两小时缩到四十分钟，大家终于有时间讨论真正重要的事。”
+          <cite>—— 林晚舟，星桥互娱产品总监</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="section-head"><h2>常见问题</h2></div>
+        <div class="faq">
+          <details open>
+            <summary>免费版有什么限制？</summary>
+            <p>免费版支持 10 人以内的团队，存储空间 5&nbsp;GB，核心功能全部可用。</p>
+          </details>
+          <details>
+            <summary>数据安全吗？</summary>
+            <p>全部数据加密存储，通过等保三级 &amp; ISO 27001 认证，也支持私有化部署。</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta">
+          <h2>准备好换一种方式工作了吗？</h2>
+          <p>14 天专业版免费试用，无需绑定信用卡。</p>
+          <button class="btn btn-primary" data-open="demo-modal">预约 15 分钟演示</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <span>© 2026 云帆科技 · 保留所有权利</span>
+      <nav>
+        <a href="pricing.html">价格方案</a>
+        <a href="contact.html">联系我们</a>
+        <a href="#features">功能介绍</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="modal" id="demo-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="demo-title">
+      <h3 id="demo-title">预约产品演示</h3>
+      <p style="color: var(--muted); font-size: 14px;">留下联系方式，顾问会在一个工作日内联系你。</p>
+      <form id="demo-form">
+        <label class="field">工作邮箱<input type="email" placeholder="name@company.com" required></label>
+        <label class="field">团队规模
+          <select>
+            <option>10 人以内</option>
+            <option>10 - 50 人</option>
+            <option>50 人以上</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close>再想想</button>
+          <button type="submit" class="btn btn-primary">提交预约</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <button class="to-top" aria-label="回到顶部">↑</button>
+
+  <script>
+    var cases = [
+      { name: "星桥互娱", tag: "互联网", text: "周会时长减少 65%，需求交付提速一倍。" },
+      { name: "岚山制造", tag: "制造业", text: "12 条产线的异常处理全部在线闭环。" },
+      { name: "青禾教育", tag: "教育", text: "300 名老师共用一套备课文档库。" }
+    ];
+    var list = document.getElementById("js-list");
+    cases.forEach(function (c) {
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="tag">' + c.tag + "</span><h3>" + c.name + "</h3><p>" + c.text + "</p>";
+      list.appendChild(li);
+    });
+
+    var modal = document.getElementById("demo-modal");
+    document.querySelectorAll("[data-open]").forEach(function (btn) {
+      btn.addEventListener("click", function () { document.getElementById(btn.dataset.open).hidden = false; });
+    });
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal || e.target.hasAttribute("data-close")) modal.hidden = true;
+    });
+    document.getElementById("demo-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      modal.hidden = true;
+      alert("预约成功，我们会尽快联系你！");
+    });
+    document.querySelector(".to-top").addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+  </script>
+</body>
+</html>

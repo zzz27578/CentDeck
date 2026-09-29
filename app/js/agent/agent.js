@@ -177,5 +177,10 @@ export function createAgent(app) {
   }
   function toggle(force) { setOpen(force == null ? !open : !!force); }
   app.bus.on('project', () => { msgs = []; atts = []; ctxChips = []; });
-  return { mount, toggle, addCtx };
+  function prefill(text) {
+    setOpen(true);
+    const ta = box && box.querySelector('textarea');
+    if (ta) { ta.value = text; ta.dispatchEvent(new Event('input')); }
+  }
+  return { mount, toggle, addCtx, prefill };
 }

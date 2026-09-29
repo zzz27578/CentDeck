@@ -16,7 +16,7 @@ const ROOT = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT, 'app');
 const DEFAULT_PORT = 8420;
 const MAX_PORT_ATTEMPTS = 10;
-const BODY_LIMIT = 30 * 1024 * 1024;
+const BODY_LIMIT = 120 * 1024 * 1024;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -208,6 +208,25 @@ async function handle(req, res) {
       return;
     }
     throw new ApiError(405, '项目接口只支持 GET / PUT / DELETE');
+  }
+
+  if (pathname === '/api/import') {
+    if (method !== 'POST') throw new ApiError(405, '导入只支持 POST');
+    sendData(res, store.importProject(await readJsonBody(req)), 201);
+    return;
+  }
+  if (pathname === '/api/settings') {
+    if (method === 'GET') { sendData(res, store.getSettings()); return; }
+    if (method === 'PUT') { sendData(res, store.saveSettings(await readJsonBody(req))); return; }
+    throw new ApiError(405, '设置接口只支持 GET / PUT');
+  }
+
+  m = pathname.match(/^\/api\/projects\/([^/]+)\/pages$/);
+  if (m) {
+    const id = decodeURIComponent(m[1]);
+    if (method === 'POST') { sendData(res, store.addPage(id, await readJsonBody(req)), 201); return; }
+    if (method === 'DELETE') { sendData(res, store.removePage(id, url.searchParams.get('file'))); return; }
+    throw new ApiError(405, '页面接口只支持 POST / DELETE');
   }
 
   m = pathname.match(/^\/api\/projects\/([^/]+)\/file$/);

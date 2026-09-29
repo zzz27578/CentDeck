@@ -1,12 +1,15 @@
-// frame.js —— 预览宿主：把页面源码渲染进 iframe（注入隐藏门牌号 data-loc，源码本身不动）。
+// frame.js —— 预览宿主：把页面源码渲染进 iframe（注入隐藏门牌号 data-cd-loc，源码本身不动）。
 // 双缓冲：改完代码后在后台那块 iframe 里渲染好、恢复滚动位置，再无闪烁地换到前台。
 import { parse, instrument } from './parse.js';
 
-function withBase(html, baseHref) {
-  const inject = `<base href="${baseHref}"><style id="__cd_boot">*,*::before,*::after{transition:none!important}</style>`;
-  const m = /<head[^>]*>/i.exec(html);
+// 注入 <base>（让相对路径的图片、样式照常加载）和开场禁用过渡的样式；
+// 没有 <head> 的页面插在 doctype 后面，绝不能插到 doctype 前（会让页面进入怪异模式、排版变样）
+export function withBase(html, baseHref, extra = '') {
+  const inject = `<base href="${baseHref}"><style id="__cd_boot">*,*::before,*::after{transition:none!important}</style>${extra}`;
+  const m = /<head(?=[\s>/])[^>]*>/i.exec(html);
   if (m) return html.slice(0, m.index + m[0].length) + inject + html.slice(m.index + m[0].length);
-  return inject + html;
+  const d = /^\uFEFF?\s*<!doctype[^>]*>/i.exec(html);
+  return d ? html.slice(0, d[0].length) + inject + html.slice(d[0].length) : inject + html;
 }
 
 function running(el) {
@@ -21,7 +24,7 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
     host.appendChild(f);
     return f;
   });
-  let active = 0, token = 0, destroyed = false;
+  let active = 0, token = 0, destroyed = false, dupLocs = new Set();
   let source = '', parsed = parse('');
   const disposers = [];
 
@@ -52,6 +55,10 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
           if (my !== token || destroyed) return resolve(false);
           source = nextSource;
           parsed = nextParsed;
+          // 同一个门牌号出现多次：浏览器为了修正交叉嵌套的标签复制了元素，这些地方不能按位置直接写回
+          const seen = new Set();
+          dupLocs = new Set();
+          d.querySelectorAll('[data-cd-loc]').forEach((e) => { const v = e.getAttribute('data-cd-loc'); if (seen.has(v)) dupLocs.add(+v); else seen.add(v); });
           back.classList.add('on');
           frames[active].classList.remove('on');
           const old = frames[active];
@@ -75,24 +82,25 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
     get win() { return win(); },
     get iframe() { return cur(); },
     render,
-    elByLoc(loc) { const d = doc(); return d ? d.querySelector(`[data-loc="${loc}"]`) : null; },
+    elByLoc(loc) { const d = doc(); return d ? d.querySelector(`[data-cd-loc="${loc}"]`) : null; },
+    isDup(loc) { return dupLocs.has(loc); },
     // DOM 节点 → 最近的带门牌号元素（没有则返回 null，表示程序生成）
     owner(node) {
       for (let n = node; n && n.nodeType === 1; n = n.parentElement) {
-        if (n.hasAttribute && n.hasAttribute('data-loc')) return n;
+        if (n.hasAttribute && n.hasAttribute('data-cd-loc')) return n;
         if (n.tagName === 'BODY') break;
       }
       return null;
     },
-    locOf(elm) { return elm && elm.hasAttribute('data-loc') ? +elm.getAttribute('data-loc') : null; },
+    locOf(elm) { return elm && elm.hasAttribute('data-cd-loc') ? +elm.getAttribute('data-cd-loc') : null; },
     // 几何快照：loc → 页面坐标矩形（跳过正在播动画的元素）
     snapRects() {
       const out = {}, d = doc(), w = win();
       if (!d || !w) return out;
-      d.querySelectorAll('[data-loc]').forEach((e) => {
+      d.querySelectorAll('[data-cd-loc]').forEach((e) => {
         if (running(e)) return;
         const r = e.getBoundingClientRect();
-        out[e.getAttribute('data-loc')] = { x: r.left + w.scrollX, y: r.top + w.scrollY, w: r.width, h: r.height, tag: e.tagName.toLowerCase() };
+        out[e.getAttribute('data-cd-loc')] = { x: r.left + w.scrollX, y: r.top + w.scrollY, w: r.width, h: r.height, tag: e.tagName.toLowerCase() };
       });
       return out;
     },
@@ -112,10 +120,10 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
         const d = f.contentDocument;
         d.open(); d.write(withBase(html, baseHref)); d.close();
         const out = {};
-        d.querySelectorAll('[data-loc]').forEach((e) => {
+        d.querySelectorAll('[data-cd-loc]').forEach((e) => {
           if (running(e)) return;
           const r = e.getBoundingClientRect();
-          out[e.getAttribute('data-loc')] = { x: r.left, y: r.top, w: r.width, h: r.height, tag: e.tagName.toLowerCase() };
+          out[e.getAttribute('data-cd-loc')] = { x: r.left, y: r.top, w: r.width, h: r.height, tag: e.tagName.toLowerCase() };
         });
         return out;
       };

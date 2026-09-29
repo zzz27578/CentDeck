@@ -55,7 +55,7 @@ export function createEditor(app) {
   ed.isInlineText = (e) => !REPLACED.test(e.tagName) && /^(inline|contents)$/.test(ed.frame.win.getComputedStyle(e).display);
   ed.movableOf = (e) => {
     let n = e;
-    while (n && n.tagName !== 'BODY' && (!n.hasAttribute('data-loc') || ed.isInlineText(n))) n = n.parentElement;
+    while (n && n.tagName !== 'BODY' && (!n.hasAttribute('data-cd-loc') || ed.isInlineText(n))) n = n.parentElement;
     return n && n.tagName !== 'BODY' ? n : e;
   };
   ed.isLocked = (info) => app.isLocked(info);
@@ -95,18 +95,18 @@ export function createEditor(app) {
   ed.selectParent = () => {
     if (!ed.sel) return;
     let p = ed.sel.parentElement;
-    while (p && p.tagName !== 'BODY' && !p.hasAttribute('data-loc')) p = p.parentElement;
+    while (p && p.tagName !== 'BODY' && !p.hasAttribute('data-cd-loc')) p = p.parentElement;
     if (p && p.tagName !== 'BODY') ed.select(p);
   };
   ed.selectSibling = (dir) => {
     if (!ed.sel) return;
-    const sibs = [...ed.sel.parentElement.children].filter((c) => c.hasAttribute('data-loc') || c === ed.sel);
+    const sibs = [...ed.sel.parentElement.children].filter((c) => c.hasAttribute('data-cd-loc') || c === ed.sel);
     const i = sibs.indexOf(ed.sel);
     const n = sibs[(i + dir + sibs.length) % sibs.length];
     if (n) ed.select(n);
   };
   ed.selectChild = () => {
-    const c = ed.sel && [...ed.sel.children].find((x) => x.hasAttribute('data-loc'));
+    const c = ed.sel && [...ed.sel.children].find((x) => x.hasAttribute('data-cd-loc'));
     if (c) ed.select(c);
   };
 
@@ -217,15 +217,17 @@ export function createEditor(app) {
     return { ok: true, result: res };
   };
   const targetOf = (info) => (info.generated ? { generated: true, selector: info.selector, text: info.text } : info.loc);
-  ed.runEdit = (label, edit) => ed.doSource({ label, build: (src) => applyEdit(src, edit, { measure: ed.measure }) });
+  const DUP_REASON = '浏览器在这里自动修正了原代码里交叉嵌套的标签（复制出了一份元素），这一块和代码对不上号，没法直接写回。可以记成草图标记交给 AI，顺便请它把这里的标签理顺。';
+  const dupRes = () => ({ light: 'red', reason: DUP_REASON });
+  ed.runEdit = (label, edit) => ed.doSource({ label, build: (src) => (typeof edit.target === 'number' && ed.frame.isDup(edit.target) ? dupRes() : applyEdit(src, edit, { measure: ed.measure })) });
   ed.commitMove = async (info, dx, dy, restore) => {
     const r = await ed.runEdit(`移动 <${info.tag}>（${dx}, ${dy}）`, { kind: 'move', target: targetOf(info), dx, dy, crossed: false });
     if (!r.ok) restore();
   };
-  ed.onMoveCrossed = (info, dx, dy, cont) => {
+  ed.onMoveCrossed = (info, dx, dy) => {
     const res = applyEdit(ed.frame.source, { kind: 'move', target: targetOf(info), dx, dy, crossed: true });
-    if (app.sketch) app.sketch.addGhost(info, dx, dy);
-    showVerdict(ed, { ...res, reason: (res.reason || '') + ' 你的意图已经记成一条"虚影"草图标记。' }, { label: '移动', auto: true });
+    if (app.sketch) app.sketch.addMoveArrow(info, dx, dy);
+    showVerdict(ed, { ...res, reason: (res.reason || '') + ' 你想挪到哪里，已经画成一条箭头草图标记。' }, { label: '移动', auto: true });
   };
   ed.commitStyle = async (info, props, label, restore) => {
     const r = await ed.runEdit(label, { kind: 'style', target: targetOf(info), props });
@@ -236,6 +238,7 @@ export function createEditor(app) {
   ed.commitText = (changes) => ed.doSource({
     label: changes.length === 1 ? `改字：「${changes[0].oldText.trim().slice(0, 8)}」→「${changes[0].newText.trim().slice(0, 8)}」` : `改字（${changes.length} 处）`,
     build: (src) => {
+      if (changes.some((c) => ed.frame.isDup(c.loc))) return dupRes();
       let cur = src, last = null;
       for (let i = changes.length - 1; i >= 0; i--) {
         const c = changes[i];
@@ -253,6 +256,7 @@ export function createEditor(app) {
     const info = ed.infoOf(e);
     if (!info) return;
     if (info.generated) { showVerdict(ed, applyEdit(ed.frame.source, { kind: 'text', target: { generated: true, text: info.text }, newText: 'x' }), { label: '改字' }); return; }
+    if (ed.frame.isDup(info.loc)) { ed.select(e); showVerdict(ed, dupRes(), { label: '改字' }); return; }
     if (ed.isLocked(info)) { toast('这个元素已锁定，先解锁再改', 'err'); return; }
     if (!info.hasText) { toast('这里没有可以改的文字', 'err'); return; }
     ed.select(e);
@@ -278,8 +282,8 @@ export function createEditor(app) {
   };
   ed.addTextBoxAt = (cx, cy) => {
     const hitEl = ed.pickAt(cx, cy);
-    const cont = hitEl && (hitEl.closest(CONTAINERS) || hitEl.closest('div[data-loc]'));
-    if (!cont || !cont.hasAttribute('data-loc')) { toast('请点在页面的某个区域里面', 'err'); return; }
+    const cont = hitEl && (hitEl.closest(CONTAINERS) || hitEl.closest('div[data-cd-loc]'));
+    if (!cont || !cont.hasAttribute('data-cd-loc')) { toast('请点在页面的某个区域里面', 'err'); return; }
     if (app.pageLocked(ed.page)) { toast('本页已锁定', 'err'); return; }
     const win = ed.frame.win;
     let ref = cont;
@@ -299,7 +303,7 @@ export function createEditor(app) {
       },
     }).then((r) => {
       if (!r.ok) return;
-      const ps = [...ed.frame.doc.querySelectorAll('p[data-loc]')].filter((n) => n.textContent === '双击这里改字');
+      const ps = [...ed.frame.doc.querySelectorAll('p[data-cd-loc]')].filter((n) => n.textContent === '双击这里改字');
       const n = ps[ps.length - 1];
       if (n) { ed.select(n); ed.setTool('select'); setTimeout(() => startTextEdit(ed, n, null), 60); }
     });
@@ -422,7 +426,7 @@ export function createEditor(app) {
     if (s && s.isConnected && ed.tool !== 'interact') {
       const r = ed.pageRect(s);
       ov.place(ov.sel, r);
-      const gen = !s.hasAttribute('data-loc');
+      const gen = !s.hasAttribute('data-cd-loc');
       const info = gen ? null : f.parsed.byLoc(f.locOf(s));
       const locked = app.isLocked(gen ? null : { generated: false, selector: info && info.selector });
       ov.sel.classList.toggle('gen', gen);
@@ -436,7 +440,7 @@ export function createEditor(app) {
     const h = ed.hoverEl;
     if (h && h.isConnected && h !== s && !ed.dragging && ed.tool !== 'interact') {
       ov.place(ov.hover, ed.pageRect(h));
-      ov.hover.classList.toggle('gen', !h.hasAttribute('data-loc'));
+      ov.hover.classList.toggle('gen', !h.hasAttribute('data-cd-loc'));
     } else ov.hide(ov.hover);
     if (app.sketch) app.sketch.tick(ed);
   }
