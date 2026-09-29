@@ -53,7 +53,7 @@ export function render(iframe, html, hooks = {}) {
     st.id = UI_ID + '_style';
     st.textContent =
       '#' + UI_ID + '{position:absolute;left:0;top:0;width:0;height:0;z-index:2147483646;pointer-events:none;font:12px/20px "Microsoft YaHei",sans-serif}' +
-      '#' + UI_ID + ' .h{position:absolute;display:none;border:1px dashed #4c7dff}' +
+      '#' + UI_ID + ' .h{position:absolute;display:none;border:1px dashed #4c7dff;background:rgba(76,125,255,.06)}' +
       '#' + UI_ID + ' .s{position:absolute;display:none;border:2px solid #4c7dff;border-radius:3px}' +
       '#' + UI_ID + ' .s span{position:absolute;left:-2px;top:-22px;padding:0 6px;background:#4c7dff;color:#fff;border-radius:4px 4px 0 0;white-space:nowrap}' +
       '#' + UI_ID + ' .g i{position:absolute;background:#ff3b7f}' +
@@ -130,6 +130,28 @@ export function render(iframe, html, hooks = {}) {
     for (let n = el.parentElement; n && n !== doc.body; n = n.parentElement) if (n.hasAttribute('data-loc')) return n;
     return null;
   }
+  let lastClick = { x: 0, y: 0, t: 0 };
+  let pendingDrag = null;
+  function cycleSelect(ev, fallback) { // 同一位置连点：在光标下那一摞元素间循环切层
+    const now = Date.now();
+    if (lastClick.t && now - lastClick.t < 600 && Math.hypot(ev.clientX - lastClick.x, ev.clientY - lastClick.y) < 4) {
+      const stack = (doc.elementsFromPoint ? doc.elementsFromPoint(ev.clientX, ev.clientY) : [fallback]).filter((n) => pick(n));
+      if (stack.length > 1) {
+        const i = stack.indexOf(state.selEl);
+        const next = stack[(i + 1) % stack.length];
+        lastClick = { x: ev.clientX, y: ev.clientY, t: now };
+        selectAndNotify(next);
+        return true;
+      }
+    }
+    lastClick = { x: ev.clientX, y: ev.clientY, t: now };
+    return false;
+  }
+  function maybeDrag(el, x, y) {
+    // 锁定预判（壳层 canDrag）：被锁元素干脆不让拖，不"拖了白拖"松手弹回
+    if (hooks.canDrag && !hooks.canDrag(buildInfo(el))) return;
+    startDrag(el, { clientX: x, clientY: y });
+  }
   function onDown(e) {
     if (e.button !== 0) return;
     const el = pick(e.target);
@@ -142,8 +164,31 @@ export function render(iframe, html, hooks = {}) {
       } else selectAndNotify(el);
       return;
     }
-    if (el !== state.selEl) { selectAndNotify(el); return; }
-    startDrag(el, e); // 按住的已是选中元素 → 开始拖动
+    // 按住选中元素内部任意处：拖得动（含容器被子元素填满的情况）；没拖动则按普通点击（含连点切层）
+    if (state.selEl && state.selEl !== el && state.selEl.contains(el)) {
+      pendingDrag = { el: state.selEl, x: e.clientX, y: e.clientY, used: false };
+      const target = el;
+      const onUpPre = (ev) => {
+        doc.removeEventListener('mousemove', onMvPre, true);
+        if (pendingDrag && !pendingDrag.used) {
+          if (!cycleSelect(ev, target) && target !== state.selEl) selectAndNotify(target);
+        }
+        pendingDrag = null;
+      };
+      const onMvPre = (ev) => {
+        if (!pendingDrag || pendingDrag.used) return;
+        if (Math.abs(ev.clientX - pendingDrag.x) + Math.abs(ev.clientY - pendingDrag.y) >= 3) {
+          pendingDrag.used = true;
+          doc.removeEventListener('mousemove', onMvPre, true);
+          maybeDrag(pendingDrag.el, pendingDrag.x, pendingDrag.y);
+        }
+      };
+      doc.addEventListener('mousemove', onMvPre, true);
+      doc.addEventListener('mouseup', onUpPre, { once: true });
+      return;
+    }
+    if (el === state.selEl) { maybeDrag(el, e.clientX, e.clientY); return; } // 按住选中元素本身 → 拖动
+    if (!cycleSelect(e, el)) selectAndNotify(el);
   }
   function selectAndNotify(el) { doSelect(el); if (hooks.onSelect) hooks.onSelect(buildInfo(el)); }
 
@@ -267,7 +312,7 @@ export function render(iframe, html, hooks = {}) {
           const info = buildInfo(state.selEl);
           ui.selTag.textContent = info.generated
             ? '<' + info.tag + '> 无门牌号（程序生成）'
-            : '<' + info.tag + '> 第 ' + info.line + ' 行' + (info.transformAnim ? ' · 带动画' : '') + (info.jsDynamic ? ' · 疑似JS生成' : '');
+            : '<' + info.tag + '> ' + Math.round(info.rect.w) + '×' + Math.round(info.rect.h) + '（第 ' + info.line + ' 行）' + (info.transformAnim ? ' · 带动画' : '') + (info.jsDynamic ? ' · 疑似JS生成' : '');
         } else ui.sel.style.display = 'none';
       }
     } catch (e) {}

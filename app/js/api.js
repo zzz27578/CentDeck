@@ -54,6 +54,7 @@ export const api = {
   restoreHistory: (id, hid, opts) =>
     request('POST', `/api/projects/${encodeURIComponent(id)}/history/${encodeURIComponent(hid)}/restore`, {}, opts),
   resetProject: (id, opts) => request('POST', `/api/projects/${encodeURIComponent(id)}/reset`, {}, opts),
+  deleteProject: (id, opts) => request('DELETE', `/api/projects/${encodeURIComponent(id)}`, null, opts),
   listAssets: (id, opts) => request('GET', `/api/projects/${encodeURIComponent(id)}/assets`, null, opts),
   saveAsset: (id, filename, dataBase64, opts) =>
     request('POST', `/api/projects/${encodeURIComponent(id)}/assets`, { filename, dataBase64 }, opts),

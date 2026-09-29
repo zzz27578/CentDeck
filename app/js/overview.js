@@ -21,7 +21,7 @@ export function setup(ctx, apiOut) {
   let camera = { x: 60, y: 60, z: 0.28 }; // 平移 + 缩放
   let pages = [];           // [{ file, title, x, y, w, h, src }]
   let selected = null;      // 选中页 file
-  let showAllLinks = false;
+  let showAllLinks = true; // 默认全开：未选中任何页面时也看到整张关系图
   let built = false;
 
   // ---------- 布局读取/保存（project.json.layout） ----------
@@ -52,8 +52,24 @@ export function setup(ctx, apiOut) {
         w: PAGE_W,
         h: 900, // 等 iframe 加载后按真实内容高度更新
         src,
+        modals: scanModals(src),
       });
     }
+  }
+
+  // ---------- 扫描页面里的弹窗（class 含 modal 的块级元素 + 邻近标题） ----------
+  function scanModals(src) {
+    const out = [];
+    const re = /<(?:div|section|dialog)(?=[^>]*class="[^"]*\bmodal\b)[^>]*>/gi;
+    let m;
+    while ((m = re.exec(src))) {
+      const idM = /id="([^"]+)"/.exec(m[0]);
+      const after = src.slice(m.index + m[0].length, m.index + m[0].length + 1200);
+      const tM = /<h[234][^>]*>([\s\S]*?)<\/h[234]>/.exec(after);
+      const title = tM ? tM[1].replace(/<[^>]+>/g, '').trim().slice(0, 24) : (idM ? idM[1] : '弹窗');
+      out.push({ id: idM ? idM[1] : null, title });
+    }
+    return out;
   }
 
   // ---------- 解析跳转连线：<a href="x.html"> ----------
@@ -102,7 +118,7 @@ export function setup(ctx, apiOut) {
       path.setAttribute('d', `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`);
       path.setAttribute('class', 'ov-link');
       path.setAttribute('marker-end', 'url(#ov-arrow)');
-      const hot = !selected || showAllLinks || l.from === selected || l.to === selected;
+      const hot = showAllLinks || l.from === selected || l.to === selected;
       path.classList.toggle('dim', !hot);
       path.classList.toggle('hot', !!selected && (l.from === selected || l.to === selected));
       svg.appendChild(path);
@@ -113,7 +129,7 @@ export function setup(ctx, apiOut) {
     nodesBox.innerHTML = '';
     pages.forEach((p) => {
       const node = el(`<div class="ov-node" style="left:${p.x}px;top:${p.y}px;width:${p.w}px">
-        <div class="ov-node-head"><span class="ov-title">${esc(p.title)}</span><span class="ov-file">${esc(p.file)}</span></div>
+        <div class="ov-node-head"><span class="ov-title">${esc(p.title)}</span><span class="ov-file">${esc(p.file)}</span>${p.modals && p.modals.length ? ` <button class="ov-badge" title="本页包含的弹窗/小页面（平时折叠不出现在画布；编辑视图里点对应按钮出现）">▣ 弹窗 ×${p.modals.length}</button>` : ''}</div>
         <div class="ov-body"><iframe title="${esc(p.title)}" loading="lazy"></iframe><div class="ov-mask" title="总览里页面是锁定的；双击进入编辑"></div></div>
       </div>`);
       const body = node.querySelector('.ov-body');
@@ -130,6 +146,21 @@ export function setup(ctx, apiOut) {
       body.style.height = p.h + 'px';
       // 拖摆位置（拖标题栏）
       const head = node.querySelector('.ov-node-head');
+      // 弹窗角标：点击列出本页弹窗/小页面（层次关系的最小落地：名字 + 从哪个按钮进）
+      const badge = node.querySelector('.ov-badge');
+      if (badge) {
+        badge.addEventListener('mousedown', (e) => e.stopPropagation());
+        badge.addEventListener('dblclick', (e) => e.stopPropagation());
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.ov-badge-pop').forEach((n) => n.remove());
+          const pop = el(`<div class="ov-badge-pop"><div class="ovb-title">本页的弹窗 / 小页面 ×${p.modals.length}</div>${p.modals.map((mm) => `<div class="ovb-item">· ${esc(mm.title)}</div>`).join('')}<div class="ovb-item ovb-src">平时折叠不出现在画布；编辑视图里点对应按钮（如「新建订单」）出现。后续版本会支持单独摆出+虚线连到所属按钮。</div></div>`);
+          pop.addEventListener('mousedown', (ev) => ev.stopPropagation());
+          node.appendChild(pop);
+          const close = (ev) => { if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('mousedown', close); } };
+          document.addEventListener('mousedown', close);
+        });
+      }
       head.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         e.preventDefault();
@@ -177,7 +208,7 @@ export function setup(ctx, apiOut) {
     stage.innerHTML = `
       <div class="ov-wrap">
         <div class="ov-toolbar">
-          <label class="ov-toggle"><input type="checkbox" id="ov-all-links"> 显示全部连线</label>
+          <label class="ov-toggle"><input type="checkbox" id="ov-all-links" checked> 显示全部连线</label>
           <span class="ov-hint">滚轮缩放 · 空白处拖动平移 · 拖标题栏摆位置 · 双击页面进入编辑</span>
         </div>
         <div class="ov-canvas" id="ov-canvas">

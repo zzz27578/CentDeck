@@ -12,7 +12,7 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 export function setup(ctx) {
   const { bus } = ctx;
   let active = false;     // 草图模式开关
-  let tool = 'pen';       // pen | arrow | rect | ghost | note
+  let tool = 'select';    // select | lasso | rect | arrow | note | ghost
   let overlay = null;     // 覆盖层根（含 SVG + HTML 层）
   let svgEl = null;
   let htmlLayer = null;
@@ -75,6 +75,47 @@ export function setup(ctx) {
     };
   }
 
+  // ---------- 选择工具：点到折线的距离 / 命中标记 ----------
+  function distToSeg(px, py, x1, y1, x2, y2) {
+    const vx = x2 - x1, vy = y2 - y1;
+    const wx = px - x1, wy = py - y1;
+    const c1 = vx * wx + vy * wy;
+    if (c1 <= 0) return Math.hypot(px - x1, py - y1);
+    const c2 = vx * vx + vy * vy;
+    if (c2 <= c1) return Math.hypot(px - x2, py - y2);
+    const t = c1 / c2;
+    return Math.hypot(px - (x1 + t * vx), py - (y1 + t * vy));
+  }
+  // 命中检测（覆盖层坐标）：rect/ghost 按边框带，pen/arrow/lasso 按点线距 <6px，note/verdict 按图钉半径
+  function hitMark(p) {
+    const list = pageMarks();
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i];
+      const base = m._last || markBaseRect(m);
+      if (!base) continue;
+      const ox = m.offset ? base.x + m.offset.px * base.w - base.x : 0;
+      const oy = m.offset ? base.y + m.offset.py * base.h - base.y : 0;
+      const dx = base.x + ox, dy = base.y + oy;
+      if (m.type === 'rect') {
+        if (p.x >= dx + m.data.x - 4 && p.x <= dx + m.data.x + m.data.w + 4 &&
+            p.y >= dy + m.data.y - 4 && p.y <= dy + m.data.y + m.data.h + 4) return m;
+      } else if (m.type === 'ghost') {
+        if (p.x >= dx + m.data.toX - 4 && p.x <= dx + m.data.toX + m.data.w + 4 &&
+            p.y >= dy + m.data.toY - 4 && p.y <= dy + m.data.toY + m.data.h + 4) return m;
+      } else if (m.type === 'pen' || m.type === 'arrow' || m.type === 'lasso') {
+        const pts = (m.data.points || []).map(([x, y]) => [x + dx, y + dy]);
+        for (let k = 0; k + 1 < pts.length; k++) {
+          if (distToSeg(p.x, p.y, pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1]) < 6) return m;
+        }
+        if (m.type === 'lasso' && pts.length > 2 &&
+            distToSeg(p.x, p.y, pts[pts.length - 1][0], pts[pts.length - 1][1], pts[0][0], pts[0][1]) < 6) return m;
+      } else {
+        if (Math.hypot(p.x - dx, p.y - dy) < 14) return m;
+      }
+    }
+    return null;
+  }
+
   // ---------- 覆盖层搭建 ----------
   function buildOverlay() {
     const stage = document.querySelector('#stage');
@@ -84,11 +125,12 @@ export function setup(ctx) {
       <div class="sketch-html"></div>
       <div class="sketch-bar">
         <span class="sketch-mode-tag">草图模式</span>
-        <button data-tool="pen" title="自由画笔">✏️ 画笔</button>
-        <button data-tool="arrow" title="画箭头">➹ 箭头</button>
+        <button data-tool="select" title="恢复鼠标：点选已有的笔画，查看/编辑/删除它们">🖱 选择</button>
+        <button data-tool="lasso" title="自由圈一圈：画回起点附近闭合，圈出一块区域">➰ 套索</button>
         <button data-tool="rect" title="框选一块区域">▭ 框选</button>
+        <button data-tool="arrow" title="画箭头（松手成形，拖动中实时预览）">➹ 箭头</button>
+        <button data-tool="note" title="点一个元素，钉一句要求">📝 便签</button>
         <button data-tool="ghost" title="把元素影子拖到想要的位置（不改代码）">👻 虚影拖动</button>
-        <button data-tool="note" title="点一个元素，钉一句要求">📝 文字便签</button>
         <span class="sketch-bar-gap"></span>
         <button id="sk-export" title="把所有标记整理成任务单">📋 导出任务单</button>
         <button id="sk-exit" title="退出草图模式（Esc）">退出草图</button>
@@ -155,16 +197,18 @@ export function setup(ctx) {
     if (!svgEl) return;
     // 清掉旧标记（保留 defs）
     svgEl.querySelectorAll('.sk-mark').forEach((n) => n.remove());
-    htmlLayer.querySelectorAll('.sk-pin,.sk-note-card,.sk-ghostbox').forEach((n) => n.remove());
+    // 只重建图钉与图形：便签卡片和进行中的虚影盒必须保住（原来 250ms 重建会让卡片打开不到 250ms 就消失）
+    htmlLayer.querySelectorAll('.sk-pin,.sk-ghostbox:not(.dragging)').forEach((n) => n.remove());
     pageMarks().forEach((m) => {
       const base = markBaseRect(m);
       if (!base) return;
       const g = document.createElementNS(SVGNS, 'g');
-      g.setAttribute('class', 'sk-mark' + (m.done ? ' done' : '') + (m._drift ? ' drift' : ''));
+      g.setAttribute('class', 'sk-mark' + (m.done ? ' done' : '') + (m._drift ? ' drift' : '') + (m.type === 'lasso' ? ' lasso' : ''));
+      g.dataset.mid = m.id;
       const ox = m.offset ? base.x + m.offset.px * base.w - base.x : 0; // 锚点相对 base 的偏移
       const oy = m.offset ? base.y + m.offset.py * base.h - base.y : 0;
       const dx = base.x + ox, dy = base.y + oy;
-      if (m.type === 'pen' || m.type === 'arrow') {
+      if (m.type === 'pen' || m.type === 'arrow' || m.type === 'lasso') {
         const path = document.createElementNS(SVGNS, 'path');
         path.setAttribute('d', m.data.d);
         path.setAttribute('transform', `translate(${dx},${dy})`);
@@ -202,6 +246,8 @@ export function setup(ctx) {
       pin.onclick = (e) => { e.stopPropagation(); openMarkCard(m, pin); };
       htmlLayer.appendChild(pin);
     });
+    // 打开中的卡片保持挂回最上层（它不再被重建删除）
+    if (openCard) htmlLayer.appendChild(openCard);
   }
 
   function oldTitle(m) { return (m.text || '（没写要求）') + '\n点开编辑'; }
@@ -297,6 +343,18 @@ export function setup(ctx) {
     if (openCard) { openCard.remove(); openCard = null; }
     const p0 = toLocal(e);
 
+    if (tool === 'select') {
+      // 恢复鼠标：点选已有笔画 → 高亮 + 打开卡片（编辑文字/打勾/删除）
+      const m = hitMark(p0);
+      svgEl.querySelectorAll('.sk-mark').forEach((g) => g.classList.remove('sk-selected'));
+      if (m) {
+        const g = svgEl.querySelector(`g[data-mid="${m.id}"]`);
+        if (g) g.classList.add('sk-selected');
+        openMarkCard(m, { getBoundingClientRect: () => ({ left: e.clientX, top: e.clientY }) });
+      }
+      return;
+    }
+
     if (tool === 'note') {
       const a = anchorAt(e.clientX, e.clientY);
       if (!a || !a.selector) { toast('点在某个具体内容上，便签才能钉住它', 'err'); return; }
@@ -383,6 +441,10 @@ export function setup(ctx) {
       drawing.node.setAttribute('width', Math.abs(p.x - drawing.start.x));
       drawing.node.setAttribute('height', Math.abs(p.y - drawing.start.y));
       drawing.rect = { x, y, w: Math.abs(p.x - drawing.start.x), h: Math.abs(p.y - drawing.start.y) };
+    } else if (drawing.type === 'arrow') {
+      // 箭头拖动中只预览"起点→当前点"直线，与松手结果一致
+      drawing.points = [[drawing.start.x, drawing.start.y], [p.x, p.y]];
+      drawing.node.setAttribute('d', pointsToD(drawing.points));
     } else {
       drawing.points.push([p.x, p.y]);
       drawing.node.setAttribute('d', pointsToD(drawing.points));
@@ -415,7 +477,13 @@ export function setup(ctx) {
         data: { x: Math.round(d.rect.x - ax), y: Math.round(d.rect.y - ay), w: Math.round(d.rect.w), h: Math.round(d.rect.h) },
       });
     } else {
-      if (d.points.length < 3 && d.type === 'pen') return;
+      if (d.type === 'lasso') {
+        // 套索：首尾足够接近才算圈上（红色虚线范围），否则提示不落标记
+        const p0 = d.points[0];
+        const closedEnough = d.points.length >= 8 && Math.hypot(pEnd.x - p0[0], pEnd.y - p0[1]) < 16;
+        if (!closedEnough) { toast('套索要画回起点附近闭合，才能圈定范围', 'err'); return; }
+        d.points.push([p0[0], p0[1]]);
+      }
       if (d.type === 'arrow') d.points = [d.start ? [d.start.x, d.start.y] : d.points[0], [pEnd.x, pEnd.y]];
       const base = rectOf(anchor.selector);
       const ax = base ? base.x + anchor.offset.px * base.w : 0;
@@ -424,8 +492,8 @@ export function setup(ctx) {
       await addMark({
         id: uid('mk'), page: ctx.editor.page, type: d.type,
         selector: anchor.selector, offset: anchor.offset, text: '', done: false,
-        meta: `<${anchor.tag}> 第 ${anchor.line} 行 · ${d.type === 'arrow' ? '箭头' : '画笔'}`,
-        data: { d: pointsToD(rel), points: rel },
+        meta: `<${anchor.tag}> 第 ${anchor.line} 行 · ${d.type === 'arrow' ? '箭头' : '套索圈选'}`,
+        data: { d: pointsToD(rel) + (d.type === 'lasso' ? ' Z' : ''), points: rel },
       });
     }
   }
@@ -512,7 +580,7 @@ export function setup(ctx) {
   }
 
   function typeName(t) {
-    return { pen: '画笔圈画', arrow: '箭头', rect: '框选区域', ghost: '虚影移动', note: '文字便签', verdict: '修改受阻' }[t] || t;
+    return { pen: '画笔圈画', lasso: '套索圈选', arrow: '箭头', rect: '框选区域', ghost: '虚影移动', note: '文字便签', verdict: '修改受阻' }[t] || t;
   }
 
   // ---------- 红/黄灯转标记（内核经命令总线调用） ----------
@@ -598,6 +666,9 @@ export function setup(ctx) {
       host.appendChild(wrap);
     },
   });
+
+  // 供内核 Esc 链调用：只退草图，不动视图
+  bus.registerCommand('sketch.setActive', (c, on) => setActive(!!on));
 
   // ---------- 工具栏开关 ----------
   bus.registerToolbarAction({

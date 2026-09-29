@@ -194,7 +194,8 @@ export function applyEdit(source, edit, opts = {}) {
     const nt = String(edit.newText == null ? '' : edit.newText);
     if (/\r|\n/.test(nt)) return fail('新文字里不允许换行：换行会改变行数，无法做到"只改那一行"。', { selector: info.selector, line: info.line });
     if (!nt.trim()) return fail('不能把文字清空：清空文字相当于改内容结构；如要删整块内容请用删除命令（会按波及情况亮黄灯）。', { selector: info.selector, line: info.line });
-    if (!info.textOnly) return fail('目标内部还嵌套着别的标签，不是一行纯文字；请选中里面具体的那段文字再改。', { selector: info.selector, line: info.line });
+    // 非纯文字元素：给出 oldText（元素内唯一的文本段）时放行——定位替换只动那一小串，标签与行数都不变
+    if (!info.textOnly && edit.oldText == null) return fail('目标内部还嵌套着别的标签，不是一行纯文字；请选中里面具体的那段文字，或在右侧属性面板的"文字内容"里分段修改。', { selector: info.selector, line: info.line });
     if (info.jsDynamic) return fail('该区域被脚本引用、内容疑似由 JS 生成，写回源码里的文字不会生效；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
     const raw = info.text;
     const lead = /^\s*/.exec(raw)[0], trail = /\s*$/.exec(raw)[0];

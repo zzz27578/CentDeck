@@ -203,7 +203,11 @@ async function handle(req, res) {
       sendData(res, store.saveProject(id, await readJsonBody(req)));
       return;
     }
-    throw new ApiError(405, '项目接口只支持 GET / PUT');
+    if (method === 'DELETE') {
+      sendData(res, store.deleteProject(id));
+      return;
+    }
+    throw new ApiError(405, '项目接口只支持 GET / PUT / DELETE');
   }
 
   m = pathname.match(/^\/api\/projects\/([^/]+)\/file$/);

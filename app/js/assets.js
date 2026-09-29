@@ -168,11 +168,11 @@ export function setup(ctx) {
     return s.parsed.byLoc(info.loc);
   }
 
-  async function replaceImage(asset) {
+  async function replaceImage(asset, infoE = null) {
     const proj = ctx.project();
     const page = ctx.editor.page;
     const session = ctx.editor.session;
-    const infoE = selectionEl();
+    if (!infoE) infoE = selectionEl();
     if (!proj || !session || !infoE) return;
     if (infoE.tag === 'svg' || (infoE.type === 'image' && infoE.tag !== 'img')) {
       // svg：本步提示转为标记交给后续
@@ -212,22 +212,21 @@ export function setup(ctx) {
     toast(`已替换：只改了第 ${infoE.line} 行的 src 属性`, 'ok');
   }
 
-  async function insertImage(asset) {
+  async function insertImage(asset, cont = null) {
     const proj = ctx.project();
     const page = ctx.editor.page;
     const session = ctx.editor.session;
     if (!proj || !session) return;
-    const info = ctx.editor.selection;
-    // 容器：当前选中元素（不是容器就用它的父级），没选中就用 body 第一个 section
-    let cont = null;
-    if (info && !info.generated) {
-      const e = session.parsed.byLoc(info.loc);
-      cont = e.type === 'container' || /^(section|div|main|article|header|footer|nav|aside)$/.test(e.tag)
-        ? e
-        : (e.parent != null ? session.parsed.byLoc(e.parent) : null);
-    }
+    // 容器：优先用传入容器（拖放落点）；否则当前选中（不是容器就用它的父级）；没选中用第一个版块
     if (!cont) {
-      cont = session.parsed.elements.find((e) => /^(section|main|article)$/.test(e.tag)) || null;
+      const info = ctx.editor.selection;
+      if (info && !info.generated) {
+        const e = session.parsed.byLoc(info.loc);
+        if (e) cont = e.type === 'container' || /^(section|div|main|article|header|footer|nav|aside)$/.test(e.tag)
+          ? e
+          : (e.parent != null ? session.parsed.byLoc(e.parent) : null);
+      }
+      if (!cont) cont = session.parsed.elements.find((e) => /^(section|main|article)$/.test(e.tag)) || null;
     }
     if (!cont) { toast('找不到可以插入的容器，先点选页面里的某个区块', 'err'); return; }
     const rel = `assets/${asset.filename}`;
@@ -303,6 +302,15 @@ export function setup(ctx) {
             <div class="asset-acts"></div>
           </div>`);
           const acts = card.querySelector('.asset-acts');
+          // 拖拽源头：图片素材卡可以整个拖上页面（替换/插入由接收层按落点决定）
+          if (isImg) {
+            card.draggable = true;
+            card.title = '可以拖到页面上：落到图片=替换，落到区块=插入';
+            card.addEventListener('dragstart', (e) => {
+              e.dataTransfer.setData('application/x-centdeck-asset', a.filename);
+              e.dataTransfer.effectAllowed = 'copy';
+            });
+          }
           if (isImg && ctx.view() === 'edit') {
             const info = ctx.editor.selection;
             if (info && !info.generated && session_tag() === 'img') {
@@ -344,4 +352,58 @@ export function setup(ctx) {
 
   // 打开项目时重建字体登记表
   bus.on('project', refreshFonts);
+
+  // ---------- 素材拖上页面：透明接收层 ----------
+  // 拖拽从素材卡出发（同文档），dragenter 进编辑视图时在舞台上铺接收层；
+  // 落点是 <img> → 替换；落点是区块容器 → 插入。草图开着也能用（接收层在其上）。
+  function stageScale() {
+    const fr = ctx.editor.iframeRect();
+    const f = document.querySelector('#stage-frame');
+    if (!fr || !f || !f.offsetWidth) return 1;
+    return fr.width / f.offsetWidth; // 适配档 iframe 被 transform 缩放：rect 是视觉宽，offsetWidth 是布局宽
+  }
+  function showDropLayer() {
+    const stage = document.querySelector('#stage');
+    if (!stage || stage.querySelector('.asset-droplayer')) return;
+    const layer = el('<div class="asset-droplayer"><span>松开鼠标：放到图片上 = 替换它；放到区块上 = 插入图片</span><input type="file" hidden></div>');
+    const off = () => { if (layer.isConnected) layer.remove(); document.removeEventListener('dragend', off); };
+    layer.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+    layer.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const name = e.dataTransfer.getData('application/x-centdeck-asset');
+      off();
+      if (!name) return;
+      const session = ctx.editor.session;
+      if (!session || !session.document) return;
+      const doc = session.document;
+      const fr = ctx.editor.iframeRect();
+      if (!fr) return;
+      const k = stageScale();
+      const node = doc.elementFromPoint((e.clientX - fr.left) / k, (e.clientY - fr.top) / k);
+      if (!node) { toast('没有落在页面内容上', 'err'); return; }
+      const withLoc = node.hasAttribute('data-loc') ? node : node.closest('[data-loc]');
+      // 落在图片上 → 替换它
+      if (node.tagName === 'IMG' && withLoc) {
+        const eInfo = session.parsed.byLoc(+withLoc.getAttribute('data-loc'));
+        await replaceImage({ filename: name }, eInfo);
+        return;
+      }
+      // 否则找最近的区块容器 → 插入
+      let cont = null;
+      if (withLoc) {
+        const cNode = withLoc.closest('section,main,article,div,header,footer,nav,aside') || withLoc;
+        if (cNode && cNode.hasAttribute('data-loc')) cont = session.parsed.byLoc(+cNode.getAttribute('data-loc'));
+      }
+      if (!cont) { toast('找不到落点所在的区块', 'err'); return; }
+      await insertImage({ filename: name }, cont);
+    });
+    stage.appendChild(layer);
+    document.addEventListener('dragend', off); // 源头松手（含拖出窗口取消）
+  }
+  document.addEventListener('dragenter', (e) => {
+    if (ctx.view() !== 'edit') return;
+    if (!e.dataTransfer || ![...e.dataTransfer.types].includes('application/x-centdeck-asset')) return;
+    showDropLayer();
+  });
+  bus.on('view', (v) => { if (v !== 'edit') { const l = document.querySelector('.asset-droplayer'); if (l) l.remove(); } });
 }

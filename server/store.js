@@ -382,6 +382,13 @@ function saveAsset(id, body) {
   };
 }
 
+// 删除项目：目录自包含（.centdeck 快照/历史都在里面），整体移除
+function deleteProject(id) {
+  const dir = projectDir(id);
+  fs.rmSync(dir, { recursive: true, force: true });
+  return { deleted: id };
+}
+
 module.exports = {
   ROOT,
   TEMPLATES_DIR,
@@ -396,6 +403,7 @@ module.exports = {
   createProject,
   getProject,
   saveProject,
+  deleteProject,
   readProjectFile,
   writeProjectFile,
   listHistory,

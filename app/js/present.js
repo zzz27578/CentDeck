@@ -29,13 +29,34 @@ export function setup(ctx, apiOut) {
   }
 
   // ---------- 进场 / 离场 ----------
+  let modeOrig = true; // 原版画面：1280 设计宽等比缩放，居中；关掉则充滿窗口
+  function exit() { bus.runCommand('app.exitPresent', ctx); }
+  function stepPage(d) {
+    const proj = ctx.project();
+    const i = proj.pages.findIndex((p) => p.file === currentFile);
+    const n = proj.pages[(i + d + proj.pages.length) % proj.pages.length];
+    if (n) goto(n.file);
+  }
+  function applyMode() {
+    const stg = hostEl && hostEl.querySelector('#pv-stage');
+    const view = hostEl && hostEl.querySelector('#pv-view');
+    if (!stg || !view) return;
+    const sw = stg.clientWidth, sh = stg.clientHeight;
+    if (modeOrig) {
+      const k = Math.min(1, sw / 1280);
+      view.style.cssText = `position:absolute;left:${Math.max(0, (sw - 1280 * k) / 2)}px;top:0;width:1280px;height:${sh / k}px;transform:scale(${k});transform-origin:0 0;background:#fff;box-shadow:0 0 0 1px #454550;`;
+    } else {
+      view.style.cssText = 'position:absolute;inset:0;';
+    }
+    if (overlay) sizeOverlay();
+  }
   function enter(stage) {
     const proj = ctx.project();
     const first = proj.pages[0];
     if (!first) { stage.innerHTML = '<div class="panel-empty">这个项目没有页面</div>'; return; }
     currentFile = null;
     stage.innerHTML = `
-      <div class="present-wrap">
+      <div class="present-wrap chrome-hidden">
         <div class="present-top">
           <button class="btn small" id="pv-home-page" title="回到首页">⌂ 首页</button>
           <div class="present-addr" id="pv-addr"></div>
@@ -43,18 +64,47 @@ export function setup(ctx, apiOut) {
           <button class="btn small" id="pv-exit" title="退出放映（Esc）">退出放映</button>
         </div>
         <div class="present-stage" id="pv-stage">
-          <iframe id="pv-frame" title="放映"></iframe>
+          <div id="pv-view"><iframe id="pv-frame" title="放映"></iframe></div>
         </div>
         <div class="present-strip" id="pv-strip"></div>
+        <div class="present-capsule">
+          <button id="pv-prev" title="上一页">◀</button>
+          <button id="pv-next" title="下一页">▶</button>
+          <span class="cap-sep"></span>
+          <button id="pv-cap-home" title="回到首页">⌂</button>
+          <button id="pv-mode" title="切换：原版画面（等比）/ 充滿窗口">原版</button>
+          <button id="pv-cap-exit" title="退出放映（Esc）">✕</button>
+        </div>
       </div>`;
     hostEl = stage.querySelector('.present-wrap');
     frame = stage.querySelector('#pv-frame');
     frame.addEventListener('load', onFrameLoad);
-    stage.querySelector('#pv-exit').onclick = () => bus.runCommand('app.exitPresent', ctx);
+    stage.querySelector('#pv-exit').onclick = exit;
+    stage.querySelector('#pv-cap-exit').onclick = exit;
     stage.querySelector('#pv-home-page').onclick = () => goto(proj.pages[0].file);
+    stage.querySelector('#pv-cap-home').onclick = () => goto(proj.pages[0].file);
     stage.querySelector('#pv-mark').onclick = toggleAnnotate;
+    stage.querySelector('#pv-prev').onclick = () => stepPage(-1);
+    stage.querySelector('#pv-next').onclick = () => stepPage(1);
+    const modeBtn = stage.querySelector('#pv-mode');
+    const syncModeBtn = () => { modeBtn.textContent = modeOrig ? '原版' : '充滿'; modeBtn.classList.toggle('on', modeOrig); };
+    modeBtn.onclick = () => { modeOrig = !modeOrig; syncModeBtn(); applyMode(); };
+    syncModeBtn();
+    // chrome 自动隐藏：默认全隐，鼠标靠近上下边缘才浮现（标注态常显，圈问题要用按钮）
+    hostEl.addEventListener('mousemove', (ev) => {
+      if (annotating) { hostEl.classList.remove('chrome-hidden'); return; }
+      const r = hostEl.getBoundingClientRect();
+      const near = (ev.clientY - r.top) < 48 || (r.bottom - ev.clientY) < 72;
+      hostEl.classList.toggle('chrome-hidden', !near);
+    });
+    hostEl.addEventListener('mouseleave', () => { if (!annotating) hostEl.classList.add('chrome-hidden'); });
+    if (!stage.__pvObserved) {
+      stage.__pvObserved = true;
+      new ResizeObserver(() => { if (hostEl) applyMode(); }).observe(stage);
+    }
     buildStrip(stage.querySelector('#pv-strip'));
     goto(first.file);
+    applyMode();
   }
 
   function leave() {

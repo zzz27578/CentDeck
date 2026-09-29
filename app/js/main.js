@@ -17,6 +17,7 @@ import { setup as setupAssets } from './assets.js';
 import { setup as setupTokens } from './tokens.js';
 import { setup as setupLayers } from './layers.js';
 import { setup as setupHistory } from './history.js';
+import { setup as setupCodeview } from './codeview.js';
 
 // ---------- 全局骨架 ----------
 const $ = (sel) => document.querySelector(sel);
@@ -46,6 +47,8 @@ const editor = {
   editingText: false,  // 正在双击改字
   lastResult: null,    // 最近一次三灯判定结果（判定面板显示用）
   addingText: false,   // "新增文本框"等待点选位置
+  stageFit: true,      // 编辑舞台"适配宽度"档：iframe 按 1200 渲染后等比缩回舞台宽
+  scale: 1,            // 舞台缩放系数（锚点/标记坐标换算要用）
 };
 
 // 外部（插件）可调的编辑器接口（越界防护：插件不直接碰 engine）
@@ -101,8 +104,10 @@ const ctx = {
     if (!dom) return null;
     const fr = editorApi.iframeRect();
     if (!fr) return null;
+    // iframe 等比缩放（适配档）时，文档内坐标要乘缩放系数才是屏幕坐标
+    const k = state.view === 'edit' ? (editor.scale || 1) : 1;
     const r = dom.getBoundingClientRect();
-    return { x: fr.left + r.left, y: fr.top + r.top, w: r.width, h: r.height };
+    return { x: fr.left + r.left * k, y: fr.top + r.top * k, w: r.width * k, h: r.height * k };
   },
 };
 
@@ -182,10 +187,22 @@ async function renderHome() {
       projects.forEach((p) => {
         const card = el(`<div class="card project-card">
           <div class="card-name">${esc(p.name)}</div>
-          <div class="card-desc">${esc(p.template ? '模板：' + p.template : '')} · ${p.pages.length} 页</div>
-          <div class="card-foot"><button class="btn primary">打开</button></div>
+          <div class="card-desc">${esc(p.template ? '模板：' + p.template : '')} · ${p.pages.length} 页${p.createdAt ? ' · ' + esc(String(p.createdAt).slice(0, 10)) : ''}</div>
+          <div class="card-foot"><button class="btn primary">打开</button> <button class="btn danger small card-del">删除</button></div>
         </div>`);
-        card.querySelector('button').onclick = () => openProject(p.id);
+        card.querySelector('.btn.primary').onclick = () => openProject(p.id);
+        card.querySelector('.card-del').onclick = async () => {
+          const yes = await confirmDlg({
+            title: '删除项目', danger: true, okLabel: '删除',
+            body: `将删除项目「<b>${esc(p.name)}</b>」的全部文件、历史版本、草图标记与便签。<b>此操作不可恢复。</b>确定删除吗？`,
+          });
+          if (!yes) return;
+          try {
+            await api.deleteProject(p.id);
+            toast(`项目「${p.name}」已删除`, 'ok');
+            renderHome();
+          } catch { /* api 已提示 */ }
+        };
         card.onclick = (e) => { if (e.target.tagName !== 'BUTTON') openProject(p.id); };
         pbox.appendChild(card);
       });
@@ -401,13 +418,49 @@ function setView(view) {
 // 编辑视图
 // ============================================================
 function enterEdit(stage) {
-  stage.innerHTML = '<iframe id="stage-frame" title="页面编辑"></iframe>';
+  stage.innerHTML = '<iframe id="stage-frame" title="页面编辑"></iframe>' +
+    '<div class="stage-toolbar"><button id="st-fit" title="等比缩放到窗口宽度，整页都看得见（默认）">适配</button><button id="st-orig" title="按 100% 原始尺寸显示，画面按真实比例（面板挤压时可滚动页面）">原版</button></div>';
+  const fitBtn = stage.querySelector('#st-fit'), origBtn = stage.querySelector('#st-orig');
+  const syncFitUI = () => {
+    fitBtn.classList.toggle('on', editor.stageFit);
+    origBtn.classList.toggle('on', !editor.stageFit);
+  };
+  fitBtn.onclick = () => { editor.stageFit = true; syncFitUI(); applyStageFit(); };
+  origBtn.onclick = () => { editor.stageFit = false; syncFitUI(); applyStageFit(); };
+  syncFitUI();
+  applyStageFit();
+  if (!stage.__fitObserved) {
+    stage.__fitObserved = true;
+    new ResizeObserver(() => { if (state.view === 'edit') applyStageFit(); }).observe(stage);
+  }
   renderPagebar();
   renderPropsEmpty();
   renderCrumbs();
   renderVerdict(null);
   const first = state.project.pages[0];
   if (first) openPage(first.file, first.title, { keepView: true });
+}
+
+// 设计宽度：模板按 ~1200px 桌面宽设计；适配档 = 按 1200 渲染后 scale 回舞台宽
+const STAGE_DESIGN_W = 1200;
+function applyStageFit() {
+  const stage = $('#stage'), iframe = $('#stage-frame');
+  if (!stage || !iframe || state.view !== 'edit') return;
+  if (!editor.stageFit) {
+    iframe.classList.remove('fit');
+    iframe.style.width = '';
+    iframe.style.height = '';
+    iframe.style.transform = '';
+    editor.scale = 1;
+    return;
+  }
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  const k = Math.min(1, sw / STAGE_DESIGN_W) || 1;
+  editor.scale = k;
+  iframe.classList.add('fit');
+  iframe.style.width = STAGE_DESIGN_W + 'px';
+  iframe.style.height = (sh / k) + 'px';
+  iframe.style.transform = `scale(${k})`;
 }
 
 function leaveEdit() {
@@ -483,6 +536,11 @@ async function openPage(file, title, opts = {}) {
       onDrop: onEngineDrop,
       onDblClick: onEngineDblClick,
       onRender: onEngineRender,
+      // 锁定预判：被锁元素拖之前就拦（松手时 onEngineDrop 的 restore 仍是兜底）
+      canDrag: (info) => {
+        if (isLocked(info)) { toast('该元素已锁定，先解锁再拖', 'err'); return false; }
+        return true;
+      },
     });
     if (myToken !== openPageToken) { try { session.destroy(); } catch (e2) { /* 忽略 */ } return; } // 已被更新的 openPage 取代
     editor.session = session;
@@ -508,7 +566,14 @@ function bindIframeKeys(session) {
   if (!doc || doc.__cdKeysBound) return;
   Object.defineProperty(doc, '__cdKeysBound', { value: true, configurable: true });
   doc.addEventListener('keydown', (e) => {
-    if (editor.editingText) return;
+    if (editor.editingText) {
+      // 改字中 Ctrl+Z：拦掉浏览器原生撤销，等价 Esc 取消本次编辑
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (editor.cancelTextEdit) editor.cancelTextEdit();
+      }
+      return;
+    }
     const tag = (e.target && e.target.tagName) || '';
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable)) return;
     if ((e.ctrlKey || e.metaKey)) {
@@ -555,12 +620,15 @@ function renderVerdict(result, extra = {}) {
   editor.lastResult = result;
   if (!result) { slot.innerHTML = ''; return; }
   const { light } = result;
+  // 绿灯不用再点"好"：toast 一闪而过，判定面板只留给需要决策的黄灯/红灯
+  if (light === 'green') {
+    slot.innerHTML = '';
+    toast(`✅ 已写回，只动了第 ${result.line} 行${result.note ? '：' + result.note : ''}`, 'ok');
+    return;
+  }
   const box = el(`<div class="verdict ${light}"></div>`);
   let head = '', body = '';
-  if (light === 'green') {
-    head = '✅ 绿灯 · 已写回';
-    body = `只动了第 ${result.line} 行。${result.note ? esc(result.note) : ''}`;
-  } else if (light === 'yellow') {
+  if (light === 'yellow') {
     head = '🟡 黄灯 · 已写回，但有连带影响';
     const list = (result.affected || []).slice(0, 6).map((a) =>
       `<li>&lt;${esc(a.tag || '?')}&gt; 第 ${a.line != null ? a.line : '?'} 行 — ${esc(a.note || '被挤动')}</li>`).join('');
@@ -585,10 +653,6 @@ function renderVerdict(result, extra = {}) {
     const okB = el('<button class="btn small">知道了</button>');
     okB.onclick = () => renderVerdict(null);
     acts.append(toMark, okB);
-  } else {
-    const okB = el('<button class="btn small">好</button>');
-    okB.onclick = () => renderVerdict(null);
-    acts.append(okB);
   }
   slot.innerHTML = '';
   slot.appendChild(box);
@@ -628,8 +692,11 @@ async function doSourceCommand({ label, makeEdit, buildSource, onResult, forceVe
       if (onResult) onResult(result);
     }
     await api.writeFile(state.project.id, page, newSource);
-    await editor.session.setSource(newSource);
-    editorApi.setScroll(scroll.x, scroll.y);
+    // 会话可能已切页/切视图：写盘是权威，只在会话仍是该页时重渲染
+    if (editor.session && editor.page === page) {
+      await editor.session.setSource(newSource);
+      editorApi.setScroll(scroll.x, scroll.y);
+    }
     return { result, newSource };
   }
 
@@ -652,8 +719,12 @@ async function doSourceCommand({ label, makeEdit, buildSource, onResult, forceVe
     },
     revert: async () => {
       await api.writeFile(state.project.id, page, cmd.beforeSource);
-      await editor.session.setSource(cmd.beforeSource);
-      editorApi.setScroll(scroll.x, scroll.y);
+      if (state.view === 'edit' && editor.session && editor.page === page) {
+        await editor.session.setSource(cmd.beforeSource);
+        editorApi.setScroll(scroll.x, scroll.y);
+      } else if (state.view === 'overview') {
+        await overviewApi.refresh();
+      }
       renderVerdict(null);
     },
   };
@@ -704,6 +775,7 @@ function onEngineDblClick(info) {
   const commit = async (cancel) => {
     if (done) return;
     done = true;
+    editor.cancelTextEdit = null;
     dom.contentEditable = 'false';
     editor.editingText = false;
     const nt = dom.textContent;
@@ -717,6 +789,7 @@ function onEngineDblClick(info) {
       makeEdit: () => ({ kind: 'text', target: info.loc, newText: nt }),
     });
   };
+  editor.cancelTextEdit = () => commit(true); // 供快捷键在改字中触发"取消编辑"
   dom.addEventListener('blur', () => commit(false), { once: true });
   dom.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); commit(false); }
@@ -971,6 +1044,10 @@ function renderProps(info) {
           </div>
         </div>
       </div>
+      <div class="prop-group" id="p-text-group" hidden>
+        <div class="prop-title" onmouseover="this.title='不用双击，这里直接改字'">文字内容</div>
+        <div id="p-text-host"></div>
+      </div>
       <div class="prop-group">
         <div class="prop-title">位置与大小</div>
         <div class="prop-row">
@@ -1073,6 +1150,43 @@ function renderProps(info) {
   $('#prop-addtext').onclick = startAddText;
   $('#p-note').onclick = () => bus.runCommand('notes.addForSelection', ctx);
   $('#p-del').onclick = deleteSelection;
+  // —— 文字内容：不用双击进页面，右侧直接改 ——
+  const tg = $('#p-text-group'), th = $('#p-text-host');
+  if (!info.generated && info.text && info.text.trim()) {
+    tg.hidden = false;
+    if (info.textOnly) {
+      th.innerHTML = `<textarea class="prop-textarea" id="p-text"></textarea>
+        <div class="prop-row btn-row" style="margin-top:6px"><button class="btn small primary" id="p-text-apply">应用文字</button></div>`;
+      $('#p-text').value = info.text.trim();
+      $('#p-text-apply').onclick = () => {
+        const nt = $('#p-text').value;
+        if (nt === info.text.trim()) return;
+        doSourceCommand({
+          label: `改字：「${info.text.trim().slice(0, 10)}」`,
+          makeEdit: () => ({ kind: 'text', target: info.loc, newText: nt }),
+        });
+      };
+    } else {
+      // 混合内容：按文本段分别改（engine 的 oldText 路径，段落在元素内唯一才写回，歧义红灯兜底）
+      const segs = info.text.split(/<[^>]+>/).filter((s) => s.trim());
+      segs.forEach((seg, i) => {
+        const row = el('<div class="prop-text-seg"></div>');
+        row.innerHTML = `<label>段 ${i + 1}</label>`;
+        const ipt = el('<input class="ipt">');
+        ipt.value = seg.trim();
+        const btn = el('<button class="btn small" style="margin-top:4px">应用本段</button>');
+        btn.onclick = () => {
+          if (ipt.value === seg.trim()) return;
+          doSourceCommand({
+            label: `改文字段 ${i + 1}：「${seg.trim().slice(0, 10)}」`,
+            makeEdit: () => ({ kind: 'text', target: info.loc, oldText: seg.trim(), newText: ipt.value }),
+          });
+        };
+        row.append(ipt, btn);
+        th.appendChild(row);
+      });
+    }
+  }
   $('#p-lock').onclick = async () => {
     if (info.generated) return;
     const on = !elementLocked(editor.page, info.selector);
@@ -1125,8 +1239,8 @@ function renderCrumbs() {
 document.addEventListener('keydown', (e) => {
   const tag = (e.target && e.target.tagName) || '';
   const inField = /INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable);
-  // Ctrl+Z / Ctrl+Y：全局撤销重做（输入框里不抢）
-  if ((e.ctrlKey || e.metaKey) && !inField) {
+  // Ctrl+Z / Ctrl+Y：全局撤销重做；仅多行文本（textarea、富文本）保留浏览器原生撤销，普通输入框让给用户撤销
+  if ((e.ctrlKey || e.metaKey) && tag !== 'TEXTAREA' && !(e.target && e.target.isContentEditable)) {
     const k = e.key.toLowerCase();
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); bus.undo(); return; }
     if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); bus.redo(); return; }
@@ -1136,6 +1250,8 @@ document.addEventListener('keydown', (e) => {
     if (anyModalOpen()) { closeTopModal(); return; }
     if (editor.editingText) return; // 改字中的 Esc 由改字流程自己处理
     if (state.view === 'present') { setView('overview'); return; }
+    // 草图开着时 Esc 只退草图，不连视图一起退回总览
+    if (state.view === 'edit' && document.body.classList.contains('sketch-on')) { bus.runCommand('sketch.setActive', ctx, false); return; }
     if (state.activePanel) { togglePanel(null); return; }
     if (state.view === 'edit' && editor.selection) { editorApi.clearSelection(); onEngineSelect(null); return; }
     if (state.view === 'edit' && state.project) { setView('overview'); return; }
@@ -1163,6 +1279,7 @@ document.addEventListener('keydown', (e) => {
 // ============================================================
 setupLayers(ctx);
 setupHistory(ctx);
+setupCodeview(ctx);
 setupSketch(ctx);
 setupNotes(ctx);
 setupAssets(ctx);
