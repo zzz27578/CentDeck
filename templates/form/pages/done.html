@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>报名成功 · 橙屿城市漫步计划</title>
+<style id="cd-tokens">
+:root{
+  --brand: #E8590C;
+  --brand-dark: #C74702;
+  --brand-soft: #FFE8D6;
+  --bg: #FFF8F0;
+  --surface: #FFFFFF;
+  --text: #2B2118;
+  --muted: #8A7B6C;
+  --border: #F0E3D2;
+  --success: #2F9E44;
+  --danger: #E03131;
+  --fs-sm: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 30px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-2xl: 40px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+</style>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text);
+  font-size: var(--fs-md); line-height: 1.7;
+}
+.wrap{ max-width: 640px; margin: 0 auto; padding: 0 var(--sp-lg); }
+
+.site-nav{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: var(--sp-lg) var(--sp-xl);
+  max-width: 960px; margin: 0 auto;
+}
+.logo{ display:flex; align-items:center; gap: var(--sp-sm); font-weight:700; font-size: var(--fs-lg); color: var(--text); text-decoration:none; }
+.nav-links a{ color: var(--muted); text-decoration:none; font-size: var(--fs-sm); margin-left: var(--sp-xl); }
+.nav-links a:hover, .nav-links a.active{ color: var(--brand); }
+
+.done-hero{ text-align:center; padding: var(--sp-2xl) 0 var(--sp-xl); }
+.check-badge{ margin-bottom: var(--sp-lg); }
+.check-badge .ring{ transform-origin: center; animation: ringPop .55s cubic-bezier(.34,1.56,.64,1) both; }
+.check-badge .tick{ stroke-dasharray: 40; stroke-dashoffset: 40; animation: tickDraw .45s ease .35s forwards; }
+@keyframes ringPop{
+  from{ opacity:0; transform: scale(.5); }
+  to{ opacity:1; transform: scale(1); }
+}
+@keyframes tickDraw{
+  to{ stroke-dashoffset: 0; }
+}
+h1{ font-size: var(--fs-2xl); line-height:1.3; margin-bottom: var(--sp-sm); }
+h2{ font-size: var(--fs-xl); margin-bottom: var(--sp-md); }
+h3{ font-size: var(--fs-lg); margin-bottom: var(--sp-sm); }
+.sub{ color: var(--muted); max-width: 420px; margin: 0 auto; }
+
+.confetti{ position:relative; height: 10px; margin: var(--sp-xl) 0 0; }
+.confetti i{
+  position:absolute; left:50%; top:0; width:8px; height:8px;
+  border-radius: 2px; background: var(--brand);
+  animation: pop 2.4s ease-in-out infinite;
+}
+.confetti i:nth-child(1){ margin-left:-70px; animation-delay: 0s; background: var(--brand); }
+.confetti i:nth-child(2){ margin-left:-20px; animation-delay: .5s; background: var(--success); }
+.confetti i:nth-child(3){ margin-left: 30px; animation-delay: 1s; background: var(--brand-dark); }
+.confetti i:nth-child(4){ margin-left: 80px; animation-delay: 1.5s; background: var(--brand-soft); }
+@keyframes pop{
+  0%,100%{ transform: translateY(0) rotate(0deg); opacity:1; }
+  50%{ transform: translateY(-14px) rotate(45deg); opacity:.7; }
+}
+
+.card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-xl) var(--sp-2xl);
+  box-shadow: 0 12px 32px rgba(232, 89, 12, 0.06);
+  margin-bottom: var(--sp-xl);
+}
+.ticket-info{ list-style:none; }
+.ticket-info li{
+  display:flex; justify-content:space-between;
+  padding: var(--sp-md) 0; border-bottom: 1px dashed var(--border);
+}
+.ticket-info li:last-child{ border-bottom:none; }
+.ticket-info .k{ color: var(--muted); font-size: var(--fs-sm); }
+.ticket-info .v{ font-weight:700; }
+
+.tips{ display:grid; gap: var(--sp-md); grid-template-columns: 1fr; }
+.tip{
+  display:flex; gap: var(--sp-md); align-items:flex-start;
+  background: var(--surface); border:1px solid var(--border);
+  border-radius: var(--radius-sm); padding: var(--sp-lg);
+}
+.tip .dot{
+  width: 10px; height: 10px; border-radius: var(--radius-pill);
+  background: var(--brand); flex-shrink:0; margin-top: 7px;
+}
+.tip b{ display:block; margin-bottom: 2px; }
+.tip p{ color: var(--muted); font-size: var(--fs-sm); }
+
+.actions{ display:flex; flex-wrap:wrap; gap: var(--sp-md); justify-content:center; padding: var(--sp-xl) 0; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap: var(--sp-sm);
+  padding: var(--sp-md) var(--sp-xl);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-md); font-weight:700;
+  cursor:pointer; border: 1px solid transparent; text-decoration:none;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.btn:hover{ transform: translateY(-2px); }
+.btn-primary{ background: var(--brand); color:#fff; box-shadow: 0 6px 16px rgba(232,89,12,.28); }
+.btn-primary:hover{ background: var(--brand-dark); }
+.btn-ghost{ background: transparent; color: var(--brand-dark); border-color: var(--brand); }
+
+.page-footer{
+  text-align:center; color: var(--muted); font-size: var(--fs-sm);
+  padding: var(--sp-2xl) 0;
+  border-top: 1px solid var(--border);
+  margin-top: var(--sp-xl);
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="logo" href="index.html">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+      <circle cx="13" cy="13" r="12" fill="var(--brand)"/>
+      <path d="M8 14.5 L12 18 L18 8.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    橙屿城市漫步
+  </a>
+  <div class="nav-links">
+    <a href="index.html">报名表单</a>
+    <a href="done.html" class="active">报名成功页</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section class="done-hero">
+    <div class="check-badge">
+      <svg width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+        <circle class="ring" cx="48" cy="48" r="44" fill="var(--success)" opacity="0.14"/>
+        <circle class="ring" cx="48" cy="48" r="34" fill="var(--success)"/>
+        <path class="tick" d="M33 49 L44 60 L64 38" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <h1>报名成功，城墙上见！</h1>
+    <p class="sub" id="hello-text">你的名额已经锁定，活动前一日 18:00 前会收到短信提醒与集合群二维码。</p>
+    <div class="confetti" aria-hidden="true">
+      <i></i>
+      <i></i>
+      <i></i>
+      <i></i>
+    </div>
+  </section>
+  <section class="card">
+    <h2>报名回执</h2>
+    <ul class="ticket-info">
+      <li>
+        <span class="k">报名编号</span>
+        <span class="v" style="color: var(--brand-dark);">CYW-20261017</span>
+      </li>
+      <li>
+        <span class="k">集合地点</span>
+        <span class="v" id="session-text">东门瓮城 · 橙色旗子下</span>
+      </li>
+      <li>
+        <span class="k">建议到达</span>
+        <span class="v">提前 15 分钟签到</span>
+      </li>
+    </ul>
+  </section>
+  <section style="margin-bottom: var(--sp-xl);">
+    <h3>出发前的三个小提醒</h3>
+    <div class="tips">
+      <div class="tip">
+        <span class="dot"></span>
+        <div>
+          <b>穿一双走惯的鞋</b>
+          <p>全程约 5 公里慢走，路面是旧砖，不建议穿新鞋。</p>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="dot"></span>
+        <div>
+          <b>带一件薄外套</b>
+          <p>城墙上风大，日落后气温会掉 3~5 度。</p>
+        </div>
+      </div>
+      <div class="tip">
+        <span class="dot"></span>
+        <div>
+          <b>手机留点电</b>
+          <p>摄影小课环节会用手机拍砖纹微距，建议带上充电宝。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="actions">
+    <a class="btn btn-primary" href="index.html">再报一位同伴</a>
+    <a class="btn btn-ghost" href="index.html">返回报名页修改</a>
+  </div>
+</main>
+
+<footer class="page-footer">
+  <p>橙屿城市漫步计划 · 期待与你同走一段旧城墙</p>
+</footer>
+
+<script>
+// 读取报名页写入的信息，使回执文案与填写内容一致（无则保持默认文案）
+try{
+  var name = sessionStorage.getItem("signup_name");
+  var session = sessionStorage.getItem("signup_session");
+  if (name){
+    document.getElementById("hello-text").textContent =
+      name + "，你的名额已经锁定，活动前一日 18:00 前会收到短信提醒与集合群二维码。";
+  }
+  if (session){
+    document.getElementById("session-text").textContent = session;
+  }
+}catch(err){}
+</script>
+</body>
+</html>

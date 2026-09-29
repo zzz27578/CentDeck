@@ -1,0 +1,10 @@
+{
+  "id": "portfolio",
+  "name": "个人作品集",
+  "type": "portfolio",
+  "description": "设计师个人主页风格的作品集模板：首页含个人简介、CSS columns 瀑布流作品网格与联系方式区，另有作品详情页演示图文排版与翻页。",
+  "pages": [
+    { "file": "pages/index.html", "title": "首页" },
+    { "file": "pages/project.html", "title": "作品详情" }
+  ]
+}

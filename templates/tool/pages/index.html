@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> 四则计算器 · 百映工具箱 </title>
+ <style id="cd-tokens">
+:root{
+  --brand:#4f6df5;
+  --brand-deep:#3b55d9;
+  --bg:#f4f6fb;
+  --text:#1f2430;
+  --muted:#6b7385;
+  --card:#ffffff;
+  --line:#e4e8f2;
+  --accent:#ffb020;
+  --radius-sm:6px;
+  --radius:12px;
+  --radius-lg:20px;
+  --fs-sm:13px;
+  --fs-normal:15px;
+  --fs-lg:18px;
+  --fs-xl:24px;
+  --fs-hero:32px;
+  --sp-xs:4px;
+  --sp-sm:8px;
+  --sp-md:16px;
+  --sp-lg:24px;
+  --sp-xl:40px;
+}
+    </style> <style>
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: var(--fs-normal);
+    line-height: 1.6;
+  }
+  /* 顶部工具栏与标签互链 */
+  .site-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--sp-md) var(--sp-xl);
+    background: var(--card); border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: var(--sp-sm); font-size: var(--fs-lg); font-weight: 700; }
+  .brand small { color: var(--muted); font-size: var(--fs-sm); font-weight: 400; }
+  .tabs { display: flex; gap: var(--sp-xs); }
+  .tab {
+    padding: var(--sp-sm) var(--sp-md); border-radius: var(--radius);
+    text-decoration: none; color: var(--muted); font-size: var(--fs-normal);
+    transition: transform .2s ease, background .2s ease;
+  }
+  .tab:hover { transform: translateY(-2px); background: var(--bg); }
+  .tab.active { background: var(--brand); color: #fff; font-weight: 600; }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: var(--sp-xl) var(--sp-md); }
+  .lead { color: var(--muted); margin: var(--sp-sm) 0 var(--sp-lg); font-size: var(--fs-lg); }
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: var(--sp-lg); }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); padding: var(--sp-lg);
+    box-shadow: 0 8px 24px rgba(31,36,48,.05);
+  }
+  .card h2 { font-size: var(--fs-xl); margin-bottom: var(--sp-xs); }
+  .card .sub { color: var(--muted); font-size: var(--fs-sm); margin-bottom: var(--sp-md); }
+
+  /* 计算器 */
+  .screen {
+    background: var(--text); color: #fff; border-radius: var(--radius);
+    padding: var(--sp-md) var(--sp-lg); margin-bottom: var(--sp-md);
+    text-align: right; min-height: 96px;
+    display: flex; flex-direction: column; justify-content: flex-end; gap: var(--sp-xs);
+  }
+  .screen .expr { color: rgba(255,255,255,.55); font-size: var(--fs-sm); min-height: 1.2em; word-break: break-all; }
+  .screen .result { font-size: var(--fs-hero); font-weight: 700; word-break: break-all; }
+  .screen .result.pop { animation: pop .25s ease; }
+  @keyframes pop {
+    0% { transform: scale(.92); }
+    60% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-sm); }
+  .key {
+    border: 1px solid var(--line); background: var(--bg); color: var(--text);
+    font-size: var(--fs-lg); border-radius: var(--radius);
+    padding: var(--sp-md) 0; cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .key:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(79,109,245,.15); }
+  .key:active { transform: translateY(0); }
+  .key.op { color: var(--brand); font-weight: 700; background: #edf0fe; }
+  .key.eq { background: var(--brand); color: #fff; font-weight: 700; grid-column: span 2; }
+  .key.eq:hover { background: var(--brand-deep); }
+
+  .settings { display: flex; align-items: center; gap: var(--sp-sm); margin-top: var(--sp-md); flex-wrap: wrap; }
+  .settings label { font-size: var(--fs-sm); color: var(--muted); }
+  select, input, textarea {
+    font: inherit; color: var(--text);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: var(--sp-xs) var(--sp-sm); background: #fff;
+  }
+
+  /* 共用按钮样式 */
+  .btn {
+    display: inline-block; border: 1px solid var(--brand); background: var(--brand);
+    color: #fff; font-size: var(--fs-normal); cursor: pointer;
+    padding: var(--sp-xs) var(--sp-md); border-radius: var(--radius);
+    transition: transform .15s ease, background .15s ease;
+  }
+  .btn:hover { transform: translateY(-2px); background: var(--brand-deep); }
+  .btn.ghost { background: #fff; color: var(--brand); }
+  .btn.ghost:hover { background: #edf0fe; }
+
+  /* 历史记录 */
+  .hist-list { list-style: none; margin: var(--sp-md) 0; max-height: 300px; overflow: auto; }
+  .hist-list li {
+    display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-sm);
+    padding: var(--sp-sm) var(--sp-xs); border-bottom: 1px dashed var(--line);
+  }
+  .hist-expr { font-weight: 600; }
+  .hist-time { color: var(--muted); font-size: var(--fs-sm); white-space: nowrap; }
+  .empty { color: var(--muted); font-size: var(--fs-sm); text-align: center; padding: var(--sp-lg) 0; }
+
+  /* 弹窗 */
+  .modal {
+    position: fixed; inset: 0; background: rgba(31,36,48,.45);
+    display: none; align-items: center; justify-content: center; z-index: 10;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: var(--card); border-radius: var(--radius-lg);
+    width: min(92vw, 440px); padding: var(--sp-lg);
+    animation: rise .25s ease;
+  }
+  @keyframes rise {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-box h3 { font-size: var(--fs-xl); margin-bottom: var(--sp-sm); }
+  .modal-box h4 { font-size: var(--fs-normal); margin: var(--sp-md) 0 var(--sp-xs); color: var(--brand-deep); }
+  .modal-box p, .modal-box li { color: var(--muted); font-size: var(--fs-normal); }
+  .modal-box ul { padding-left: 1.2em; }
+  .modal-box textarea { width: 100%; min-height: 72px; resize: vertical; margin-top: var(--sp-xs); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: var(--sp-sm); margin-top: var(--sp-md); }
+
+  .foot { text-align: center; color: var(--muted); font-size: var(--fs-sm); padding: var(--sp-xl) var(--sp-md); }
+    </style> 
+</head>
+<body>
+<header class="site-head">
+<div class="brand">
+ <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+        <rect x="1" y="1" width="26" height="26" rx="7" fill="#4f6df5"/>
+        <rect x="6" y="7" width="16" height="4" rx="2" fill="#fff"/>
+        <circle cx="9.5" cy="17" r="2" fill="#ffb020"/>
+        <circle cx="14" cy="17" r="2" fill="#fff"/>
+        <circle cx="18.5" cy="17" r="2" fill="#fff"/>
+        </svg> 百映工具箱 
+<small> CentDeck Tools </small>
+</div>
+<nav class="tabs">
+<a class="tab active" href="index.html"> 四则计算器 </a>
+<a class="tab" href="convert.html"> 单位换算 </a>
+</nav>
+</header>
+<main class="wrap">
+<h1> 四则计算器 </h1>
+<p class="lead">
+ 加减乘除一步完成，历史记录自动留存， 
+<span style="color:var(--brand);font-weight:700"> 大按键盘感 </span>
+ 设计，点按之间毫不费力。 
+</p>
+<div class="layout">
+<section class="card">
+<h2> 计算器 </h2>
+<p class="sub"> 点击按键输入表达式，按「=」得出结果。 </p>
+<div class="screen" style="box-shadow: inset 0 2px 8px rgba(0,0,0,.35)">
+<div class="expr" id="expr"> &nbsp; </div>
+<div class="result" id="result"> 0 </div>
+</div>
+<div class="keys" id="keys">
+<button class="key" data-key="C" style="color:#e2543a"> C </button>
+<button class="key" data-key="back"> ⌫ </button>
+<button class="key op" data-key="÷"> ÷ </button>
+<button class="key op" data-key="×"> × </button>
+<button class="key" data-key="7"> 7 </button>
+<button class="key" data-key="8"> 8 </button>
+<button class="key" data-key="9"> 9 </button>
+<button class="key op" data-key="-"> − </button>
+<button class="key" data-key="4"> 4 </button>
+<button class="key" data-key="5"> 5 </button>
+<button class="key" data-key="6"> 6 </button>
+<button class="key op" data-key="+"> ＋ </button>
+<button class="key" data-key="1"> 1 </button>
+<button class="key" data-key="2"> 2 </button>
+<button class="key" data-key="3"> 3 </button>
+<button class="key" data-key="."> . </button>
+<button class="key" data-key="0" style="font-weight:700"> 0 </button>
+<button class="key eq" data-key="="> = </button>
+</div>
+<div class="settings">
+<label for="precision"> 结果保留位数 </label>
+<select id="precision">
+<option value="2"> 2 位小数 </option>
+<option value="4" selected> 4 位小数 </option>
+<option value="6"> 6 位小数 </option>
+</select>
+<button class="btn ghost" id="openHelp"> 使用说明 </button>
+</div>
+</section>
+<aside class="card">
+<h2> 计算历史 </h2>
+<p class="sub"> 最近的算式会保留在这里，方便核对。 </p>
+<ul class="hist-list" id="js-list"> </ul>
+<button class="btn" id="clearHist"> 清空记录 </button>
+</aside>
+</div>
+</main>
+<div class="modal" id="helpModal">
+<div class="modal-box">
+<h3> 使用说明 </h3>
+<h4> 怎么算 </h4>
+<p> 依次输入数字与运算符，按「=」立即得到结果；C 键清零，⌫ 键删除上一步输入。 </p>
+<h4> 小技巧 </h4>
+<ul>
+<li> 连续输入运算符会自动替换为最后一个。 </li>
+<li> 结果的小数位数可以在计算器下方的下拉框调整。 </li>
+<li> 每次按「=」的算式都会自动记入右侧历史。 </li>
+</ul>
+<h4> 意见反馈 </h4>
+<textarea placeholder="说说你希望这个工具箱增加什么小工具……">
+        </textarea>
+<div class="modal-actions">
+<button class="btn ghost" id="closeHelp"> 关闭 </button>
+<button class="btn" id="sendFeedback"> 提交反馈 </button>
+</div>
+</div>
+</div>
+<footer class="foot"> 百映工具箱 · 用 CentDeck 搭建 · 无需联网，打开即用 </footer>
+<script>
+
+(function () {
+  var exprEl = document.getElementById('expr');
+  var resultEl = document.getElementById('result');
+  var precisionEl = document.getElementById('precision');
+  var listEl = document.getElementById('js-list');
+
+  var cur = '0';        // 当前输入段
+  var expr = '';        // 已输入的表达式
+  var justDone = false; // 刚按过 =
+
+  function round(n) {
+    var d = parseInt(precisionEl.value, 10);
+    return parseFloat(n.toFixed(d));
+  }
+
+  function refresh() {
+    exprEl.textContent = expr || ' ';
+    resultEl.textContent = cur;
+  }
+
+  function pushDigit(d) {
+    if (justDone) { expr = ''; cur = '0'; justDone = false; }
+    if (d === '.') {
+      if (cur.indexOf('.') === -1) cur += '.';
+    } else {
+      cur = cur === '0' ? d : cur + d;
+    }
+    refresh();
+  }
+
+  function pushOp(op) {
+    justDone = false;
+    if (expr && /[+\-×÷]$/.test(expr) && cur === '') {
+      expr = expr.slice(0, -1) + op;
+    } else {
+      expr += (cur === '' ? '' : cur) + op;
+      cur = '';
+    }
+    resultEl.textContent = '0';
+    exprEl.textContent = expr;
+  }
+
+  function compute(s) {
+    var tokens = s.match(/(\d+\.?\d*)|[+\-×÷]/g);
+    if (!tokens) return 0;
+    var nums = [parseFloat(tokens[0])];
+    var ops = [];
+    for (var i = 1; i < tokens.length; i += 2) {
+      ops.push(tokens[i]);
+      nums.push(parseFloat(tokens[i + 1]));
+    }
+    for (var j = 0; j < ops.length; j++) {
+      if (ops[j] === '×' || ops[j] === '÷') {
+        var a = nums[j], b = nums[j + 1];
+        if (ops[j] === '÷' && b === 0) return null;
+        nums.splice(j, 2, ops[j] === '×' ? a * b : a / b);
+        ops.splice(j, 1); j--;
+      }
+    }
+    var total = nums[0];
+    for (var k = 0; k < ops.length; k++) {
+      total = ops[k] === '+' ? total + nums[k + 1] : total - nums[k + 1];
+    }
+    return total;
+  }
+
+  var history = [
+    { text: '128 ÷ 8 = 16', time: '昨天 21:04' },
+    { text: '399 + 128 = 527', time: '昨天 20:52' }
+  ];
+
+  function renderHistory() {
+    listEl.innerHTML = '';
+    if (!history.length) {
+      var li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = '还没有计算记录，按几次「=」试试。';
+      listEl.appendChild(li);
+      return;
+    }
+    history.slice().reverse().forEach(function (h) {
+      var li = document.createElement('li');
+      var exprSpan = document.createElement('span');
+      exprSpan.className = 'hist-expr';
+      exprSpan.textContent = h.text;
+      var timeSpan = document.createElement('span');
+      timeSpan.className = 'hist-time';
+      timeSpan.textContent = h.time;
+      li.appendChild(exprSpan);
+      li.appendChild(timeSpan);
+      listEl.appendChild(li);
+    });
+  }
+
+  function nowTime() {
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    return pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function equals() {
+    if (justDone || cur === '') return;
+    var full = expr + cur;
+    var r = compute(full);
+    if (r === null) {
+      resultEl.textContent = '不能除以 0';
+      resultEl.classList.add('pop');
+      setTimeout(function () { resultEl.classList.remove('pop'); }, 260);
+      return;
+    }
+    var pretty = full.replace(/\+/g, '＋').replace(/-/g, '−');
+    var val = round(r);
+    history.push({ text: pretty + ' = ' + val, time: nowTime() });
+    if (history.length > 20) history.shift();
+    renderHistory();
+    expr = '';
+    cur = String(val);
+    justDone = true;
+    refresh();
+    resultEl.classList.add('pop');
+    setTimeout(function () { resultEl.classList.remove('pop'); }, 260);
+  }
+
+  document.getElementById('keys').addEventListener('click', function (e) {
+    var k = e.target.getAttribute('data-key');
+    if (!k) return;
+    if (k === 'C') { expr=''; cur='0'; justDone=false; refresh(); }
+    else if (k === 'back') {
+      if (!justDone) { cur = cur.length > 1 ? cur.slice(0, -1) : '0'; refresh(); }
+    }
+    else if (k === '=') equals();
+    else if ('+×÷-'.indexOf(k) !== -1) pushOp(k);
+    else pushDigit(k);
+  });
+
+  document.getElementById('clearHist').addEventListener('click', function () {
+    history = [];
+    renderHistory();
+  });
+
+  var modal = document.getElementById('helpModal');
+  document.getElementById('openHelp').addEventListener('click', function () {
+    modal.classList.add('show');
+  });
+  document.getElementById('closeHelp').addEventListener('click', function () {
+    modal.classList.remove('show');
+  });
+  document.getElementById('sendFeedback').addEventListener('click', function () {
+    modal.classList.remove('show');
+  });
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) modal.classList.remove('show');
+  });
+
+  renderHistory();
+  refresh();
+})();
+    </script>
+</body>
+</html>

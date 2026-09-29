@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>价格方案 · 曜川智能数据协作平台</title>
+<style id="cd-tokens">:root{
+  --brand:#3d5af1; --brand-deep:#2b3fbf; --accent:#7c5cff;
+  --bg:#f6f7fb; --text:#1b2233; --muted:#5b6478; --card:#ffffff; --border:#e6e9f2;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:28px; --fs-h1:44px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:40px; --sp-5:64px;
+  --radius:14px; --radius-s:8px; --radius-l:24px;
+}</style>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs-body);line-height:1.7}
+  a{text-decoration:none;color:inherit}
+  ul{list-style:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 var(--sp-3)}
+  .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:var(--sp-1);font-weight:700;font-size:var(--fs-h3);color:var(--text)}
+  .nav-links{display:flex;align-items:center;gap:var(--sp-3)}
+  .nav-links a.nav-item{color:var(--muted);font-size:var(--fs-m);transition:color .2s}
+  .nav-links a.nav-item:hover,.nav-links a.nav-item.active{color:var(--brand)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 22px;border-radius:var(--radius-s);font-size:var(--fs-m);font-weight:600;cursor:pointer;border:1px solid transparent;transition:transform .2s,box-shadow .2s,background .2s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--brand);color:#fff;box-shadow:0 6px 16px rgba(61,90,241,.28)}
+  .btn-primary:hover{background:var(--brand-deep)}
+  .btn-ghost{background:transparent;color:var(--brand);border-color:var(--brand)}
+  .btn-ghost:hover{background:rgba(61,90,241,.08)}
+  .page-hero{padding:var(--sp-5) 0 var(--sp-3);text-align:center;background:linear-gradient(180deg,#eef1ff 0%,var(--bg) 100%)}
+  .page-hero h1{font-size:var(--fs-h1);margin-bottom:var(--sp-2)}
+  .page-hero p{color:var(--muted)}
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);padding-bottom:var(--sp-5)}
+  .plan-card{position:relative;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-l);padding:var(--sp-4);display:flex;flex-direction:column;transition:transform .25s,box-shadow .25s}
+  .plan-card:hover{transform:translateY(-6px);box-shadow:0 16px 36px rgba(27,34,51,.1)}
+  .plan-card h3{font-size:var(--fs-h3);margin-bottom:var(--sp-1)}
+  .plan-card .for{color:var(--muted);font-size:var(--fs-m);min-height:44px}
+  .price{margin:var(--sp-2) 0}
+  .price b{font-size:var(--fs-h1);font-weight:800}
+  .price span{color:var(--muted);font-size:var(--fs-m)}
+  .plan-card ul{flex:1;display:flex;flex-direction:column;gap:var(--sp-1);margin-bottom:var(--sp-3)}
+  .plan-card li{display:flex;gap:var(--sp-1);align-items:flex-start;font-size:var(--fs-m);color:var(--text)}
+  .check{flex:none;width:18px;height:18px;margin-top:3px}
+  .badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--brand),var(--accent));color:#fff;font-size:var(--fs-s);font-weight:700;padding:5px 16px;border-radius:99px;animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}}
+  .faq{max-width:760px;margin:0 auto;padding-bottom:var(--sp-5)}
+  .faq h2{font-size:var(--fs-h2);text-align:center;margin-bottom:var(--sp-3)}
+  .faq-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-3);margin-bottom:var(--sp-2)}
+  .faq-item h4{font-size:var(--fs-body);margin-bottom:6px}
+  .faq-item p{color:var(--muted);font-size:var(--fs-m)}
+  .cta{background:linear-gradient(120deg,var(--brand) 0%,var(--accent) 100%);border-radius:var(--radius-l);padding:var(--sp-5) var(--sp-4);text-align:center;color:#fff;margin-bottom:var(--sp-5)}
+  .cta h2{font-size:var(--fs-h2);margin-bottom:var(--sp-1)}
+  .cta p{opacity:.88;margin-bottom:var(--sp-3)}
+  .cta .btn-primary{background:#fff;color:var(--brand);box-shadow:0 8px 20px rgba(0,0,0,.18)}
+  .cta .btn-primary:hover{background:#f0f2ff}
+  .site-footer{border-top:1px solid var(--border);padding:var(--sp-4) 0 var(--sp-3);color:var(--muted);font-size:var(--fs-m)}
+  .footer-grid{display:flex;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap}
+  .footer-grid h4{color:var(--text);font-size:var(--fs-body);margin-bottom:var(--sp-1)}
+  .footer-grid a{display:block;color:var(--muted);font-size:var(--fs-m);padding:2px 0}
+  .footer-grid a:hover{color:var(--brand)}
+  .copyright{text-align:center;margin-top:var(--sp-3);font-size:var(--fs-s)}
+  .modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(15,20,40,.45)}
+  .modal[hidden]{display:none}
+  .modal-box{background:var(--card);border-radius:var(--radius-l);padding:var(--sp-4);width:min(420px,92vw);box-shadow:0 24px 60px rgba(0,0,0,.25);animation:popIn .28s ease}
+  @keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-box h3{font-size:var(--fs-h3);margin-bottom:var(--sp-1)}
+  .modal-box .desc{color:var(--muted);font-size:var(--fs-m);margin-bottom:var(--sp-2)}
+  .modal-actions{display:flex;gap:var(--sp-2);justify-content:flex-end;margin-top:var(--sp-2)}
+  .field{margin-bottom:var(--sp-2)}
+  .field label{display:block;font-size:var(--fs-m);font-weight:600;margin-bottom:6px}
+  .field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-s);font-size:var(--fs-m);font-family:inherit;background:#fff;color:var(--text)}
+  .field input:focus,.field select:focus{outline:2px solid rgba(61,90,241,.35);border-color:var(--brand)}
+  .form-ok{display:none;color:#0e9f6e;font-size:var(--fs-m);font-weight:600}
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:translateY(0)}
+  @media (max-width:860px){
+    .plans{grid-template-columns:1fr}
+    .page-hero h1{font-size:32px}
+    .nav-links{gap:var(--sp-2)}
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="logo" href="index.html">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="26" height="26" rx="7" fill="#3d5af1"/>
+        <path d="M8 18.5c3-6 5-9 6-9s3 3 6 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="14" cy="9.5" r="2" fill="#fff"/>
+      </svg>
+      曜川
+    </a>
+    <nav class="nav-links">
+      <a class="nav-item" href="index.html">首页</a>
+      <a class="nav-item" href="features.html">功能详情</a>
+      <a class="nav-item active" href="pricing.html">价格方案</a>
+      <a class="btn btn-primary" href="pricing.html">免费开始</a>
+    </nav>
+  </div>
+</header>
+<div class="page-hero">
+  <div class="wrap">
+    <p style="font-size:12px;font-weight:600;color:#3d5af1;letter-spacing:2px;margin-bottom:8px">PRICING</p>
+    <h1>简单透明的价格</h1>
+    <p>所有方案均含 14 天免费试用，按年付再享 8 折。随时升级、随时降级，不为用不到的功能付费。</p>
+  </div>
+</div>
+<main>
+  <!-- 三档价格卡片 -->
+  <div class="wrap plans">
+    <div class="plan-card reveal">
+      <h3>起步版</h3>
+      <p class="for">适合 10 人以内的小团队，先把报表跑起来。</p>
+      <div class="price">
+        <b style="color:#3d5af1">¥99</b>
+        <span> / 人 / 月</span>
+      </div>
+      <ul>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          10 个实时仪表盘
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          5 个数据源连接器
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          每日自动报表推送
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          7 天数据版本历史
+        </li>
+      </ul>
+      <button class="btn btn-ghost" data-open-modal data-plan="起步版">选择起步版</button>
+    </div>
+    <div class="plan-card reveal" style="border:2px solid #3d5af1;box-shadow:0 18px 40px rgba(61,90,241,.16)">
+      <span class="badge">最受欢迎</span>
+      <h3 style="color:#3d5af1">专业版</h3>
+      <p class="for">适合成长中的业务团队，把分析和协作放进同一个地方。</p>
+      <div class="price">
+        <b style="color:#3d5af1">¥249</b>
+        <span> / 人 / 月</span>
+      </div>
+      <ul>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          不限数量仪表盘与多维分析
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          全部 60+ 数据源连接器
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          自动化流程与智能告警
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          行级权限 · 90 天版本历史
+        </li>
+      </ul>
+      <button class="btn btn-primary" data-open-modal data-plan="专业版">选择专业版</button>
+    </div>
+    <div class="plan-card reveal">
+      <h3>企业版</h3>
+      <p class="for">适合对安全、合规与部署有更高要求的中大型组织。</p>
+      <div class="price">
+        <b style="color:#7c5cff">定制</b>
+        <span> / 按需报价</span>
+      </div>
+      <ul>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          专业版全部能力，不限席位
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          私有化部署 · SSO 单点登录
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          字段级权限 · 全量审计日志
+        </li>
+        <li>
+          <svg class="check" viewBox="0 0 18 18">
+            <circle cx="9" cy="9" r="8" fill="#eef1ff"/>
+            <path d="M5.5 9.2l2.3 2.3 4.7-5" stroke="#3d5af1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          专属客户成功经理 · SLA 保障
+        </li>
+      </ul>
+      <button class="btn btn-ghost" data-open-modal data-plan="企业版">预约演示</button>
+    </div>
+  </div>
+  <!-- 常见问题 -->
+  <div class="wrap faq">
+    <h2 class="reveal">常见问题</h2>
+    <div class="faq-item reveal">
+      <h4>试用期结束后会自动扣费吗？</h4>
+      <p>不会。试用无需绑定支付方式，到期后账号自动降级为只读，数据完整保留 90 天，升级即可恢复。</p>
+    </div>
+    <div class="faq-item reveal">
+      <h4>可以中途更换方案吗？</h4>
+      <p>可以。升级立即生效、按天折算差价；降级在当前账期结束后生效，不做任何数据删除。</p>
+    </div>
+    <div class="faq-item reveal">
+      <h4>支持私有化部署吗？</h4>
+      <p>企业版支持本地私有化部署与离线授权，交付含部署手册、运维培训与一年升级服务。</p>
+    </div>
+    <div class="faq-item reveal">
+      <h4>有面向教育或非盈利组织的优惠吗？</h4>
+      <p>有。凭相关资质可申请专业版 5 折公益价，请联系销售团队获取申请入口。</p>
+    </div>
+  </div>
+  <!-- 底部 CTA -->
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2>还拿不准选哪一档？</h2>
+      <p>用 14 天免费试用把三个版本都跑一遍，做过决定再付费。</p>
+      <button class="btn btn-primary" data-open-modal data-plan="免费试用">开始免费试用</button>
+      <a class="btn btn-ghost" style="color:#fff;border-color:#fff;margin-left:8px" href="features.html">再看看功能</a>
+    </div>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <h4>曜川</h4>
+      <p>
+        让团队的数据
+        <br>
+        像河流一样自由流动。
+      </p>
+    </div>
+    <div>
+      <h4>产品</h4>
+      <a href="features.html">功能详情</a>
+      <a href="pricing.html">价格方案</a>
+    </div>
+    <div>
+      <h4>快速入口</h4>
+      <a href="index.html">返回首页</a>
+      <a href="pricing.html">免费试用</a>
+    </div>
+  </div>
+  <div class="wrap copyright">© 2026 曜川科技 · 本产品页为 CentDeck 演示模板</div>
+</footer>
+<!-- 开通 / 预约演示弹窗 -->
+<div class="modal" id="plan-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
+    <h3 id="plan-modal-title">开通曜川</h3>
+    <p class="desc">
+      已选择方案：
+      <b id="chosen-plan" style="color:#3d5af1">专业版</b>
+      ，留下邮箱即可开始。
+    </p>
+    <form id="plan-form" novalidate>
+      <div class="field">
+        <label for="p-email">工作邮箱</label>
+        <input id="p-email" type="email" placeholder="name@company.com" required>
+      </div>
+      <div class="field">
+        <label for="p-contact">称呼（选填）</label>
+        <input id="p-contact" type="text" placeholder="例如：陈女士">
+      </div>
+      <p class="form-ok" id="plan-ok">开通链接已发送，请查收邮箱完成最后一步！</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>取消</button>
+        <button type="submit" class="btn btn-primary">确认开通</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+// 滚动淡入
+var revealEls = document.querySelectorAll(".reveal");
+if ("IntersectionObserver" in window) {
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(function (el) { io.observe(el); });
+} else {
+  revealEls.forEach(function (el) { el.classList.add("in"); });
+}
+// 弹窗：按所选方案显示名称
+var modal = document.getElementById("plan-modal");
+var chosenPlan = document.getElementById("chosen-plan");
+document.querySelectorAll("[data-open-modal]").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    chosenPlan.textContent = btn.getAttribute("data-plan") || "专业版";
+    modal.hidden = false;
+  });
+});
+document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
+  btn.addEventListener("click", function () { modal.hidden = true; });
+});
+modal.addEventListener("click", function (e) { if (e.target === modal) modal.hidden = true; });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") modal.hidden = true; });
+// 表单提交
+document.getElementById("plan-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var email = document.getElementById("p-email");
+  if (!email.value || email.value.indexOf("@") < 0) { email.focus(); return; }
+  document.getElementById("plan-ok").style.display = "block";
+  var btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = "已发送邮件";
+});
+</script>
+</body>
+</html>

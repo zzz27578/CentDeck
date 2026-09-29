@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>橙果市集三周年狂欢夜 · 限时抽奖</title>
+<style id="cd-tokens">
+:root {
+  --brand: #ff7847;
+  --accent: #ffc94d;
+  --bg: #160b33;
+  --bg-soft: #22124a;
+  --card: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.16);
+  --text: #fff6ea;
+  --muted: rgba(255, 246, 234, 0.62);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --round: 999px;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-title: 30px;
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+}
+</style>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0418;
+  color: var(--text);
+  font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); text-decoration: none; }
+/* 掌心舞台：手机竖屏比例，宽屏下呈手机框 */
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+@media (min-width: 480px) {
+  body { padding: 20px 0; }
+  .stage {
+    width: 400px;
+    height: min(840px, calc(100dvh - 40px));
+    border: 1px solid var(--line);
+    border-radius: 36px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  }
+}
+/* 翻屏：整轨 translate 切换 */
+.deck { height: 100%; transition: transform 0.72s cubic-bezier(0.76, 0, 0.24, 1); will-change: transform; }
+.screen {
+  position: relative;
+  height: 100%;
+  padding: var(--space-5) var(--space-4) 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  overflow: hidden;
+  text-align: center;
+}
+/* 右侧圆点与下滑箭头 */
+.dots { position: absolute; right: 10px; top: 50%; z-index: 20; display: flex; flex-direction: column; gap: 10px; transform: translateY(-50%); }
+.dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--line); cursor: pointer; transition: transform 0.25s, background 0.25s; }
+.dot.on { background: var(--accent); transform: scale(1.4); }
+.next {
+  position: absolute; left: 50%; bottom: 18px; z-index: 20;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--card); color: var(--accent); cursor: pointer;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+  animation: bob 1.6s ease-in-out infinite;
+}
+.next.hide { opacity: 0; pointer-events: none; }
+/* 漂浮装饰 */
+.orb { position: absolute; border-radius: 50%; filter: blur(28px); pointer-events: none; animation: floatY 8s ease-in-out infinite; }
+.orb-a { width: 230px; height: 230px; top: -80px; right: -70px; background: rgba(255, 120, 71, 0.34); }
+.orb-b { width: 170px; height: 170px; bottom: -50px; left: -60px; background: rgba(124, 92, 255, 0.30); animation-delay: -3.5s; }
+.orb-c { width: 190px; height: 190px; top: -60px; left: -70px; background: rgba(255, 201, 77, 0.22); animation-delay: -1.5s; }
+.twinkle { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #ffe9bf; pointer-events: none; animation: twinkle 2.4s ease-in-out infinite; }
+.hero-orbit { position: absolute; top: 50%; left: 50%; width: 320px; height: 320px; margin: -160px 0 0 -160px; pointer-events: none; animation: spin 26s linear infinite; }
+/* 文案层级 */
+.tag {
+  display: inline-block; padding: 6px 14px;
+  border: 1px solid rgba(255, 201, 77, 0.45); border-radius: var(--round);
+  background: rgba(255, 201, 77, 0.12);
+  color: var(--accent); font-size: var(--fs-sm); letter-spacing: 0.18em;
+}
+.hero-title { font-size: var(--fs-title); line-height: 1.25; letter-spacing: 0.06em; text-shadow: 0 4px 30px rgba(255, 120, 71, 0.35); }
+.hero-sub { max-width: 26em; color: var(--muted); }
+.hero-note { font-size: var(--fs-sm); color: var(--muted); }
+.hero-cta-note { font-size: var(--fs-sm); }
+.sec-title { font-size: var(--fs-xl); letter-spacing: 0.1em; }
+.sec-sub { max-width: 24em; font-size: var(--fs-sm); color: var(--muted); }
+/* 倒计时 */
+.cd-title { font-size: var(--fs-base); letter-spacing: 0.12em; }
+.cd { display: flex; align-items: center; gap: var(--space-1); }
+.cd-box { min-width: 58px; padding: 10px 6px 8px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); backdrop-filter: blur(6px); }
+.cd-box b { display: block; color: var(--accent); font-size: var(--fs-xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cd-box i { font-style: normal; font-size: var(--fs-xs); color: var(--muted); }
+.cd-dot { padding-bottom: 14px; color: var(--muted); font-size: var(--fs-lg); }
+.cd-tip { font-size: var(--fs-xs); color: var(--muted); }
+/* 按钮（多屏共用） */
+.btn {
+  display: inline-block; padding: 14px 34px;
+  border: 0; border-radius: var(--round);
+  background: linear-gradient(135deg, var(--brand), #ffa25c);
+  color: #fff; font-size: var(--fs-base); font-weight: 700; letter-spacing: 0.06em;
+  cursor: pointer; box-shadow: 0 10px 26px rgba(255, 120, 71, 0.38);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(255, 120, 71, 0.46); }
+.btn:active { transform: scale(0.96); }
+.btn-ghost { border: 1px solid var(--line); background: transparent; box-shadow: none; color: var(--text); font-weight: 500; }
+a.btn { color: #fff; }
+a.btn-ghost { color: var(--text); }
+/* 奖品卡片（共用 class） */
+.prize-list { width: 100%; max-width: 330px; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.prize-card { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); text-align: left; }
+.prize-icon { flex: 0 0 52px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: rgba(255, 201, 77, 0.14); color: var(--accent); }
+.prize-tag { display: inline-block; margin-bottom: 2px; padding: 1px 10px; border-radius: var(--round); background: rgba(255, 120, 71, 0.18); color: #ffb08f; font-size: var(--fs-xs); }
+.prize-card h3 { font-size: var(--fs-base); }
+.prize-card p { font-size: var(--fs-xs); color: var(--muted); }
+/* 中奖名单 */
+.win-list { width: 100%; max-width: 330px; height: 292px; list-style: none; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+.win-item { display: flex; align-items: center; gap: var(--space-2); padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--card); text-align: left; }
+.win-item.enter { animation: winIn 0.55s ease; }
+.win-face { flex: 0 0 32px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: linear-gradient(135deg, var(--brand), var(--accent)); color: #3b1a05; font-size: var(--fs-sm); font-weight: 700; }
+.win-body { flex: 1; min-width: 0; }
+.win-body b { display: block; font-size: var(--fs-sm); line-height: 1.3; }
+.win-body i { display: block; font-style: normal; font-size: var(--fs-xs); color: var(--muted); }
+.win-time { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 尾屏 */
+.quick { width: 100%; max-width: 330px; padding-left: 22px; display: flex; flex-direction: column; gap: var(--space-1); text-align: left; font-size: var(--fs-sm); color: var(--muted); }
+.quick li::marker { color: var(--accent); font-weight: 700; }
+.org { margin-top: var(--space-2); color: var(--accent); font-size: var(--fs-sm); letter-spacing: 0.1em; }
+.foot-note { font-size: var(--fs-xs); color: var(--muted); }
+.cta-col { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-1); }
+/* 底部弹窗 */
+.modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.modal-mask { position: absolute; inset: 0; background: rgba(7, 3, 18, 0.66); backdrop-filter: blur(3px); }
+.modal-card {
+  position: relative; width: min(400px, 94vw);
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 26px 26px 0 0;
+  background: var(--bg-soft); box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  animation: sheetUp 0.38s cubic-bezier(0.2, 0.9, 0.3, 1);
+  text-align: left;
+}
+.modal-card h3 { font-size: var(--fs-lg); }
+.modal-sub { margin: 4px 0 var(--space-3); font-size: var(--fs-xs); color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: var(--fs-xs); color: var(--muted); }
+.field input, .field select {
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06); font-size: var(--fs-base); outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field select option { background: var(--bg-soft); color: var(--text); }
+.agree { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--fs-xs); color: var(--muted); cursor: pointer; }
+.agree input { width: 16px; height: 16px; accent-color: var(--brand); }
+.err { min-height: 18px; font-size: var(--fs-xs); color: #ff9d89; }
+.modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.modal-actions .btn { width: 100%; }
+.done-face { display: block; margin: 4px auto 10px; }
+.modal-done { text-align: center; }
+.modal-done h3 { text-align: center; }
+.modal-done b { display: block; margin: 8px 0 2px; color: var(--accent); font-size: var(--fs-xl); letter-spacing: 0.12em; }
+.modal-done p { font-size: var(--fs-xs); color: var(--muted); }
+.modal-done .btn { width: 100%; margin-top: var(--space-3); }
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-6px); } }
+@keyframes winIn { from { opacity: 0; transform: translateY(-12px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes sheetUp { from { opacity: 0; transform: translateY(80px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-height: 700px) {
+  .screen { gap: var(--space-2); padding-top: var(--space-4); }
+  .hero-title { font-size: var(--fs-xl); }
+  .cd-box { min-width: 50px; padding: 8px 4px 6px; }
+  .win-list { height: 212px; }
+  .prize-icon { flex-basis: 44px; width: 44px; height: 44px; }
+}
+</style>
+</head>
+<body>
+<main class="stage" id="stage">
+  <div class="deck" id="deck">
+    <!-- 第 1 屏：主题 + 倒计时 -->
+    <section class="screen">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <div class="hero-orbit" aria-hidden="true">
+        <svg viewBox="0 0 320 320" width="320" height="320" fill="none">
+          <circle cx="160" cy="160" r="150" stroke="rgba(255,201,77,0.35)" stroke-width="1" stroke-dasharray="2 10" stroke-linecap="round"/>
+          <circle cx="160" cy="10" r="5" fill="#ffc94d"/>
+          <circle cx="310" cy="160" r="3" fill="#ff7847"/>
+        </svg>
+      </div>
+      <i class="twinkle" style="top: 22%; left: 18%;"></i>
+      <i class="twinkle" style="top: 14%; right: 26%; animation-delay: 0.9s;"></i>
+      <i class="twinkle" style="bottom: 26%; right: 14%; animation-delay: 1.6s;"></i>
+      <span class="tag">三周年 · 限时抽奖</span>
+      <h1 class="hero-title">橙果市集
+<br>
+三周年狂欢夜</h1>
+      <p class="hero-sub">万份心愿礼已装进橘色星球邮袋，12 月 31 日深夜，轮到好运来找你。</p>
+      <p class="hero-note">
+已有 <em style="color: #ffc94d; font-style: normal; font-weight: 700;">126,430</em>
+位朋友上车
+</p>
+      <h3 class="cd-title">距「圆满开奖」还有</h3>
+      <div class="cd" aria-label="开奖倒计时">
+        <div class="cd-box">
+<b id="cdD">--</b>
+<i>天</i></div>
+        <span class="cd-dot">:</span>
+        <div class="cd-box">
+<b id="cdH">--</b>
+<i>时</i></div>
+        <span class="cd-dot">:</span>
+        <div class="cd-box">
+<b id="cdM">--</b>
+<i>分</i></div>
+        <span class="cd-dot">:</span>
+        <div class="cd-box">
+<b id="cdS">--</b>
+<i>秒</i></div>
+      </div>
+      <p class="cd-tip" id="cdTip">开奖时刻：2026 年 12 月 31 日 23:59</p>
+      <button class="btn" type="button" data-open>立即参与抽奖</button>
+      <p class="hero-cta-note">
+<a href="rules.html">活动规则与奖品说明 →</a></p>
+    </section>
+    <!-- 第 2 屏：奖品卡片 -->
+    <section class="screen">
+      <div class="orb orb-c"></div>
+      <h2 class="sec-title" style="margin-top: 8px;">幸运大奖池</h2>
+      <p class="sec-sub">三重好礼报名即进池，另有人人有份的好运券。</p>
+      <ul class="prize-list">
+        <li class="prize-card">
+          <span class="prize-icon">
+            <svg viewBox="0 0 48 48" width="30" height="30" fill="none">
+              <rect x="14" y="6" width="20" height="36" rx="5" stroke="currentColor" stroke-width="2.5"/>
+              <circle cx="24" cy="12" r="1.6" fill="currentColor"/>
+              <rect x="19" y="36.5" width="10" height="2.4" rx="1.2" fill="currentColor"/>
+            </svg>
+          </span>
+          <span style="flex: 1; min-width: 0;">
+            <span class="prize-tag">一等奖 · 1 名</span>
+            <h3>Apple iPhone 17 Pro</h3>
+            <p>256GB 钛原色，含周年限定礼盒装</p>
+          </span>
+        </li>
+        <li class="prize-card">
+          <span class="prize-icon">
+            <svg viewBox="0 0 48 48" width="30" height="30" fill="none">
+              <path d="M10 28v-4a14 14 0 0 1 28 0v4" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+              <rect x="7" y="26" width="8" height="14" rx="3.5" fill="currentColor"/>
+              <rect x="33" y="26" width="8" height="14" rx="3.5" fill="currentColor"/>
+            </svg>
+          </span>
+          <span style="flex: 1; min-width: 0;">
+            <span class="prize-tag">二等奖 · 3 名</span>
+            <h3>Bose 头戴式消噪耳机</h3>
+            <p>QuietComfort Ultra，经典黑</p>
+          </span>
+        </li>
+        <li class="prize-card">
+          <span class="prize-icon">
+            <svg viewBox="0 0 48 48" width="30" height="30" fill="none">
+              <path d="M6 14a2 2 0 0 1 2-2h32a2 2 0 0 1 2 2v8a4 4 0 0 0 0 8v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a4 4 0 0 0 0-8v-8z" stroke="currentColor" stroke-width="2.4"/>
+              <path d="M28 14v20" stroke="currentColor" stroke-width="2.4" stroke-dasharray="3 5"/>
+              <circle cx="16" cy="24" r="4" fill="currentColor"/>
+            </svg>
+          </span>
+          <span style="flex: 1; min-width: 0;">
+            <span class="prize-tag">三等奖 · 50 名</span>
+            <h3>100 元无门槛市集券</h3>
+            <p>全场通用，到账后 30 天有效</p>
+          </span>
+        </li>
+      </ul>
+      <button class="btn" type="button" data-open>立即参与抽奖</button>
+    </section>
+    <!-- 第 3 屏：实时中奖名单 -->
+    <section class="screen">
+      <div class="orb orb-a" style="animation-delay: -5s;"></div>
+      <h2 class="sec-title">实时中奖播报</h2>
+      <p class="sec-sub">名单持续滚动更新，看看今晚的幸运儿都有谁。</p>
+      <ul id="js-list" class="win-list"></ul>
+      <button class="btn" type="button" data-open>好运接力，我也要参与</button>
+    </section>
+    <!-- 第 4 屏：规则速览 + 主办信息 -->
+    <section class="screen">
+      <div class="orb orb-b" style="animation-delay: -2s;"></div>
+      <svg viewBox="0 0 64 64" width="56" height="56" fill="none">
+        <path d="M22 6l10 8 10-8-4 20H26L22 6z" fill="#ff7847"/>
+        <circle cx="32" cy="42" r="16" stroke="#ffc94d" stroke-width="3"/>
+        <path d="M32 33l2.7 5.4 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6-4.3-4.2 6-.9L32 33z" fill="#ffc94d"/>
+      </svg>
+      <h2 class="sec-title">规则速览</h2>
+      <ol class="quick">
+        <li>活动期间报名即可参与，全程免费，谨防假冒收费。</li>
+        <li>每人限报名 1 次，重复提交以首次记录为准。</li>
+        <li>实物奖品 7 个工作日内寄出，市集券自动到账。</li>
+      </ol>
+      <div>
+        <h4 class="org">主办方 · 橙果市集</h4>
+        <p class="foot-note">橙果科技出品，用心把日子过成市集
+<br>
+客服时间 10:00 – 20:00（周末不休）</p>
+      </div>
+      <div class="cta-col">
+        <a class="btn btn-ghost" href="rules.html">查看完整规则</a>
+        <button class="btn" type="button" data-go="0">回到第一屏</button>
+      </div>
+    </section>
+  </div>
+  <div class="dots" aria-label="屏幕导航">
+    <button class="dot on" type="button" data-go="0" aria-label="第 1 屏"></button>
+    <button class="dot" type="button" data-go="1" aria-label="第 2 屏"></button>
+    <button class="dot" type="button" data-go="2" aria-label="第 3 屏"></button>
+    <button class="dot" type="button" data-go="3" aria-label="第 4 屏"></button>
+  </div>
+  <button class="next" id="nextBtn" type="button" aria-label="下一屏">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+      <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</main>
+<!-- 参与报名弹窗 -->
+<div class="modal" id="joinModal" hidden>
+  <div class="modal-mask" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="joinTitle">
+    <form id="joinForm" novalidate>
+      <h3 id="joinTitle">填写报名信息</h3>
+      <p class="modal-sub">开奖结果将通过短信通知到你</p>
+      <div class="field">
+        <label for="fName">你的称呼</label>
+        <input id="fName" name="name" type="text" placeholder="会员昵称或真实姓名" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="fPhone">手机号</label>
+        <input id="fPhone" name="phone" type="tel" placeholder="用于中奖后联系你" autocomplete="tel" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="fCity">所在城市</label>
+        <select id="fCity" name="city">
+          <option>北京</option>
+          <option>上海</option>
+          <option>广州</option>
+          <option selected>深圳</option>
+          <option>杭州</option>
+          <option>成都</option>
+          <option>其他城市</option>
+        </select>
+      </div>
+      <label class="agree">
+        <input id="fAgree" type="checkbox">
+        <span>
+我已阅读并同意<a href="rules.html">《活动规则》</a>
+</span>
+      </label>
+      <p class="err" id="joinErr"></p>
+      <div class="modal-actions">
+        <button class="btn" type="submit">提交并参与抽奖</button>
+        <button class="btn btn-ghost" type="button" data-close>暂不参加</button>
+      </div>
+    </form>
+    <div class="modal-done" id="joinDone" hidden>
+      <svg class="done-face" viewBox="0 0 54 54" width="54" height="54" fill="none">
+        <circle cx="27" cy="27" r="26" fill="rgba(46,204,113,0.15)" stroke="#2ecc71" stroke-width="2"/>
+        <path d="M17 28l7 7 13-15" stroke="#2ecc71" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h3>报名成功</h3>
+      <b id="joinCode">CG000000</b>
+      <p>你的幸运号码已放进奖池，开奖结果将通过短信通知。</p>
+      <button class="btn" type="button" data-close>完成</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  /* —— 全屏翻页 —— */
+  var deck = $('deck');
+  var stage = $('stage');
+  var nextBtn = $('nextBtn');
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.dot'));
+  var total = document.querySelectorAll('.screen').length;
+  var cur = 0;
+  var lock = false;
+  function modalOpen() { return !$('joinModal').hidden; }
+  function updateUI() {
+    dots.forEach(function (d, i) { d.classList.toggle('on', i === cur); });
+    nextBtn.classList.toggle('hide', cur === total - 1);
+  }
+  function go(i) {
+    i = Math.max(0, Math.min(total - 1, i));
+    if (i === cur) { updateUI(); return; }
+    cur = i;
+    lock = true;
+    deck.style.transform = 'translateY(' + (-100 * cur) + '%)';
+    updateUI();
+    setTimeout(function () { lock = false; }, 780);
+  }
+  updateUI();
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (el) {
+    el.addEventListener('click', function (e) { e.preventDefault(); go(+el.getAttribute('data-go')); });
+  });
+  nextBtn.addEventListener('click', function () { go(cur + 1); });
+  stage.addEventListener('wheel', function (e) {
+    if (modalOpen()) return;
+    e.preventDefault();
+    if (lock || Math.abs(e.deltaY) < 12) return;
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+  var touchY = null;
+  stage.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; }, { passive: true });
+  stage.addEventListener('touchend', function (e) {
+    if (touchY === null || modalOpen()) return;
+    var dy = touchY - e.changedTouches[0].clientY;
+    touchY = null;
+    if (Math.abs(dy) > 46 && !lock) go(cur + (dy > 0 ? 1 : -1));
+  }, { passive: true });
+  document.addEventListener('keydown', function (e) {
+    if (modalOpen()) { if (e.key === 'Escape') closeModal(); return; }
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') go(cur + 1);
+    if (e.key === 'ArrowUp' || e.key === 'PageUp') go(cur - 1);
+  });
+  /* —— 开奖倒计时 —— */
+  var END = new Date(2026, 11, 31, 23, 59, 59).getTime();
+  var cd = { d: $('cdD'), h: $('cdH'), m: $('cdM'), s: $('cdS'), tip: $('cdTip') };
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function tick() {
+    var diff = END - Date.now();
+    if (diff <= 0) {
+      cd.d.textContent = '00'; cd.h.textContent = '00';
+      cd.m.textContent = '00'; cd.s.textContent = '00';
+      cd.tip.textContent = '大奖已经开出，去名单里找找你的名字';
+      return;
+    }
+    var s = Math.floor(diff / 1000);
+    cd.d.textContent = pad(Math.floor(s / 86400));
+    cd.h.textContent = pad(Math.floor(s / 3600) % 24);
+    cd.m.textContent = pad(Math.floor(s / 60) % 60);
+    cd.s.textContent = pad(s % 60);
+    setTimeout(tick, 1000);
+  }
+  tick();
+  /* —— 中奖名单：JS 数组渲染 —— */
+  var winners = [
+    { name: '林小满', prize: 'Bose 头戴式耳机', time: '22:14' },
+    { name: '陈亦舟', prize: '100 元无门槛券', time: '22:09' },
+    { name: '苏砚清', prize: 'iPhone 17 Pro 礼盒', time: '21:58' },
+    { name: '高贝贝', prize: '50 元无门槛券', time: '21:47' },
+    { name: '周又青', prize: '9.9 折好运券', time: '21:32' }
+  ];
+  var namePool = ['温之仪', '孟星河', '季安然', '何遇', '顾北辰', '姜小桃', '沈砚舟', '白鹭洲'];
+  var prizePool = ['9.9 折好运券', '20 元立减券', '50 元无门槛券', '100 元无门槛券'];
+  var listEl = $('js-list');
+  function maskName(n) { return n.length <= 1 ? n : n.charAt(0) + '**'; }
+  function renderWinners(freshFirst) {
+    listEl.innerHTML = '';
+    winners.forEach(function (w, i) {
+      var li = document.createElement('li');
+      li.className = 'win-item' + (freshFirst && i === 0 ? ' enter' : '');
+      var face = document.createElement('span');
+      face.className = 'win-face';
+      face.textContent = w.name.charAt(0);
+      var body = document.createElement('span');
+      body.className = 'win-body';
+      var b = document.createElement('b');
+      b.textContent = maskName(w.name);
+      var sub = document.createElement('i');
+      sub.textContent = '抽中了「' + w.prize + '」';
+      body.appendChild(b);
+      body.appendChild(sub);
+      var time = document.createElement('span');
+      time.className = 'win-time';
+      time.textContent = w.time;
+      li.appendChild(face);
+      li.appendChild(body);
+      li.appendChild(time);
+      listEl.appendChild(li);
+    });
+  }
+  renderWinners(false);
+  setInterval(function () {
+    var now = new Date();
+    winners.unshift({
+      name: namePool[Math.floor(Math.random() * namePool.length)],
+      prize: prizePool[Math.floor(Math.random() * prizePool.length)],
+      time: pad(now.getHours()) + ':' + pad(now.getMinutes())
+    });
+    if (winners.length > 8) winners.pop();
+    renderWinners(true);
+  }, 8000);
+  /* —— 参与报名弹窗 —— */
+  var modal = $('joinModal');
+  var form = $('joinForm');
+  var done = $('joinDone');
+  var err = $('joinErr');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-open]'), function (el) {
+    el.addEventListener('click', function () {
+      modal.hidden = false;
+      var f = $('fName');
+      if (f) f.focus();
+    });
+  });
+  function closeModal() {
+    modal.hidden = true;
+    err.textContent = '';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (el) {
+    el.addEventListener('click', closeModal);
+  });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('fName').value.trim();
+    var phone = $('fPhone').value.trim();
+    if (!name) { err.textContent = '请填写你的称呼，开奖时好喊出你的名字'; return; }
+    if (!/^1\d{10}$/.test(phone)) { err.textContent = '请填写 11 位手机号，中奖后好通知你'; return; }
+    if (!$('fAgree').checked) { err.textContent = '请先阅读并勾选同意《活动规则》'; return; }
+    $('joinCode').textContent = 'CG' + String(100000 + Math.floor(Math.random() * 900000));
+    form.hidden = true;
+    done.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

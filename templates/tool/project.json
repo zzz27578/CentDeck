@@ -1,0 +1,10 @@
+{
+  "id": "tool",
+  "name": "百映工具箱",
+  "type": "tool",
+  "description": "网页小工具集：四则计算器与长度、重量单位换算，开箱即用。",
+  "pages": [
+    { "file": "pages/index.html", "title": "四则计算器" },
+    { "file": "pages/convert.html", "title": "单位换算" }
+  ]
+}

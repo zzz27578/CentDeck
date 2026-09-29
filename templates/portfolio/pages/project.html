@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> 星野咖啡 · 品牌视觉升级 | 林晚秋作品集 </title>
+ <style id="cd-tokens">
+:root{
+  --brand:#e85d3d;
+  --brand-deep:#c94728;
+  --brand-soft:#fdeee8;
+  --bg:#faf7f2;
+  --surface:#ffffff;
+  --ink:#26221c;
+  --muted:#8a8378;
+  --line:#e9e2d7;
+  --fs-sm:13px;
+  --fs-md:15px;
+  --fs-lg:18px;
+  --fs-xl:24px;
+  --fs-2xl:32px;
+  --fs-3xl:44px;
+  --sp-1:8px;
+  --sp-2:16px;
+  --sp-3:24px;
+  --sp-4:40px;
+  --sp-5:64px;
+  --radius-sm:6px;
+  --radius:12px;
+  --radius-lg:20px;
+}
+</style> <style>
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:var(--fs-md)/1.8 "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+svg{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+h1,h2{font-family:"Songti SC","STSong","SimSun",serif;line-height:1.3;margin:0 0 var(--sp-2);}
+h1{font-size:var(--fs-3xl);}
+h2{font-size:var(--fs-2xl);}
+h3{font-size:var(--fs-lg);margin:0 0 var(--sp-1);line-height:1.4;}
+h4{font-size:var(--fs-md);margin:0 0 var(--sp-1);}
+p{margin:0 0 var(--sp-2);}
+.wrap{width:min(1120px,92vw);margin:0 auto;}
+
+/* 顶部导航 */
+.site-nav{position:sticky;top:0;z-index:30;background:rgba(250,247,242,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:var(--fs-lg);}
+.logo-mark{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--brand);color:#fff;display:grid;place-items:center;font-family:"Songti SC","SimSun",serif;font-size:17px;}
+.nav-links{display:flex;align-items:center;gap:var(--sp-3);}
+.nav-links a{padding:6px 2px;color:var(--muted);border-bottom:2px solid transparent;}
+.nav-links a:hover{color:var(--ink);}
+.nav-links a.active{color:var(--ink);border-bottom-color:var(--brand);font-weight:600;}
+
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;font-size:var(--fs-md);font-weight:600;
+  padding:12px 26px;border-radius:999px;background:var(--brand);color:#fff;
+  transition:transform .25s ease,box-shadow .25s ease,background .25s ease;}
+.btn:hover{background:var(--brand-deep);transform:translateY(-2px);box-shadow:0 10px 24px rgba(232,93,61,.28);}
+.btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:var(--fs-md);font-weight:600;
+  padding:11px 24px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  transition:transform .25s ease,border-color .25s ease,color .25s ease;}
+.btn-ghost:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-2px);}
+.btn-ghost.on{color:var(--brand);border-color:var(--brand);background:var(--brand-soft);}
+
+/* 面包屑 */
+.crumb{display:flex;align-items:center;gap:var(--sp-1);font-size:var(--fs-sm);color:var(--muted);padding:var(--sp-3) 0 0;}
+.crumb a:hover{color:var(--brand);}
+.crumb em{font-style:normal;color:var(--ink);font-weight:600;}
+
+/* 案例首屏 */
+.p-hero{padding:var(--sp-2) 0 var(--sp-4);}
+.section-tag{font-size:var(--fs-sm);letter-spacing:.2em;color:var(--brand);font-weight:700;display:block;margin-bottom:var(--sp-1);}
+.p-lead{font-size:var(--fs-lg);color:var(--muted);max-width:44em;margin-bottom:var(--sp-2);}
+.chip{display:inline-block;font-size:var(--fs-sm);color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:3px 12px;margin-right:var(--sp-1);}
+.p-poster{position:relative;margin:var(--sp-3) 0;}
+.p-poster .poster-main{width:100%;height:auto;border-radius:var(--radius-lg);box-shadow:0 24px 60px rgba(38,34,28,.18);}
+.badge-spin{position:absolute;right:var(--sp-3);top:var(--sp-3);width:112px;height:112px;animation:spin 14s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.p-caption{font-size:var(--fs-sm);color:var(--muted);text-align:center;margin:var(--sp-2) 0 0;}
+.p-actions{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-3);}
+
+/* 项目信息 */
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-2);padding:var(--sp-3) 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.info-cell h4{color:var(--muted);font-size:var(--fs-sm);font-weight:400;letter-spacing:.1em;}
+.info-cell p{margin:0;font-weight:600;font-family:"Songti SC","SimSun",serif;font-size:var(--fs-lg);}
+
+/* 正文分节 */
+.p-body{max-width:820px;padding:var(--sp-4) 0 0;}
+.p-body p{color:var(--muted);}
+.p-body h2{margin-top:var(--sp-4);}
+.p-body h3{margin-top:var(--sp-3);}
+.p-body ul{color:var(--muted);padding-left:1.2em;}
+.p-body li{margin-bottom:var(--sp-1);}
+.swatches{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin:var(--sp-2) 0;}
+.sw{display:inline-flex;align-items:center;gap:8px;font-size:var(--fs-sm);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;}
+.sw i{display:inline-block;width:18px;height:18px;border-radius:50%;border:1px solid rgba(38,34,28,.08);}
+
+/* 过程稿 */
+.process{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);margin-top:var(--sp-3);}
+.process-item{margin:0;}
+.process-img{width:100%;height:auto;border-radius:var(--radius);border:1px solid var(--line);transition:transform .3s ease;}
+.process-item:hover .process-img{transform:translateY(-4px);}
+.process-item figcaption{font-size:var(--fs-sm);color:var(--muted);margin-top:var(--sp-1);text-align:center;}
+
+/* 成果数据 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2);margin-top:var(--sp-3);}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-3);text-align:center;}
+.stat b{display:block;font-size:var(--fs-2xl);font-family:"Songti SC","SimSun",serif;}
+.stat span{font-size:var(--fs-sm);color:var(--muted);}
+
+/* 翻页 */
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);margin:var(--sp-5) 0 0;}
+.pager-link{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:var(--sp-3);display:block;
+  transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;}
+.pager-link:hover{transform:translateY(-3px);border-color:var(--brand);box-shadow:0 12px 30px rgba(38,34,28,.08);}
+.pager-dir{display:block;font-size:var(--fs-sm);color:var(--muted);margin-bottom:4px;}
+.pager-title{font-weight:700;font-family:"Songti SC","SimSun",serif;font-size:var(--fs-lg);}
+.pager-next{text-align:right;}
+
+/* 行动区 */
+.cta-band{margin:var(--sp-5) 0;background:var(--brand-soft);border-radius:var(--radius-lg);padding:var(--sp-4);text-align:center;}
+.cta-band p{color:var(--muted);max-width:36em;margin:0 auto var(--sp-3);}
+.cta-actions{display:flex;gap:var(--sp-2);justify-content:center;flex-wrap:wrap;}
+
+/* 页脚 */
+.site-footer{border-top:1px solid var(--line);padding:var(--sp-3) 0;color:var(--muted);font-size:var(--fs-sm);}
+.footer-inner{display:flex;justify-content:space-between;gap:var(--sp-2);flex-wrap:wrap;}
+.footer-inner a{margin-left:var(--sp-2);}
+.footer-inner a:hover{color:var(--brand);}
+
+/* 弹窗 */
+.modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:var(--sp-3);}
+.modal[hidden]{display:none;}
+.modal-mask{position:absolute;inset:0;background:rgba(38,34,28,.45);backdrop-filter:blur(3px);}
+.modal-card{position:relative;background:var(--surface);border-radius:var(--radius-lg);padding:var(--sp-4);width:min(480px,100%);
+  box-shadow:0 30px 80px rgba(38,34,28,.25);animation:pop .28s ease;}
+@keyframes pop{from{transform:translateY(14px) scale(.96);opacity:0;}to{transform:none;opacity:1;}}
+.modal-card ul{color:var(--muted);padding-left:1.2em;font-size:var(--fs-sm);}
+.modal-card li{margin-bottom:6px;}
+.modal-card p{color:var(--muted);font-size:var(--fs-sm);}
+.modal-card .btn{width:100%;margin-top:var(--sp-2);}
+
+@media (max-width:960px){
+  .info-grid{grid-template-columns:1fr 1fr;}
+  .process{grid-template-columns:1fr;}
+}
+@media (max-width:600px){
+  h1{font-size:var(--fs-2xl);}
+  .pager{grid-template-columns:1fr;}
+  .pager-next{text-align:left;}
+}
+</style> 
+</head>
+<body>
+<header class="site-nav">
+<div class="wrap nav-inner">
+<a class="logo" href="index.html">
+<span class="logo-mark"> 林 </span>
+ 林晚秋 
+<span style="font-size:var(--fs-sm);color:var(--muted);font-weight:400;"> &nbsp;视觉设计师 </span>
+</a>
+<nav class="nav-links" aria-label="站内导航">
+<a href="index.html"> 首页 </a>
+<a class="active" href="project.html"> 作品详情 </a>
+<button class="btn" type="button" data-open-modal> 预约交流 </button>
+</nav>
+</div>
+</header>
+<main class="wrap">
+<nav class="crumb" aria-label="面包屑">
+<a href="index.html"> 首页 </a>
+<span> / </span>
+<a href="index.html#works"> 精选作品 </a>
+<span> / </span>
+<em> 星野咖啡 · 品牌视觉升级 </em>
+</nav>
+<!-- 案例首屏：大图 -->
+<section class="p-hero">
+<span class="section-tag"> BRAND CASE · 2025 </span>
+<h1> 星野咖啡 · 品牌视觉升级 </h1>
+<p class="p-lead"> 为起源于莫干山的精品咖啡品牌「星野」完成从标志到门店物料的整体视觉升级——以「山与日出」为核心意象，让品牌故事被一眼记住、被一杯一杯带走。 </p>
+<div>
+<span class="chip"> 品牌视觉 </span>
+<span class="chip"> 包装设计 </span>
+<span class="chip"> 门店物料 </span>
+<span class="chip"> 2025 年 4 月交付 </span>
+</div>
+<div class="p-poster"> <svg class="poster-main" viewBox="0 0 1200 560" role="img" aria-label="星野咖啡品牌主视觉海报">
+        <defs>
+          <linearGradient id="p-sun" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f6b48b"/><stop offset="1" stop-color="#e85d3d"/>
+          </linearGradient>
+        </defs>
+        <rect width="1200" height="560" fill="#22303c"/>
+        <circle cx="140" cy="80" r="2.4" fill="#c9d4dc"/><circle cx="320" cy="52" r="1.8" fill="#c9d4dc"/><circle cx="520" cy="96" r="2" fill="#c9d4dc"/><circle cx="700" cy="60" r="1.6" fill="#c9d4dc"/><circle cx="1080" cy="110" r="2.2" fill="#c9d4dc"/>
+        <path d="M980 60 l5 14 14 5 -14 5 -5 14 -5 -14 -14 -5 14 -5 Z" fill="#f0d9c4"/>
+        <circle cx="880" cy="250" r="150" fill="url(#p-sun)"/>
+        <path d="M0 400 L260 220 L520 400 Z" fill="#2f4356"/>
+        <path d="M260 400 L560 170 L860 400 Z" fill="#17232e"/>
+        <path d="M560 170 L528 204 L592 204 Z" fill="#faf7f2"/>
+        <path d="M720 400 L940 250 L1160 400 Z" fill="#22384a"/>
+        <path d="M80 430 H1120" stroke="#5b7080" stroke-width="2"/>
+        <path d="M160 456 H1040" stroke="#3b4d5d" stroke-width="2"/>
+        <g>
+          <rect x="72" y="120" width="230" height="150" rx="16" fill="#faf7f2"/>
+          <path d="M104 200 q60 -60 130 0" fill="none" stroke="#e85d3d" stroke-width="10" stroke-linecap="round"/>
+          <circle cx="230" cy="176" r="34" fill="#e85d3d"/>
+          <rect x="104" y="224" width="120" height="9" rx="4.5" fill="#d8d2c2"/>
+          <rect x="104" y="242" width="80" height="9" rx="4.5" fill="#e9e2d7"/>
+        </g>
+        <text x="72" y="356" font-size="64" font-weight="700" fill="#faf7f2" font-family="'Songti SC','SimSun',serif">星野咖啡</text>
+        <text x="76" y="392" font-size="16" letter-spacing="6" fill="#93a6b4">STARRY BREW · 山与日出的一杯</text>
+        <rect x="0" y="540" width="1200" height="20" fill="#e85d3d"/>
+  </svg> <svg class="badge-spin" viewBox="0 0 120 120" role="img" aria-label="原创案例徽章">
+        <defs>
+          <path id="badge-circle" d="M60,60 m-42,0 a42,42 0 1,1 84,0 a42,42 0 1,1 -84,0"/>
+        </defs>
+        <circle cx="60" cy="60" r="58" fill="#e85d3d"/>
+        <circle cx="60" cy="60" r="30" fill="none" stroke="#fdeee8" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <text font-size="12.5" letter-spacing="2.5" fill="#fdeee8"><textPath href="#badge-circle">BRAND DESIGN · 星野咖啡 · 2025 ·</textPath></text>
+        <text x="60" y="67" text-anchor="middle" font-size="19" font-weight="700" fill="#fdeee8" font-family="'Songti SC','SimSun',serif">原作</text>
+</svg> </div>
+<p class="p-caption"> ▲ 品牌主视觉海报（内联 SVG 演示图），右上角旋转徽章为 CSS @keyframes 动画。 </p>
+<div class="p-actions">
+<button class="btn-ghost" id="likeBtn" type="button"> ♡ 收藏这个案例 </button>
+<button class="btn" type="button" data-open-modal> 查看交付清单 </button>
+</div>
+</section>
+<!-- 项目信息 -->
+<section class="info-grid" aria-label="项目信息">
+<div class="info-cell">
+<h4> 客户 </h4>
+<p> 星野咖啡（12 家门店） </p>
+</div>
+<div class="info-cell">
+<h4> 年份 </h4>
+<p> 2025 </p>
+</div>
+<div class="info-cell">
+<h4> 我的角色 </h4>
+<p> 主创视觉设计师 </p>
+</div>
+<div class="info-cell">
+<h4> 项目周期 </h4>
+<p> 10 周 </p>
+</div>
+</section>
+<!-- 说明文字 -->
+<section class="p-body">
+<h2> 项目背景 </h2>
+<p> 星野咖啡 2019 年创立于莫干山脚下，主打「高山种植、当日烘焙」。随着门店从 3 家扩张到 12 家，旧形象在杯身、外卖袋与社交媒体上难以统一：标志在小尺寸下糊成一团，各门店的招牌也各自为战。 </p>
+<p> 2025 年初，创始人找到我，希望在不丢失「山」这个母题的前提下，建立一套能从小红书封面一直用到门店灯箱的视觉系统。 </p>
+<h2> 设计策略 </h2>
+<h3> 图形语言 </h3>
+<p> 以「山脊线 × 日出」为核心图形：一条连续的山脊线承担识别，一轮渐变的太阳承担情绪。两者可以组合为完整标志，也可以拆分为杯身纹样与社交头像，保证在 24px 到 4 米招牌之间都清晰可辨。 </p>
+<h3> 色彩系统 </h3>
+<p> 主色取烘焙豆的深棕与山间日出的橘，辅以夜空蓝稳住整体气质。全部色值在交付手册中标注了印刷 CMYK 与屏幕 RGB 两套数值： </p>
+<div class="swatches">
+<span class="sw">
+<i style="background:#22303c"> </i>
+ 夜空蓝 #22303C 
+</span>
+<span class="sw">
+<i style="background:#e85d3d"> </i>
+ 日出橘 #E85D3D 
+</span>
+<span class="sw">
+<i style="background:#6d4c2f"> </i>
+ 烘焙棕 #6D4C2F 
+</span>
+<span class="sw">
+<i style="background:#f0d9c4"> </i>
+ 晨雾米 #F0D9C4 
+</span>
+<span class="sw">
+<i style="background:#faf7f2"> </i>
+ 纸白 #FAF7F2 
+</span>
+</div>
+<h3> 字体与版式 </h3>
+<p> 中文标准字以宋体骨架重新绘制，横画末端保留手写般的微微上扬；西文选择人文无衬线字体与之中和。版式上规定「山脊线永远出现在画面下三分之一处」，让所有物料保持一致的呼吸感。 </p>
+<ul>
+<li> 标志最小使用尺寸：印刷 12mm，屏幕 32px； </li>
+<li> 杯身纹样提供 3 种密度，对应不同杯型； </li>
+<li> 所有门店招牌的统一安全区 = 标志高度的 0.6 倍。 </li>
+</ul>
+<h2> 过程稿 </h2>
+<p> 第一轮共提交 4 个方向，客户选择了「山脊线」方向继续深化。以下为该方向的推演节点（内联 SVG 复刻草图）： </p>
+<div class="process">
+<figure class="process-item">
+<svg class="process-img" viewBox="0 0 400 260" role="img" aria-label="标志草图推演">
+          <rect width="400" height="260" fill="#f3ede2"/>
+          <path d="M40 190 L120 110 L200 190" fill="none" stroke="#8a8378" stroke-width="3" stroke-linecap="round"/>
+          <path d="M140 190 L230 90 L320 190" fill="none" stroke="#26221c" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="230" cy="96" r="30" fill="none" stroke="#e85d3d" stroke-width="4"/>
+          <path d="M60 214 H340" stroke="#c9c0b2" stroke-width="2" stroke-dasharray="6 6"/>
+          <circle cx="330" cy="70" r="26" fill="none" stroke="#e85d3d" stroke-width="2"/>
+          <text x="330" y="112" text-anchor="middle" font-size="11" fill="#e85d3d">OK →</text>
+</svg>
+<figcaption> ① 标志推演：山脊线与日的组合 </figcaption>
+</figure>
+<figure class="process-item">
+<svg class="process-img" viewBox="0 0 400 260" role="img" aria-label="杯身包装草图">
+          <rect width="400" height="260" fill="#f3ede2"/>
+          <path d="M70 60 h110 l-14 150 h-82 Z" fill="#ffffff" stroke="#8a8378" stroke-width="3"/>
+          <path d="M76 130 l40 -34 34 30" fill="none" stroke="#26221c" stroke-width="3"/>
+          <circle cx="145" cy="96" r="14" fill="#e85d3d" opacity=".85"/>
+          <path d="M230 50 h110 l-14 170 h-82 Z" fill="#ffffff" stroke="#8a8378" stroke-width="3" stroke-dasharray="8 6"/>
+          <path d="M238 140 l44 -38 38 34" fill="none" stroke="#c9c0b2" stroke-width="3"/>
+          <text x="200" y="240" text-anchor="middle" font-size="12" fill="#8a8378">中杯 → 大杯：纹样密度 ×1.5</text>
+</svg>
+<figcaption> ② 杯身纹样的密度推演 </figcaption>
+</figure>
+<figure class="process-item">
+<svg class="process-img" viewBox="0 0 400 260" role="img" aria-label="门店招牌草图">
+          <rect width="400" height="260" fill="#f3ede2"/>
+          <rect x="30" y="70" width="340" height="110" rx="8" fill="#22303c"/>
+          <path d="M56 150 l44 -38 44 38" fill="none" stroke="#f0d9c4" stroke-width="4"/>
+          <circle cx="164" cy="112" r="16" fill="#e85d3d"/>
+          <text x="200" y="136" font-size="26" fill="#faf7f2" font-family="'Songti SC','SimSun',serif">星野咖啡</text>
+          <rect x="30" y="194" width="340" height="10" rx="5" fill="#d8d2c2"/>
+          <text x="200" y="232" text-anchor="middle" font-size="12" fill="#8a8378">发光字 + 侧招灯箱组合</text>
+</svg>
+<figcaption> ③ 门店招牌的夜间效果推演 </figcaption>
+</figure>
+</div>
+<h2> 项目成果 </h2>
+<p> 新形象自 2025 年 5 月起在全部门店陆续落地，三个月后回访数据如下（客户提供，演示数据）： </p>
+<div class="stats">
+<div class="stat">
+<b style="color:var(--brand);"> +18% </b>
+<span> 门店会员复购率提升 </span>
+</div>
+<div class="stat">
+<b> 2.3 倍 </b>
+<span> 社交媒体自然曝光量 </span>
+</div>
+<div class="stat">
+<b> 96% </b>
+<span> 新包装顾客好评率 </span>
+</div>
+</div>
+</section>
+<!-- 翻页 -->
+<nav class="pager" aria-label="作品翻页">
+<a class="pager-link" href="index.html">
+<span class="pager-dir"> ← 上一页 </span>
+<span class="pager-title"> 首页 · 个人简介与作品网格 </span>
+</a>
+<a class="pager-link pager-next" href="project.html">
+<span class="pager-dir"> 下一页 → </span>
+<span class="pager-title"> 云杉民宿 · 官网重设计 </span>
+</a>
+</nav>
+<!-- 行动区 -->
+<section class="cta-band">
+<span class="section-tag"> WORK WITH ME </span>
+<h2> 喜欢这样的风格？ </h2>
+<p> 我每年只接 6 个品牌全案，保证每个案子都有足够的思考密度。如果你的品牌也走到「需要被一眼记住」的阶段，欢迎来聊。 </p>
+<div class="cta-actions">
+<a class="btn" href="index.html#contact"> 预约类似合作 </a>
+<a class="btn-ghost" href="index.html"> 返回首页 </a>
+</div>
+</section>
+</main>
+<footer class="site-footer">
+<div class="wrap footer-inner">
+<span> © 2026 林晚秋 · 个人作品集 </span>
+<span> CentDeck 内置模板「个人作品集」· 页面内容均为演示数据 </span>
+<span>
+<a href="index.html"> 首页 </a>
+<a href="project.html"> 作品详情 </a>
+</span>
+</div>
+</footer>
+<!-- 弹窗：交付清单 -->
+<div class="modal" id="caseModal" hidden>
+<div class="modal-mask" data-close-modal> </div>
+<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="caseTitle">
+<h3 id="caseTitle"> ✦ 本案交付清单 </h3>
+<ul>
+<li> 标志与中文标准字（含黑白、压印专版） </li>
+<li> VI 使用手册 · 86 页（印刷 / 屏幕双规范） </li>
+<li> 4 款杯身、手提袋与外卖封套设计 </li>
+<li> 门店招牌、灯箱与菜单板版式 </li>
+<li> 社交媒体通用模板 × 12 套 </li>
+</ul>
+<p> 这是演示模板中的弹窗示例，清单内容仅为演示数据。 </p>
+<button class="btn" type="button" data-close-modal> 好的，知道了 </button>
+</div>
+</div>
+<script>
+(function () {
+  var modal = document.getElementById("caseModal");
+  function openModal() { modal.hidden = false; document.body.style.overflow = "hidden"; }
+  function closeModal() { modal.hidden = true; document.body.style.overflow = ""; }
+  document.querySelectorAll("[data-open-modal]").forEach(function (b) {
+    b.addEventListener("click", openModal);
+  });
+  modal.querySelectorAll("[data-close-modal]").forEach(function (b) {
+    b.addEventListener("click", closeModal);
+  });
+
+  var likeBtn = document.getElementById("likeBtn");
+  var liked = false;
+  likeBtn.addEventListener("click", function () {
+    liked = !liked;
+    likeBtn.textContent = liked ? "♥ 已收藏" : "♡ 收藏这个案例";
+    likeBtn.classList.toggle("on", liked);
+  });
+})();
+</script>
+</body>
+</html>

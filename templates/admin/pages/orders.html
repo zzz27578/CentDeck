@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订单管理 · 沐云管理后台</title>
+<style id="cd-tokens">:root{
+  --brand:#4f46e5; --brand-dark:#3730a3; --bg:#f4f5fb; --card:#ffffff;
+  --text:#1e2233; --muted:#84899e; --line:#e6e8f4; --sidebar:#16192b;
+  --success:#16a34a; --warning:#d97706; --danger:#dc2626; --info:#0284c7;
+  --radius:12px; --radius-sm:6px; --radius-md:10px; --radius-pill:999px;
+  --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:18px; --fs-title:22px; --fs-num:28px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
+}</style>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs-md);line-height:1.6}
+a{text-decoration:none;color:inherit}
+.layout{display:flex;min-height:100vh}
+/* ---------- 侧边栏 ---------- */
+.sidebar{width:224px;flex-shrink:0;background:var(--sidebar);color:#c9cddb;display:flex;flex-direction:column;padding:var(--sp-5) var(--sp-3)}
+.brand{display:flex;align-items:center;gap:var(--sp-3);padding:0 var(--sp-2) var(--sp-5);border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-name{font-size:var(--fs-lg);font-weight:700;color:#fff}
+.brand-sub{font-size:var(--fs-xs);color:var(--muted)}
+.nav-group{font-size:var(--fs-xs);color:#5d6278;margin:var(--sp-5) var(--sp-2) var(--sp-2)}
+.nav-item{display:flex;align-items:center;gap:var(--sp-2);padding:10px var(--sp-3);border-radius:var(--radius-md);font-size:var(--fs-md);margin-bottom:var(--sp-1);transition:background .2s,transform .2s}
+.nav-item:hover{background:rgba(255,255,255,.08);transform:translateX(3px)}
+.nav-item.active{background:var(--brand);color:#fff;font-weight:600}
+.nav-tag{margin-left:auto;font-size:var(--fs-xs);color:#5d6278;border:1px solid #2c3045;border-radius:var(--radius-pill);padding:0 var(--sp-2)}
+.side-user{margin-top:auto;display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-3);background:rgba(255,255,255,.05);border-radius:var(--radius)}
+.side-user .avatar{width:36px;height:36px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.side-user .name{font-size:var(--fs-sm);color:#fff}
+.side-user .role{font-size:var(--fs-xs);color:var(--muted)}
+/* ---------- 主区域 ---------- */
+.main{flex:1;padding:var(--sp-6) var(--sp-7);max-width:1240px}
+.topbar{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-4);margin-bottom:var(--sp-6)}
+.topbar h1{font-size:var(--fs-title)}
+.topbar .sub{color:var(--muted);font-size:var(--fs-sm)}
+.breadcrumb{font-size:var(--fs-xs);color:var(--muted);margin-bottom:var(--sp-2)}
+.breadcrumb a{color:var(--brand)}
+.btn{display:inline-flex;align-items:center;gap:var(--sp-2);border:none;cursor:pointer;font-family:inherit;font-size:var(--fs-md);padding:10px var(--sp-4);border-radius:var(--radius-md);transition:transform .15s,box-shadow .15s,background .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,34,51,.12)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--line)}
+.btn-sm{padding:6px var(--sp-3);font-size:var(--fs-sm)}
+/* ---------- 概况条 ---------- */
+.chip-row{display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-bottom:var(--sp-5)}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-4) var(--sp-5);min-width:150px;animation:fadeUp .6s ease both;transition:transform .2s,box-shadow .2s}
+.chip:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(79,70,229,.10)}
+.chip .num{font-size:var(--fs-title);font-weight:700}
+.chip .label{font-size:var(--fs-xs);color:var(--muted)}
+/* ---------- 面板与表单 ---------- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--sp-6);animation:fadeUp .7s ease both}
+.panel h2{font-size:var(--fs-xl);margin-bottom:var(--sp-1)}
+.panel h3{font-size:var(--fs-lg);margin-bottom:var(--sp-1)}
+.panel .desc{color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-4)}
+.filter-card{margin-bottom:var(--sp-5)}
+.filter-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:var(--sp-4);align-items:end}
+.filter-form label{display:block;font-size:var(--fs-sm);margin-bottom:var(--sp-1)}
+.filter-form input,.filter-form select{width:100%;padding:10px var(--sp-3);border:1px solid var(--line);border-radius:var(--radius-md);font-family:inherit;font-size:var(--fs-md);color:var(--text);background:#fff}
+.filter-form input:focus,.filter-form select:focus{outline:2px solid rgba(79,70,229,.35);border-color:var(--brand)}
+.filter-actions{display:flex;gap:var(--sp-3)}
+/* ---------- 表格 ---------- */
+.list-grid{display:grid;grid-template-columns:3fr 1.2fr;gap:var(--sp-5);align-items:start}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+th{text-align:left;color:var(--muted);font-weight:500;padding:var(--sp-3) var(--sp-2);border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:var(--sp-3) var(--sp-2);border-bottom:1px solid var(--line)}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--bg)}
+tbody tr.row-flash{animation:rowFlash 1.6s ease 1}
+@keyframes rowFlash{0%{background:rgba(79,70,229,.14)}100%{background:transparent}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.tag{display:inline-block;font-size:var(--fs-xs);padding:2px var(--sp-3);border-radius:var(--radius-pill);font-weight:600;white-space:nowrap}
+.tag-warning{color:var(--warning);background:rgba(217,119,6,.12)}
+.tag-info{color:var(--info);background:rgba(2,132,199,.12)}
+.tag-success{color:var(--success);background:rgba(22,163,74,.12)}
+.tag-danger{color:var(--danger);background:rgba(220,38,38,.10)}
+.tag-muted{color:var(--muted);background:rgba(132,137,158,.14)}
+.empty-tip{display:none;text-align:center;color:var(--muted);padding:var(--sp-7) 0;font-size:var(--fs-sm)}
+/* ---------- 侧栏提示 ---------- */
+.tips-card h4,.log-card h3{font-size:var(--fs-lg);margin-bottom:var(--sp-1)}
+.tips-card .desc,.log-card .desc{color:var(--muted);font-size:var(--fs-xs);margin-bottom:var(--sp-3)}
+.tip-row{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-2) 0;font-size:var(--fs-sm);border-bottom:1px dashed var(--line)}
+.tip-row:last-child{border-bottom:none}
+.tip-row .why{color:var(--muted);font-size:var(--fs-xs);margin-left:auto;text-align:right}
+.log-card{margin-top:var(--sp-5)}
+.feed{list-style:none}
+.feed li{padding:var(--sp-3) 0;border-bottom:1px dashed var(--line);font-size:var(--fs-sm);animation:fadeUp .5s ease both}
+.feed li:last-child{border-bottom:none}
+.feed-time{display:block;color:var(--muted);font-size:var(--fs-xs)}
+/* ---------- 弹窗 ---------- */
+.modal{display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-mask{position:absolute;inset:0;background:rgba(15,17,30,.5)}
+.modal-card{position:relative;background:var(--card);border-radius:var(--radius);width:460px;max-width:92vw;padding:var(--sp-6);animation:modalIn .28s cubic-bezier(.22,1,.36,1)}
+@keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+.modal-card h3{font-size:var(--fs-xl);margin-bottom:var(--sp-1)}
+.modal-card .desc{color:var(--muted);font-size:var(--fs-sm);margin-bottom:var(--sp-5)}
+.detail-row{display:flex;justify-content:space-between;gap:var(--sp-4);padding:var(--sp-2) 0;border-bottom:1px dashed var(--line);font-size:var(--fs-sm)}
+.detail-row .k{color:var(--muted)}
+.form-row{margin-top:var(--sp-4)}
+.form-row label{display:block;font-size:var(--fs-sm);margin-bottom:var(--sp-1)}
+.form-row textarea{width:100%;padding:10px var(--sp-3);border:1px solid var(--line);border-radius:var(--radius-md);font-family:inherit;font-size:var(--fs-md);resize:vertical;min-height:64px}
+.modal-actions{display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)}
+/* ---------- 页脚 ---------- */
+.page-footer{margin-top:var(--sp-7);text-align:center;color:var(--muted);font-size:var(--fs-xs)}
+@media (max-width:980px){.list-grid{grid-template-columns:1fr}.filter-form{grid-template-columns:1fr 1fr}.sidebar{display:none}.main{padding:var(--sp-5)}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="32" height="32" rx="9" fill="#4f46e5"/>
+        <path d="M11 24.5v-7M18 24.5V12M25 24.5v-4.5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand-name">沐云商城</div>
+        <div class="brand-sub">经营管理后台</div>
+      </div>
+    </div>
+    <p class="nav-group">工作台</p>
+    <a class="nav-item" href="index.html">
+      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".45"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" fill="currentColor"/></svg>
+      数据总览
+    </a>
+    <a class="nav-item active" href="orders.html">
+      <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="1.5" width="11" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 5.5h5M5.5 8.5h5M5.5 11.5h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      订单管理
+    </a>
+    <p class="nav-group">更多模块</p>
+    <a class="nav-item" href="#reports" title="演示模板未包含该页面">
+      统计报表
+      <span class="nav-tag">待上线</span>
+    </a>
+    <a class="nav-item" href="#customers" title="演示模板未包含该页面">
+      客户管理
+      <span class="nav-tag">待上线</span>
+    </a>
+    <a class="nav-item" href="#settings" title="演示模板未包含该页面">
+      系统设置
+      <span class="nav-tag">待上线</span>
+    </a>
+    <div class="side-user">
+      <div class="avatar">岚</div>
+      <div>
+        <div class="name">苏映岚</div>
+        <div class="role">店铺运营主管</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <p class="breadcrumb">
+      <a href="index.html">数据总览</a> / 订单管理
+    </p>
+    <header class="topbar">
+      <div>
+        <h1>订单管理</h1>
+        <p class="sub">按状态、渠道与关键词快速定位订单，异常订单请在 24 小时内跟进。</p>
+      </div>
+      <button type="button" class="btn btn-ghost">导出订单明细</button>
+    </header>
+    <section class="chip-row">
+      <div class="chip">
+        <div class="num">1,286</div>
+        <div class="label">全部订单</div>
+      </div>
+      <div class="chip">
+        <div class="num" style="color:var(--warning)">23</div>
+        <div class="label">待付款</div>
+      </div>
+      <div class="chip">
+        <div class="num" style="color:var(--info)">41</div>
+        <div class="label">待发货</div>
+      </div>
+      <div class="chip">
+        <div class="num" style="color:var(--danger)">6</div>
+        <div class="label">退款处理中</div>
+      </div>
+      <div class="chip">
+        <div class="num" style="color:var(--success)">97.2%</div>
+        <div class="label">本月好评率</div>
+      </div>
+    </section>
+    <section class="panel filter-card">
+      <h2>筛选条件</h2>
+      <p class="desc">组合使用以下条件，列表实时刷新。</p>
+      <form class="filter-form" id="filterForm">
+        <div>
+          <label for="fKeyword">关键词</label>
+          <input type="text" id="fKeyword" placeholder="订单号 / 客户姓名 / 商品名称" autocomplete="off">
+        </div>
+        <div>
+          <label for="fStatus">订单状态</label>
+          <select id="fStatus">
+            <option value="">全部状态</option>
+            <option value="pending">待付款</option>
+            <option value="shipped">已发货</option>
+            <option value="done">已完成</option>
+            <option value="refund">退款中</option>
+            <option value="cancel">已取消</option>
+          </select>
+        </div>
+        <div>
+          <label for="fChannel">销售渠道</label>
+          <select id="fChannel">
+            <option value="">全部渠道</option>
+            <option value="weapp">微信小程序</option>
+            <option value="app">手机 App</option>
+            <option value="web">网页商城</option>
+            <option value="offline">线下门店</option>
+          </select>
+        </div>
+        <div>
+          <label for="fDate">下单日期</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">查询</button>
+          <button type="button" class="btn btn-ghost" id="resetBtn">重置</button>
+        </div>
+      </form>
+    </section>
+    <div class="list-grid">
+      <section class="panel">
+        <h3>订单列表</h3>
+        <p class="desc">近 3 日订单节选，共 1,286 条记录。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>订单号</th>
+              <th>客户</th>
+              <th>商品</th>
+              <th>金额</th>
+              <th>渠道</th>
+              <th>下单时间</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="orderRows">
+            <tr data-status="pending" data-channel="weapp">
+              <td>M20260929052</td>
+              <td>陈晓雯</td>
+              <td>无线降噪耳机 Pro ×1</td>
+              <td>¥899.00</td>
+              <td>微信小程序</td>
+              <td>2026-09-29 10:42</td>
+              <td>
+                <span class="tag tag-warning">待付款</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="shipped" data-channel="app">
+              <td>M20260929051</td>
+              <td>李昊然</td>
+              <td>智能音箱 Air ×2</td>
+              <td>¥658.00</td>
+              <td>手机 App</td>
+              <td>2026-09-29 10:18</td>
+              <td>
+                <span class="tag tag-info">已发货</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="done" data-channel="web">
+              <td>M20260929050</td>
+              <td>王梓涵</td>
+              <td>人体工学椅 ×1</td>
+              <td>¥1,299.00</td>
+              <td>网页商城</td>
+              <td>2026-09-29 09:57</td>
+              <td>
+                <span class="tag tag-success">已完成</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="refund" data-channel="weapp">
+              <td>M20260929049</td>
+              <td>赵启铭</td>
+              <td>云享会员年卡 ×1</td>
+              <td>¥198.00</td>
+              <td>微信小程序</td>
+              <td>2026-09-29 09:31</td>
+              <td>
+                <span class="tag tag-danger">退款中</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="shipped" data-channel="app">
+              <td>M20260929046</td>
+              <td>孙若彤</td>
+              <td>恒温咖啡杯 ×3</td>
+              <td>¥480.00</td>
+              <td>手机 App</td>
+              <td>2026-09-28 17:24</td>
+              <td>
+                <span class="tag tag-info">已发货</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="done" data-channel="offline">
+              <td>M20260929043</td>
+              <td>刘一帆</td>
+              <td>机械键盘 87 键 ×1</td>
+              <td>¥449.00</td>
+              <td>线下门店</td>
+              <td>2026-09-28 15:02</td>
+              <td>
+                <span class="tag tag-success">已完成</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="cancel" data-channel="weapp">
+              <td>M20260929038</td>
+              <td>周雨桐</td>
+              <td>便携榨汁杯 ×2</td>
+              <td>¥238.00</td>
+              <td>微信小程序</td>
+              <td>2026-09-28 11:36</td>
+              <td>
+                <span class="tag tag-muted">已取消</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="done" data-channel="web">
+              <td>M20260929035</td>
+              <td>吴思远</td>
+              <td>无线降噪耳机 Pro ×1</td>
+              <td>¥899.00</td>
+              <td>网页商城</td>
+              <td>2026-09-27 20:15</td>
+              <td>
+                <span class="tag tag-success">已完成</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="pending" data-channel="app">
+              <td>M20260929031</td>
+              <td>郑佳琪</td>
+              <td>香薰加湿器 ×1</td>
+              <td>¥269.00</td>
+              <td>手机 App</td>
+              <td>2026-09-27 16:48</td>
+              <td>
+                <span class="tag tag-warning">待付款</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+            <tr data-status="shipped" data-channel="offline">
+              <td>M20260929027</td>
+              <td>冯浩然</td>
+              <td>智能台灯 ×2</td>
+              <td>¥398.00</td>
+              <td>线下门店</td>
+              <td>2026-09-27 10:33</td>
+              <td>
+                <span class="tag tag-info">已发货</span>
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm detail-btn">详情</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="empty-tip" id="emptyTip">没有符合条件的订单，试试放宽筛选条件。</p>
+      </section>
+      <aside>
+        <section class="panel tips-card">
+          <h4>状态标签说明</h4>
+          <p class="desc">五种状态对应不同处理动作。</p>
+          <div class="tip-row">
+            <span class="tag tag-warning">待付款</span>
+            <span class="why">超时 24 小时自动关闭</span>
+          </div>
+          <div class="tip-row">
+            <span class="tag tag-info">已发货</span>
+            <span class="why">物流单号已回传客户</span>
+          </div>
+          <div class="tip-row">
+            <span class="tag tag-success">已完成</span>
+            <span class="why">支持 7 天无理由退换</span>
+          </div>
+          <div class="tip-row">
+            <span class="tag tag-danger">退款中</span>
+            <span class="why">需人工在今日内审核</span>
+          </div>
+          <div class="tip-row">
+            <span class="tag tag-muted">已取消</span>
+            <span class="why">库存已自动回补</span>
+          </div>
+        </section>
+        <section class="panel log-card">
+          <h3>今日操作日志</h3>
+          <p class="desc">由系统自动记录，按时间倒序排列。</p>
+          <ul id="js-list" class="feed"></ul>
+        </section>
+      </aside>
+    </div>
+    <footer class="page-footer">
+      <p>© 2026 沐云商城 · 经营管理后台演示模板 · 数据均为演示样例</p>
+    </footer>
+  </main>
+</div>
+
+<div class="modal" id="detailModal" hidden>
+  <div class="modal-mask" id="modalMask"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle">订单详情</h3>
+    <p class="desc">以下为订单快照，点击遮罩或「关闭」返回列表。</p>
+    <div id="detailBody"></div>
+    <div class="form-row">
+      <label for="fNote">处理备注</label>
+      <textarea id="fNote" placeholder="选填：记录本次跟进情况，便于团队协作"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="closeModalBtn">关闭</button>
+      <button type="button" class="btn btn-primary" id="saveNoteBtn">保存备注</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // 操作日志：JS 数组渲染
+  var logs = [
+    { text: "苏映岚 将订单 M20260929046 标记为已发货，顺丰 SF1389002641。", time: "今天 10:20" },
+    { text: "系统 自动关闭了超时未付款订单 M20260926012。", time: "今天 09:05" },
+    { text: "客服-小舟 通过了订单 M20260929044 的换货申请。", time: "昨天 18:41" },
+    { text: "系统 库存回补：便携榨汁杯 +2（取消单释放）。", time: "昨天 11:40" }
+  ];
+  var list = document.getElementById("js-list");
+  logs.forEach(function (item) {
+    var li = document.createElement("li");
+    var text = document.createElement("span");
+    text.textContent = item.text;
+    var time = document.createElement("span");
+    time.className = "feed-time";
+    time.textContent = item.time;
+    li.appendChild(text);
+    li.appendChild(time);
+    list.appendChild(li);
+  });
+
+  // 筛选：关键词 + 状态 + 渠道 + 日期
+  var form = document.getElementById("filterForm");
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#orderRows tr"));
+  var emptyTip = document.getElementById("emptyTip");
+  function applyFilter() {
+    var kw = document.getElementById("fKeyword").value.trim().toLowerCase();
+    var st = document.getElementById("fStatus").value;
+    var ch = document.getElementById("fChannel").value;
+    var dt = document.getElementById("fDate").value;
+    var visible = 0;
+    rows.forEach(function (tr) {
+      var ok = true;
+      if (st && tr.getAttribute("data-status") !== st) { ok = false; }
+      if (ch && tr.getAttribute("data-channel") !== ch) { ok = false; }
+      if (dt && tr.textContent.indexOf(dt) === -1) { ok = false; }
+      if (kw && tr.textContent.toLowerCase().indexOf(kw) === -1) { ok = false; }
+      tr.style.display = ok ? "" : "none";
+      if (ok) { visible++; }
+    });
+    emptyTip.style.display = visible ? "none" : "block";
+  }
+  form.addEventListener("submit", function (ev) { ev.preventDefault(); applyFilter(); });
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    form.reset();
+    applyFilter();
+  });
+
+  // 详情弹窗
+  var modal = document.getElementById("detailModal");
+  var mask = document.getElementById("modalMask");
+  var detailBody = document.getElementById("detailBody");
+  function openModal() { modal.hidden = false; modal.classList.add("show"); }
+  function closeModal() { modal.classList.remove("show"); modal.hidden = true; }
+  document.querySelectorAll(".detail-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var cells = btn.closest("tr").children;
+      var pairs = [
+        ["订单号", cells[0].textContent],
+        ["客户", cells[1].textContent],
+        ["商品", cells[2].textContent],
+        ["实付金额", cells[3].textContent],
+        ["销售渠道", cells[4].textContent],
+        ["下单时间", cells[5].textContent],
+        ["当前状态", cells[6].textContent]
+      ];
+      detailBody.innerHTML = "";
+      pairs.forEach(function (p) {
+        var row = document.createElement("div");
+        row.className = "detail-row";
+        var k = document.createElement("span");
+        k.className = "k";
+        k.textContent = p[0];
+        var v = document.createElement("span");
+        v.textContent = p[1];
+        row.appendChild(k);
+        row.appendChild(v);
+        detailBody.appendChild(row);
+      });
+      document.getElementById("modalTitle").textContent = "订单详情 · " + cells[0].textContent;
+      openModal();
+    });
+  });
+  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+  document.getElementById("saveNoteBtn").addEventListener("click", closeModal);
+  mask.addEventListener("click", closeModal);
+})();
+</script>
+</body>
+</html>

@@ -8,3 +8,7 @@ Thumbs.db
 
 # 本地私密配置（如 API Key）
 *.local
+
+# 用户项目内容不入库（仅保留 .gitkeep 占位）
+projects/*
+!projects/.gitkeep

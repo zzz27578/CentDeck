@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>曜川 · 智能数据协作平台</title>
+<style id="cd-tokens">:root{
+  --brand:#3d5af1; --brand-deep:#2b3fbf; --accent:#7c5cff;
+  --bg:#f6f7fb; --text:#1b2233; --muted:#5b6478; --card:#ffffff; --border:#e6e9f2;
+  --fs-s:12px; --fs-m:14px; --fs-body:16px; --fs-h3:20px; --fs-h2:28px; --fs-h1:44px;
+  --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:40px; --sp-5:64px;
+  --radius:14px; --radius-s:8px; --radius-l:24px;
+}</style>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs-body);line-height:1.7}
+  a{text-decoration:none;color:inherit}
+  ul{list-style:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 var(--sp-3)}
+  /* 页眉 */
+  .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:var(--sp-1);font-weight:700;font-size:var(--fs-h3);color:var(--text)}
+  .nav-links{display:flex;align-items:center;gap:var(--sp-3)}
+  .nav-links a.nav-item{color:var(--muted);font-size:var(--fs-m);transition:color .2s}
+  .nav-links a.nav-item:hover,.nav-links a.nav-item.active{color:var(--brand)}
+  /* 按钮（共用 class） */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 22px;border-radius:var(--radius-s);font-size:var(--fs-m);font-weight:600;cursor:pointer;border:1px solid transparent;transition:transform .2s,box-shadow .2s,background .2s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-primary{background:var(--brand);color:#fff;box-shadow:0 6px 16px rgba(61,90,241,.28)}
+  .btn-primary:hover{background:var(--brand-deep)}
+  .btn-ghost{background:transparent;color:var(--brand);border-color:var(--brand)}
+  .btn-ghost:hover{background:rgba(61,90,241,.08)}
+  /* Hero 区 */
+  .hero{padding:var(--sp-5) 0 var(--sp-4);background:linear-gradient(135deg,#eef1ff 0%,var(--bg) 55%,#f3efff 100%)}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:var(--sp-4);align-items:center}
+  .hero h1{font-size:var(--fs-h1);line-height:1.25;letter-spacing:.5px}
+  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--brand),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .lead{margin:var(--sp-2) 0 var(--sp-3);color:var(--muted);font-size:18px}
+  .hero-actions{display:flex;gap:var(--sp-2);flex-wrap:wrap}
+  .hero-art{animation:floatY 5s ease-in-out infinite}
+  .hero-art svg{width:100%;height:auto;display:block;filter:drop-shadow(0 18px 32px rgba(43,63,191,.18))}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  /* 数据条 */
+  .stats{display:flex;gap:var(--sp-4);justify-content:center;padding:var(--sp-4) 0;flex-wrap:wrap}
+  .stat{text-align:center}
+  .stat b{display:block;font-size:var(--fs-h2);color:var(--brand)}
+  .stat span{color:var(--muted);font-size:var(--fs-m)}
+  /* 区块 */
+  section{padding:var(--sp-5) 0}
+  .sec-head{text-align:center;max-width:640px;margin:0 auto var(--sp-4)}
+  .sec-head h2{font-size:var(--fs-h2);margin-bottom:var(--sp-1)}
+  .sec-head p{color:var(--muted)}
+  /* 特性网格 */
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3)}
+  .feature-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-3);transition:transform .25s,box-shadow .25s}
+  .feature-card:hover{transform:translateY(-6px);box-shadow:0 14px 30px rgba(27,34,51,.08)}
+  .feature-card h3{font-size:var(--fs-h3);margin:var(--sp-2) 0 var(--sp-1)}
+  .feature-card p{color:var(--muted);font-size:var(--fs-m)}
+  .icon-chip{width:44px;height:44px;border-radius:var(--radius-s);background:linear-gradient(135deg,var(--brand),var(--accent));display:flex;align-items:center;justify-content:center}
+  /* 案例列表（JS 渲染） */
+  .case-list{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-2)}
+  .case-list li{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp-3)}
+  .case-list li h4{font-size:var(--fs-body);margin-bottom:6px}
+  .case-list li .tag{display:inline-block;font-size:var(--fs-s);color:var(--brand);background:rgba(61,90,241,.1);border-radius:99px;padding:2px 10px;margin-bottom:var(--sp-1)}
+  .case-list li p{color:var(--muted);font-size:var(--fs-m)}
+  /* 客户评价 */
+  .quote-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3)}
+  .quote-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-l);padding:var(--sp-3)}
+  .quote-card p{color:var(--text);font-size:var(--fs-m)}
+  .quote-card .who{display:flex;align-items:center;gap:var(--sp-1);margin-top:var(--sp-2)}
+  .avatar{width:36px;height:36px;border-radius:50%;flex:none}
+  .who b{font-size:var(--fs-m);display:block}
+  .who span{font-size:var(--fs-s);color:var(--muted)}
+  /* 底部 CTA */
+  .cta{background:linear-gradient(120deg,var(--brand) 0%,var(--accent) 100%);border-radius:var(--radius-l);padding:var(--sp-5) var(--sp-4);text-align:center;color:#fff;margin-bottom:var(--sp-5)}
+  .cta h2{font-size:var(--fs-h2);margin-bottom:var(--sp-1)}
+  .cta p{opacity:.88;margin-bottom:var(--sp-3)}
+  .cta .btn-primary{background:#fff;color:var(--brand);box-shadow:0 8px 20px rgba(0,0,0,.18)}
+  .cta .btn-primary:hover{background:#f0f2ff}
+  /* 页脚 */
+  .site-footer{border-top:1px solid var(--border);padding:var(--sp-4) 0 var(--sp-3);color:var(--muted);font-size:var(--fs-m)}
+  .footer-grid{display:flex;justify-content:space-between;gap:var(--sp-3);flex-wrap:wrap}
+  .footer-grid h4{color:var(--text);font-size:var(--fs-body);margin-bottom:var(--sp-1)}
+  .footer-grid a{display:block;color:var(--muted);font-size:var(--fs-m);padding:2px 0}
+  .footer-grid a:hover{color:var(--brand)}
+  .copyright{text-align:center;margin-top:var(--sp-3);font-size:var(--fs-s)}
+  /* 弹窗 */
+  .modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(15,20,40,.45)}
+  .modal[hidden]{display:none}
+  .modal-box{background:var(--card);border-radius:var(--radius-l);padding:var(--sp-4);width:min(420px,92vw);box-shadow:0 24px 60px rgba(0,0,0,.25);animation:popIn .28s ease}
+  @keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-box h3{font-size:var(--fs-h3);margin-bottom:var(--sp-1)}
+  .modal-box .desc{color:var(--muted);font-size:var(--fs-m);margin-bottom:var(--sp-2)}
+  .modal-actions{display:flex;gap:var(--sp-2);justify-content:flex-end;margin-top:var(--sp-2)}
+  /* 表单 */
+  .field{margin-bottom:var(--sp-2)}
+  .field label{display:block;font-size:var(--fs-m);font-weight:600;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-s);font-size:var(--fs-m);font-family:inherit;background:#fff;color:var(--text)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid rgba(61,90,241,.35);border-color:var(--brand)}
+  .form-ok{display:none;color:#0e9f6e;font-size:var(--fs-m);font-weight:600}
+  /* 滚动淡入（IntersectionObserver 触发） */
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:translateY(0)}
+  @media (max-width:860px){
+    .hero-grid,.feature-grid,.quote-grid,.case-list{grid-template-columns:1fr}
+    .hero h1{font-size:32px}
+    .nav-links{gap:var(--sp-2)}
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="logo" href="index.html">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <rect x="1" y="1" width="26" height="26" rx="7" fill="#3d5af1"/>
+        <path d="M8 18.5c3-6 5-9 6-9s3 3 6 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="14" cy="9.5" r="2" fill="#fff"/>
+      </svg>
+      曜川
+    </a>
+    <nav class="nav-links">
+      <a class="nav-item active" href="index.html">首页</a>
+      <a class="nav-item" href="features.html">功能详情</a>
+      <a class="nav-item" href="pricing.html">价格方案</a>
+      <a class="btn btn-primary" href="pricing.html">免费开始</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <!-- Hero 大图区 -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p style="display:inline-block;font-size:12px;font-weight:600;color:#7c5cff;background:rgba(124,92,255,.12);padding:4px 12px;border-radius:99px;margin-bottom:16px">V4.0 全新发布 · 实时协作引擎升级</p>
+        <h1>
+          让团队的数据
+          <br>
+          像河流一样
+          <em>自由流动</em>
+        </h1>
+        <p class="lead">曜川是一体化智能数据协作平台，把报表、看板与自动化流程装进同一个工作台，帮助团队用更少的时间做出更准的决策。</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" data-open-modal>订阅产品动态</button>
+          <a class="btn btn-ghost" href="features.html">了解全部功能</a>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 480 360" fill="none" role="img">
+          <rect x="20" y="30" width="440" height="300" rx="18" fill="#ffffff" stroke="#e6e9f2"/>
+          <rect x="20" y="30" width="440" height="44" rx="18" fill="#f0f2ff"/>
+          <circle cx="44" cy="52" r="5" fill="#3d5af1"/>
+          <circle cx="62" cy="52" r="5" fill="#7c5cff"/>
+          <circle cx="80" cy="52" r="5" fill="#c3cbff"/>
+          <rect x="44" y="96" width="120" height="200" rx="10" fill="#f6f7fb"/>
+          <rect x="58" y="114" width="92" height="10" rx="5" fill="#3d5af1" opacity=".85"/>
+          <rect x="58" y="136" width="70" height="8" rx="4" fill="#c3cbff"/>
+          <rect x="58" y="156" width="84" height="8" rx="4" fill="#c3cbff"/>
+          <rect x="58" y="176" width="56" height="8" rx="4" fill="#c3cbff"/>
+          <rect x="186" y="96" width="250" height="120" rx="10" fill="#f6f7fb"/>
+          <polyline points="206,190 246,160 286,172 326,130 366,142 416,110" stroke="#3d5af1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="326" cy="130" r="5" fill="#7c5cff"/>
+          <rect x="186" y="232" width="118" height="64" rx="10" fill="#3d5af1"/>
+          <rect x="202" y="250" width="70" height="9" rx="4" fill="#fff" opacity=".9"/>
+          <rect x="202" y="268" width="46" height="8" rx="4" fill="#fff" opacity=".6"/>
+          <rect x="318" y="232" width="118" height="64" rx="10" fill="#ede9ff"/>
+          <rect x="334" y="250" width="70" height="9" rx="4" fill="#7c5cff"/>
+          <rect x="334" y="268" width="46" height="8" rx="4" fill="#7c5cff" opacity=".5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="wrap stats reveal">
+      <div class="stat">
+        <b>12,000+</b>
+        <span>团队正在使用</span>
+      </div>
+      <div class="stat">
+        <b>99.99%</b>
+        <span>服务可用性</span>
+      </div>
+      <div class="stat">
+        <b>38%</b>
+        <span>平均决策效率提升</span>
+      </div>
+      <div class="stat">
+        <b>150ms</b>
+        <span>全球平均同步延迟</span>
+      </div>
+    </div>
+  </section>
+  <!-- 特性网格 -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>一个平台，装下整条数据流水线</h2>
+        <p>从接入到呈现，曜川把繁琐的中间环节全部自动化，让每个人专注在真正重要的判断上。</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M3 15l4-6 4 3 5-8 3 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>实时仪表盘</h3>
+          <p>拖拽即可搭建的可视化看板，数据变化秒级刷新，会议上的每一张图都是最新答案。</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="#fff" stroke-width="2"/>
+              <path d="M11 6v5l3.5 2" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>自动化流程</h3>
+          <p>设定规则后，报表推送、异常告警、数据清洗全部按时自动执行，不再有人工漏办。</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M7 18v-6M11 18V7M15 18v-9M19 18V4M3 18v-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>多维分析</h3>
+          <p>任意维度自由下钻、交叉对比，复杂业务问题三步之内找到根因，无需写一行 SQL。</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="8" cy="8" r="4" stroke="#fff" stroke-width="2"/>
+              <path d="M13 15a5 5 0 00-9 2M15 4a4 4 0 010 8M21 17a5 5 0 00-5-5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>团队协作</h3>
+          <p>评论、@同事、版本历史一应俱全，数据结论在哪讨论，决策记录就留在哪里。</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 3l7 3v5c0 4.5-3 7.5-7 8-4-.5-7-3.5-7-8V6l7-3z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M8 11l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>企业级安全</h3>
+          <p>字段级权限、操作审计与多地容灾备份，已通过等保三级与 ISO 27001 双认证。</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="icon-chip">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M4 6h14M4 11h10M4 16h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="18" cy="11" r="2" fill="#fff"/>
+            </svg>
+          </div>
+          <h3>开放集成</h3>
+          <p>原生连接 60+ 数据源，开放 API 与 Webhook，轻松嵌入你现有的工作流。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- 客户案例（JS 数组渲染） -->
+  <section style="background:#fff;border-top:1px solid #e6e9f2;border-bottom:1px solid #e6e9f2">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>他们都在用曜川跑业务</h2>
+        <p>覆盖零售、制造、互联网等行业的一线团队，真实场景里的真实收益。</p>
+      </div>
+      <ul id="js-list" class="case-list reveal"></ul>
+    </div>
+  </section>
+  <!-- 客户评价 -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>来自一线的声音</h2>
+        <p>上线三个月后，他们这样评价曜川。</p>
+      </div>
+      <div class="quote-grid">
+        <div class="quote-card reveal">
+          <p>“以前出一份经营周报要三个人耗两天，现在打开曜川就是现成的。早会终于能讨论业务，而不是核对数字。”</p>
+          <div class="who">
+            <svg class="avatar" viewBox="0 0 36 36">
+              <rect width="36" height="36" rx="18" fill="#3d5af1"/>
+              <text x="18" y="23" text-anchor="middle" font-size="14" fill="#fff">林</text>
+            </svg>
+            <div>
+              <b>林之瑶</b>
+              <span>潮白零售 · 运营总监</span>
+            </div>
+          </div>
+        </div>
+        <div class="quote-card reveal">
+          <p>“产线异常告警从小时级缩到分钟级，单这一条自动化流程，半年就帮我们挽回了七位数的损耗。”</p>
+          <div class="who">
+            <svg class="avatar" viewBox="0 0 36 36">
+              <rect width="36" height="36" rx="18" fill="#7c5cff"/>
+              <text x="18" y="23" text-anchor="middle" font-size="14" fill="#fff">赵</text>
+            </svg>
+            <div>
+              <b>赵既明</b>
+              <span>岚山制造 · 信息化负责人</span>
+            </div>
+          </div>
+        </div>
+        <div class="quote-card reveal">
+          <p>“权限体系细到字段级，审计日志也很完整，安全评审一次通过。这是我们选型时最看重的部分。”</p>
+          <div class="who">
+            <svg class="avatar" viewBox="0 0 36 36">
+              <rect width="36" height="36" rx="18" fill="#2b3fbf"/>
+              <text x="18" y="23" text-anchor="middle" font-size="14" fill="#fff">苏</text>
+            </svg>
+            <div>
+              <b>苏望舒</b>
+              <span>星桥互娱 · CTO</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- 底部 CTA -->
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2>准备好让数据开始流动了吗？</h2>
+      <p>免费试用 14 天，无需信用卡。订阅动态还能第一时间拿到新功能内测资格。</p>
+      <button class="btn btn-primary" data-open-modal>订阅产品动态</button>
+      <a class="btn btn-ghost" style="color:#fff;border-color:#fff;margin-left:8px" href="pricing.html">查看价格方案</a>
+    </div>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div>
+      <h4>曜川</h4>
+      <p>
+        让团队的数据
+        <br>
+        像河流一样自由流动。
+      </p>
+    </div>
+    <div>
+      <h4>产品</h4>
+      <a href="features.html">功能详情</a>
+      <a href="pricing.html">价格方案</a>
+    </div>
+    <div>
+      <h4>快速入口</h4>
+      <a href="index.html">返回首页</a>
+      <a href="pricing.html">免费试用</a>
+    </div>
+  </div>
+  <div class="wrap copyright">© 2026 曜川科技 · 本产品页为 CentDeck 演示模板</div>
+</footer>
+<!-- 订阅邮箱弹窗 -->
+<div class="modal" id="subscribe-modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title">订阅曜川产品动态</h3>
+    <p class="desc">每月一封：新功能速递、行业实践与内测邀请，绝不打扰。</p>
+    <form id="subscribe-form" novalidate>
+      <div class="field">
+        <label for="sub-email">邮箱地址</label>
+        <input id="sub-email" type="email" placeholder="name@company.com" required>
+      </div>
+      <div class="field">
+        <label for="sub-role">你的角色</label>
+        <select id="sub-role">
+          <option>产品 / 运营</option>
+          <option>数据分析</option>
+          <option>研发 / IT</option>
+          <option>管理层</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <p class="form-ok" id="subscribe-ok">订阅成功，欢迎上船！第一封月报马上出发。</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close-modal>再想想</button>
+        <button type="submit" class="btn btn-primary">立即订阅</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+// 1) 客户案例：JS 数组渲染 #js-list（测"程序生成内容找不到源码行"红灯）
+var cases = [
+  { name: "潮白零售", tag: "连锁零售", text: "全国 300 家门店经营数据一屏统览，周报制作时长从 2 天降到 10 分钟。" },
+  { name: "岚山制造", tag: "智能制造", text: "12 条产线接入实时告警，异常响应从小时级提速到分钟级。" },
+  { name: "星桥互娱", tag: "互联网", text: "用留存漏斗定位新手流失点，次月留存率提升了 21%。" }
+];
+var listEl = document.getElementById("js-list");
+if (listEl) {
+  cases.forEach(function (c) {
+    var li = document.createElement("li");
+    li.innerHTML = '<span class="tag">' + c.tag + '</span><h4>' + c.name + '</h4><p>' + c.text + '</p>';
+    listEl.appendChild(li);
+  });
+}
+// 2) IntersectionObserver 滚动淡入
+var revealEls = document.querySelectorAll(".reveal");
+if ("IntersectionObserver" in window) {
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("in");
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(function (el) { io.observe(el); });
+} else {
+  revealEls.forEach(function (el) { el.classList.add("in"); });
+}
+// 3) 订阅弹窗：按钮触发显示 / 关闭
+var modal = document.getElementById("subscribe-modal");
+document.querySelectorAll("[data-open-modal]").forEach(function (btn) {
+  btn.addEventListener("click", function () { modal.hidden = false; });
+});
+document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
+  btn.addEventListener("click", function () { modal.hidden = true; });
+});
+modal.addEventListener("click", function (e) { if (e.target === modal) modal.hidden = true; });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") modal.hidden = true; });
+// 4) 订阅表单提交
+document.getElementById("subscribe-form").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var email = document.getElementById("sub-email");
+  if (!email.value || email.value.indexOf("@") < 0) { email.focus(); return; }
+  document.getElementById("subscribe-ok").style.display = "block";
+  this.querySelector('button[type="submit"]').disabled = true;
+  this.querySelector('button[type="submit"]').textContent = "已订阅";
+});
+</script>
+</body>
+</html>

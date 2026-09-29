@@ -1,0 +1,10 @@
+{
+  "id": "event",
+  "name": "活动专题页",
+  "type": "event",
+  "description": "手机竖屏全屏翻屏的活动抽奖专题：倒计时、奖品卡片、参与报名弹窗与实时中奖名单。",
+  "pages": [
+    { "file": "pages/index.html", "title": "活动主页" },
+    { "file": "pages/rules.html", "title": "活动规则" }
+  ]
+}

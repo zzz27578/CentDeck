@@ -1,0 +1,10 @@
+{
+  "id": "admin",
+  "name": "沐云管理后台",
+  "type": "admin",
+  "description": "双页数据看板后台：仪表盘含统计卡片、手绘 SVG 图表与实时动态，订单页支持关键词与状态筛选。",
+  "pages": [
+    { "file": "pages/index.html", "title": "数据仪表盘" },
+    { "file": "pages/orders.html", "title": "订单管理" }
+  ]
+}

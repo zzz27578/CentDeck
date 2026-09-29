@@ -1,0 +1,11 @@
+{
+  "id": "landing",
+  "name": "科技官网落地页",
+  "type": "landing",
+  "description": "科技公司产品官网风格落地页：长滚动首页、功能详情页、三档价格页，含滚动淡入动画与订阅弹窗。",
+  "pages": [
+    { "file": "pages/index.html", "title": "首页" },
+    { "file": "pages/features.html", "title": "功能详情" },
+    { "file": "pages/pricing.html", "title": "价格方案" }
+  ]
+}
