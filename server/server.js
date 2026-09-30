@@ -169,6 +169,24 @@ async function handle(req, res) {
   const method = req.method || 'GET';
   const url = new URL(req.url || '/', 'http://127.0.0.1');
   const pathname = url.pathname;
+  if(pathname === '/mcp') {
+    const conf=require('./extensions').mcpConfig();
+    const host=req.headers.host||'';
+    if(!/^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host) || (req.headers.origin && req.headers.origin!==`http://${host}`)) throw new ApiError(403,'MCP 仅允许本机同源访问');
+    const token=(req.headers.authorization||'').replace(/^Bearer /,'');
+    const hash=v=>require('node:crypto').createHash('sha256').update(v).digest();
+    if(!require('node:crypto').timingSafeEqual(hash(token),hash(conf.token)))throw new ApiError(401,'MCP token 无效');
+    if(method!=='POST'){res.writeHead(405,{Allow:'POST'});res.end();return;}
+    const b=await readJsonBody(req);
+    try {
+      if(b.jsonrpc!=='2.0'||typeof b.method!=='string')throw new ApiError(400,'Invalid JSON-RPC request');
+      const r=await require('./mcp').dispatch(b,req.headers['mcp-session-id']);
+      if(r.notification || b.id===undefined){res.writeHead(202);res.end();return;}
+      res.writeHead(200,{'Content-Type':'application/json',...(r.sid?{'Mcp-Session-Id':r.sid}:{})});
+      res.end(JSON.stringify({jsonrpc:'2.0',id:b.id,...(r.error?{error:r.error}:{result:r.result})}));
+    }catch(e){res.writeHead(e.status||500,{'Content-Type':'application/json'});res.end(JSON.stringify({jsonrpc:'2.0',id:b.id??null,error:{code:-32000,message:e.message}}));}
+    return;
+  }
   auth.checkOrigin(req);
   if (pathname === '/api/auth') {
     if(method==='GET'){sendData(res,auth.publicSession(auth.session(req)));return;}
@@ -176,13 +194,30 @@ async function handle(req, res) {
     if(method==='PUT'){sendData(res,auth.update(req,res,await readJsonBody(req)));return;}
     if(method==='DELETE'){sendData(res,auth.logout(req,res));return;}
   }
+  if(pathname==='/api/appearance'&&method==='GET') {const ext=require('./extensions');sendData(res,{plugins:ext.plugins().filter(p=>p.enabled).map(p=>({manifest:{id:p.manifest.id,name:p.manifest.name,themes:p.manifest.themes||[]},files:p.files})),styleEnabled:ext.plugins().some(p=>p.manifest.id==='official-styles'&&p.enabled)});return;}
   if(pathname.startsWith('/api/'))auth.requireSession(req);
+  const ext=require('./extensions');
+  if(pathname==='/api/extensions') {
+    if(method==='GET')sendData(res,{plugins:ext.plugins(),skills:ext.skills(),preferences:ext.preferences()});
+    else if(method==='POST')sendData(res,ext.install(await readJsonBody(req)));
+    else throw new ApiError(405,'不支持的方法');return;
+  }
+  if(pathname==='/api/plugins/action'&&method==='POST'){const b=await readJsonBody(req);sendData(res,ext.updatePlugin(b.id,b.action,b.settings));return;}
+  if(pathname==='/api/skills'){sendData(res,method==='PUT'?ext.updateSkill(await readJsonBody(req)):ext.skills());return;}
+  if(pathname==='/api/preferences'){sendData(res,ext.preferences(method==='PUT'?await readJsonBody(req):null));return;}
+  if(pathname==='/api/tools'&&method==='GET'){sendData(res,[...require('./tools').list(),...tasks.toolsFor({mode:'create',collaboration:'auto'}).filter(t=>!require('./tools').has(t.function.name)).map(t=>({name:t.function.name,description:t.function.description+'（内置 Agent 任务专用）',inputSchema:t.function.parameters,annotations:{readOnlyHint:t.function.name==='request_input'}}))]);return;}
+  if(pathname==='/api/mcp/config'){const config=ext.mcpConfig(method==='PUT'?await readJsonBody(req):null);sendData(res,{...config,command:process.execPath,args:[path.join(ROOT,'server','mcp-stdio.js')],env:{CENTDECK_URL:`http://127.0.0.1:${req.socket.localPort}`},endpoint:`http://127.0.0.1:${req.socket.localPort}/mcp`});return;}
+  if(pathname==='/api/ui/heartbeat'&&method==='POST'){sendData(res,require('./ui-bridge').heartbeat(await readJsonBody(req)));return;}
+  if(pathname==='/api/ui/result'&&method==='POST'){sendData(res,require('./ui-bridge').complete(await readJsonBody(req)));return;}
+
   if(pathname==='/api/system'&&method==='GET'){sendData(res,await system.info());return;}
   if(pathname==='/api/system/updates'&&method==='GET'){try{sendData(res,await system.updates());}catch{throw new ApiError(502,'暂时无法连接 GitHub 检查更新');}return;}
   if(pathname==='/api/system/restart'&&method==='POST'){
     sendData(res,{restarting:true});
     setTimeout(()=>{const port=activeServer.address().port;const child=spawn(process.execPath,['-e',`setTimeout(()=>require(${JSON.stringify(__filename)}),700)`],{cwd:ROOT,env:{...process.env,PORT:String(port),CENTDECK_NO_OPEN:'1'},detached:true,stdio:'ignore',windowsHide:true});child.unref();shutdown();},200);return;
   }
+  const exportMatch=pathname.match(/^\/api\/projects\/([^/]+)\/export$/);
+  if(exportMatch&&method==='GET'){const buffer=require('./export').exportProject(decodeURIComponent(exportMatch[1]));res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="centdeck-project.zip"','Content-Length':buffer.length});res.end(buffer);return;}
   const pm=pathname.match(/^\/api\/providers\/([\w-]+)\/models$/);
   if(pm&&method==='GET'){sendData(res,await providers.discover(pm[1]));return;}
   const tm=pathname.match(/^\/api\/projects\/([^/]+)\/tasks(?:\/([^/]+))?$/);

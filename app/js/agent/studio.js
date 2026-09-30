@@ -1,3 +1,5 @@
+import { renderExtensions } from './extensions-page.js';
+import { THINK, normalizeThink } from "../core/reasoning.js";
 import { el, esc, uid, toast, confirmDlg } from "../core/ui.js";
 import { icon } from "../core/icons.js";
 import { mark, theme, setTheme } from "../core/brand.js";
@@ -40,7 +42,7 @@ export async function openStudio(app, section = "assistants") {
     current = section || "assistants",
     off = () => {};
   const host = el(
-    `<section class="studio" role="dialog" aria-modal="true" aria-label="Agent 工作台"><aside class="studio-nav"><div class="wordmark">${mark(38)}<b>CentDeck</b></div><div class="studio-nav-main"><button data-tab="assistants">${icon("centdeck", 20)}助手</button><button data-tab="providers">${icon("layers", 20)}模型提供商</button><button data-tab="tasks">${icon("check", 20)}任务</button></div><button data-tab="general">${icon("settings", 20)}设置</button><a href="https://github.com/zzz27578/CentDeck" target="_blank" rel="noopener">GitHub ↗</a></aside><main class="studio-main"><header><div><span class="studio-overline">AGENT STUDIO</span><h1></h1></div><button class="icon-btn" data-close aria-label="关闭 Agent 工作台">${icon("close", 22)}</button></header><div class="studio-content"></div></main></section>`,
+    `<section class="studio" role="dialog" aria-modal="true" aria-label="Agent 工作台"><aside class="studio-nav"><div class="wordmark">${mark(38)}<b>CentDeck</b></div><div class="studio-nav-main"><button data-tab="assistants">${icon("centdeck", 20)}助手</button><button data-tab="providers">${icon("layers", 20)}模型提供商</button><button data-tab="tasks">${icon("check", 20)}任务</button><button data-tab="plugins">${icon("layers",20)}插件</button><button data-tab="skills">${icon("book",20)}Skills</button><button data-tab="tools">${icon("code",20)}工具注册</button><button data-tab="mcp">${icon("link",20)}MCP 接管</button></div><button data-tab="general">${icon("settings", 20)}设置</button><a href="https://github.com/zzz27578/CentDeck" target="_blank" rel="noopener">GitHub ↗</a></aside><main class="studio-main"><header><div><span class="studio-overline">AGENT STUDIO</span><h1></h1></div><button class="icon-btn" data-close aria-label="关闭 Agent 工作台">${icon("close", 22)}</button></header><div class="studio-content"></div></main></section>`,
   );
   document.body.appendChild(host);
   const content = host.querySelector(".studio-content");
@@ -101,13 +103,14 @@ export async function openStudio(app, section = "assistants") {
       assistants: "你的创作团队",
       providers: "连接你的模型",
       tasks: "正在发生",
-      general: "偏好设置",
+      general: "偏好设置", plugins: "插件管理", skills: "Agent 技能", tools: "工具注册表", mcp: "MCP 与外部助手",
     }[current];
     content.innerHTML = "";
     if (current === "assistants") assistants();
     if (current === "providers") providers();
     if (current === "tasks") tasks();
     if (current === "general") general();
+    if(['plugins','skills','tools','mcp'].includes(current)){const slot=el('<div class="extension-slot"></div>');content.append(slot);renderExtensions(app,slot,current).catch(e=>toast(e.message,'error'));}
   }
   host.querySelectorAll("[data-tab]").forEach(
     (b) =>
@@ -138,19 +141,13 @@ export async function openStudio(app, section = "assistants") {
       responsibility: "",
       skills: [],
       model: "auto",
-      think: "mid",
+      think: "medium",
       ...existing,
     };
-    content.innerHTML = `<button class="text-back">← 所有助手</button><form class="studio-form"><div class="assistant-profile"><button type="button" class="studio-avatar upload-avatar" aria-label="上传助手头像">${avatar(a, 62)}<span>上传</span></button><input type="file" accept="image/png,image/jpeg,image/webp" hidden><div><label>名字<input name="name" required maxlength="60" value="${esc(a.name)}"></label><label>角色<input name="role" list="role-presets" maxlength="80" value="${esc(a.role)}"></label><datalist id="role-presets">${ROLES.map((r) => `<option value="${r}">`).join("")}</datalist></div></div><label>任务定位<input name="responsibility" value="${esc(a.responsibility || "")}" maxlength="4000" placeholder="例如：只处理红色标记"></label><div class="studio-two"><label>模型<select name="model">${modelOptions(a.model)}</select></label><label>思考等级<select name="think">${[
-      ["off", "关闭"],
-      ["low", "低"],
-      ["mid", "中"],
-      ["high", "高"],
-      ["max", "最高"],
-    ]
+    content.innerHTML = `<button class="text-back">← 所有助手</button><form class="studio-form"><div class="assistant-profile"><button type="button" class="studio-avatar upload-avatar" aria-label="上传助手头像">${avatar(a, 62)}<span>上传</span></button><input type="file" accept="image/png,image/jpeg,image/webp" hidden><div><label>名字<input name="name" required maxlength="60" value="${esc(a.name)}"></label><label>角色<input name="role" list="role-presets" maxlength="80" value="${esc(a.role)}"></label><datalist id="role-presets">${ROLES.map((r) => `<option value="${r}">`).join("")}</datalist></div></div><label>任务定位<input name="responsibility" value="${esc(a.responsibility || "")}" maxlength="4000" placeholder="例如：只处理红色标记"></label><div class="studio-two"><label>模型<select name="model">${modelOptions(a.model)}</select></label><label>思考强度<select name="think">${THINK.map(t => [t.id, t.label])
       .map(
         ([id, n]) =>
-          `<option value="${id}" ${a.think === id ? "selected" : ""}>${n}</option>`,
+          `<option value="${id}" ${normalizeThink(a.think) === id ? "selected" : ""}>${n}</option>`,
       )
       .join(
         "",
@@ -295,13 +292,13 @@ export async function openStudio(app, section = "assistants") {
       ...existing,
     };
     let discovered = p.models.slice();
-    content.innerHTML = `<button class="text-back">← 所有提供商</button><form class="studio-form"><div class="provider-presets">${settings.presets.map((x) => `<button type="button" data-preset="${x.id}">${esc(x.name)}</button>`).join("")}</div><div class="studio-two"><label>名称<input name="name" required value="${esc(p.name)}" maxlength="80"></label><label>协议<select disabled><option>OpenAI 兼容 /v1</option></select></label></div><label>API 地址<input name="baseUrl" type="url" required placeholder="https://api.example.com/v1" value="${esc(p.baseUrl)}"></label><label>API Key<input name="apiKey" type="password" autocomplete="off" placeholder="${p.hasKey ? "已保存 " + esc(p.keyHint) + "，留空保留" : "sk-…"}"></label><div class="provider-options"><label><input type="checkbox" name="enabled" ${p.enabled ? "checked" : ""}>启用</label><label><input type="checkbox" name="noKey" ${p.noKey ? "checked" : ""}>无需密钥</label><label><input type="checkbox" name="reasoning" ${p.reasoning ? "checked" : ""}>思考参数</label><label><input type="checkbox" name="tools" ${p.tools !== false ? "checked" : ""}>工具调用</label></div><label class="provider-vision"><input type="checkbox" name="vision" ${p.vision ? "checked" : ""}> 图片能力</label><div class="model-heading"><h2>模型</h2><button class="btn" type="button" data-fetch>${icon("refresh", 15)}获取模型</button></div><div class="model-add"><input placeholder="模型 ID" aria-label="模型 ID"><button type="button" class="btn" data-add>添加</button></div><input class="model-search" placeholder="搜索模型" aria-label="搜索模型"><div class="model-checklist"></div><p class="provider-result" role="status"></p><div class="studio-form-actions"><button class="btn primary" type="submit">保存提供商</button>${existing ? '<button type="button" class="btn ghost" data-clear>清除密钥</button><button type="button" class="btn ghost danger" data-delete>删除</button>' : ""}</div></form>`;
+    content.innerHTML = `<button class="text-back">← 所有提供商</button><form class="studio-form"><div class="provider-presets">${settings.presets.map((x) => `<button type="button" data-preset="${x.id}">${esc(x.name)}</button>`).join("")}</div><div class="studio-two"><label>名称<input name="name" required value="${esc(p.name)}" maxlength="80"></label><label>协议<select disabled><option>OpenAI 兼容 /v1</option></select></label></div><label>API 地址<input name="baseUrl" type="url" required placeholder="https://api.example.com/v1" value="${esc(p.baseUrl)}"></label><label>API Key<input name="apiKey" type="password" autocomplete="off" placeholder="${p.hasKey ? "已保存 " + esc(p.keyHint) + "，留空保留" : "sk-…"}"></label><div class="provider-options"><label><input type="checkbox" name="enabled" ${p.enabled ? "checked" : ""}>启用</label><label><input type="checkbox" name="noKey" ${p.noKey ? "checked" : ""}>无需密钥</label><label><input type="checkbox" name="tools" ${p.tools !== false ? "checked" : ""}>工具调用</label></div><label class="provider-vision"><input type="checkbox" name="vision" ${p.vision ? "checked" : ""}> 图片能力</label><div class="model-heading"><h2>模型</h2><button class="btn" type="button" data-fetch>${icon("refresh", 15)}获取模型</button></div><div class="model-add"><input placeholder="模型 ID" aria-label="模型 ID"><button type="button" class="btn" data-add>添加</button></div><input class="model-search" placeholder="搜索模型" aria-label="搜索模型"><div class="model-checklist"></div><p class="provider-result" role="status"></p><div class="studio-form-actions"><button class="btn primary" type="submit">保存提供商</button>${existing ? '<button type="button" class="btn ghost" data-clear>清除密钥</button><button type="button" class="btn ghost danger" data-delete>删除</button>' : ""}</div></form>`;
     const form = content.querySelector("form");
     content.querySelector(".text-back").onclick = providers;
     const collect = () => {
       const f = new FormData(form);
       for (const k of ["name", "baseUrl", "apiKey"]) p[k] = f.get(k);
-      for (const k of ["enabled", "noKey", "reasoning", "tools", "vision"])
+      for (const k of ["enabled", "noKey", "tools", "vision"])
         p[k] = f.has(k);
       return p;
     };
@@ -424,7 +421,7 @@ export async function openStudio(app, section = "assistants") {
       }
       for (const t of list.slice().reverse()) {
         const card = el(
-          `<article class="task-card"><header><span class="task-state ${t.status}">${taskStatus(t)}</span><span>${esc(t.name)} · ${t.mode === "plan" ? "计划" : "创建"}</span><time>${new Date(t.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</time></header><h2>${esc(t.goal.slice(0, 160))}</h2><div class="task-facts"><span>${esc(t.model)}</span><span>${t.steps} / ${t.maxSteps} 步</span><span>${t.usage == null ? "用量未提供" : t.usage + " tokens"}</span><span>${t.scope === "all" ? "全站" : esc(t.scope.join("、"))}</span></div>${t.error ? `<p class="task-error">${esc(t.error)}</p>` : ""}${t.output ? `<details><summary>回复</summary><pre>${esc(t.output)}</pre></details>` : ""}<div class="task-question"></div><footer></footer></article>`,
+          `<article class="task-card"><header><span class="task-state ${t.status}">${taskStatus(t)}</span><span>${esc(t.name)} · ${t.mode === "plan" ? "计划" : "创建"}</span><time>${new Date(t.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</time></header><h2>${esc(t.goal.slice(0, 160))}</h2><div class="task-facts"><span>${esc(t.model)}</span><span>思考 ${esc(t.think)}</span><span>${t.steps} / ${t.maxSteps} 步</span><span>${t.usage == null ? "用量未提供" : t.usage + " tokens"}</span><span>${t.scope === "all" ? "全站" : esc(t.scope.join("、"))}</span></div>${t.error ? `<p class="task-error">${esc(t.error)}</p>` : ""}${t.output ? `<details><summary>回复</summary><pre>${esc(t.output)}</pre></details>` : ""}<div class="task-question"></div><footer></footer></article>`,
         );
         box.appendChild(card);
         const act = async (action, extra = {}) => {
@@ -479,6 +476,13 @@ export async function openStudio(app, section = "assistants") {
     const info = await app.api.system();
     if (current !== "general") return;
     content.innerHTML = `<div class="settings-block"><h2>外观</h2><div class="theme-options"><button data-theme="light" class="${theme() === "light" ? "on" : ""}"><span class="theme-preview light"></span>亮色</button><button data-theme="dark" class="${theme() === "dark" ? "on" : ""}"><span class="theme-preview dark"></span>暗色</button></div></div><div class="settings-block settings-about"><div>${mark(54)}<h2>CentDeck 百映</h2><p>${esc(info.version)} · ${esc(info.revision)}</p></div><div><button class="btn" data-update>检查更新</button><button class="btn" data-restart>重启服务</button></div><p data-result role="status"></p><a href="${info.github}" target="_blank" rel="noopener">${info.github} ↗</a></div><div class="settings-block"><h2>账号</h2><p>${esc(app.account?.username || "")} · <code>config.local/account.json</code></p><button class="btn" data-logout>退出登录</button></div>`;
+    const preferences=await app.api.extension('preferences');
+    if(current!=='general')return;
+    const extra=el(`<div class="settings-extra"><div class="settings-block"><h2>新任务默认值</h2><p>模型与思考强度在助手配置中单独设置。这里控制新任务的执行上限。</p><form class="extension-form" data-defaults><label>最多步骤<input name="maxSteps" type="number" min="1" max="40" value="${preferences.maxSteps}"></label><label>Token 预算<input name="budget" type="number" min="1000" max="500000" step="1000" value="${preferences.budget}"></label><label>协作方式<select name="collaboration"><option value="off">关闭协作</option><option value="confirm">每次确认</option><option value="auto">范围内自动协作</option></select></label><button class="btn primary">保存默认值</button></form></div><div class="settings-block"><h2>修改账号</h2><form class="extension-form" data-account><label>用户名<input name="username" value="${esc(app.account?.username||'')}" autocomplete="username" required></label><label>当前密码<input name="currentPassword" type="password" autocomplete="current-password" required></label><label>新密码<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="btn">更新账号</button><p role="status"></p></form></div><div class="settings-block"><h2>扩展与数据</h2><p>项目保存在 projects/，配置保存在 config.local/。插件、Skills 与 MCP 可从左侧直接进入管理。</p><p>前端文件属于你自己的项目；插件的主页样式只影响百映界面。</p></div></div>`);
+    content.append(extra);
+    const defaults=extra.querySelector('[data-defaults]');defaults.elements.collaboration.value=preferences.collaboration;
+    defaults.onsubmit=async e=>{e.preventDefault();await app.api.extension('preferences',Object.fromEntries(new FormData(defaults)),'PUT');toast('新任务默认值已保存','ok');};
+    const account=extra.querySelector('[data-account]');account.onsubmit=async e=>{e.preventDefault();try{app.account=await app.api.account(Object.fromEntries(new FormData(account)));account.elements.currentPassword.value='';account.elements.password.value='';account.querySelector('[role=status]').textContent='账号已更新';}catch(error){account.querySelector('[role=status]').textContent=error.message;}};
     content.querySelectorAll("[data-theme]").forEach(
       (b) =>
         (b.onclick = () => {

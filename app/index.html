@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CentDeck 百映 · 网页工作台</title>
 <link rel="icon" href="/app/assets/centdeck.svg" type="image/svg+xml">
-<script>document.documentElement.dataset.theme=localStorage.getItem('cd.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');</script>
+<script>
+  const savedStyle = localStorage.getItem('cd.style');
+  const activeStyle = savedStyle || 'original';
+  document.documentElement.dataset.style = activeStyle;
+  if (savedStyle && savedStyle !== activeStyle) localStorage.setItem('cd.style', activeStyle);
+  document.documentElement.dataset.theme = localStorage.getItem('cd.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+</script>
 <link rel="stylesheet" href="/app/css/base.css">
 <link rel="stylesheet" href="/app/css/shell.css">
 <link rel="stylesheet" href="/app/css/home.css">
@@ -14,6 +20,9 @@
 <link rel="stylesheet" href="/app/css/sketch.css">
 <link rel="stylesheet" href="/app/css/agent.css">
 <link rel="stylesheet" href="/app/css/design.css">
+<link rel="stylesheet" href="/app/css/interface.css">
+<link rel="stylesheet" href="/app/css/noir.css">
+<link rel="stylesheet" href="/app/css/extensions.css">
 </head>
 <body class="home">
 <div id="app"></div>

@@ -1,13 +1,14 @@
+import { mountCustomHome } from '../core/extensions.js';
 // 首页：描述想做的网站 → 空白项目 / 模板 / 导入；我的项目（搜索、排序、重命名、删除需输入名称确认）
 import { icon } from '../core/icons.js';
 import { el, esc, toast, openModal, promptDlg, showMenu } from '../core/ui.js';
 import { getViewport } from '../core/viewport.js';
-import { mark, toggleTheme } from '../core/brand.js';
+import { mark, toggleTheme, styleSwitch, bindStyleSwitch } from '../core/brand.js';
+import { pixelField, mountPixelField } from '../core/pixel-field.js';
 import { pickFiles, filesFromDrop, runImport } from './importer.js';
 
 const KIND = { template: ['模板', 'blue'], blank: ['空白', ''], import: ['导入', 'green'] };
 let sortBy = localStorage.getItem('cd.homeSort') || 'updated';
-let query = '';
 
 export function ago(iso) {
   const t = new Date(iso).getTime();
@@ -94,17 +95,18 @@ export async function renderHome(app) {
     <div class="home-page">
       <header class="home-bar">
         <div class="wordmark">${mark(38)}<b>CentDeck</b><small>百映</small></div>
-        <label class="home-search">${icon('search', 16)}<input placeholder="搜索项目" value="${esc(query)}"></label>
+
         <div class="home-bar-right">
-          <button class="btn ghost" data-a="settings">${icon('centdeck', 18)}Agent 工作台</button>
-          <button class="icon-btn" data-a="theme" aria-label="切换亮暗模式">◐</button><button class="icon-btn" data-a="preferences" aria-label="设置">${icon('settings')}</button>
+          <button class="btn ghost" data-a="settings" aria-label="Agent 工作台">${icon('centdeck', 18)}<span>Agent 工作台</span></button>
+          ${styleSwitch()}<button class="icon-btn" data-a="theme" aria-label="切换亮暗模式">◐</button><button class="btn" data-a="preferences" aria-label="设置">${icon('settings',18)}设置</button><button class="btn ghost" data-a="plugins">插件</button>
         </div>
       </header>
+      ${pixelField()}
       <section class="home-hero">
-        <div class="home-orbit">${mark(76)}</div><span class="home-eyebrow">YOUR NEXT POSSIBILITY</span><h1>好设计，始于一个想法。</h1>
+        <div class="home-orbit">${mark(76)}</div><span class="home-eyebrow">YOUR NEXT POSSIBILITY</span><h1>好设计，始于一个想法</h1>
         <div class="hero-prompt">
           <textarea rows="2" aria-label="网站需求" placeholder="描述你想创建的网站…"></textarea>
-          <span class="prompt-label">${icon('centdeck',18)}CentDeck</span><button class="btn primary" data-a="go">开始设计 ↗</button>
+          <div class="prompt-actions"><span class="prompt-label">${icon('centdeck',18)}CentDeck</span><button class="btn primary" data-a="go">开始设计 <span>↗</span></button></div>
         </div>
         <div class="entry-row">
           <button class="entry" data-a="blank">${icon('plus', 18)}空白项目</button>
@@ -123,6 +125,13 @@ export async function renderHome(app) {
       </section>
     </div>
     <div class="drop-veil">${icon('upload', 40)}<b>松开鼠标，导入网页</b><span>单个 HTML、多个文件或整个文件夹都可以</span></div>`;
+  bindStyleSwitch(root);
+  mountCustomHome(root,app);
+  app.disposeHomeAppearance?.();
+  const appearanceChanged=()=>{if(document.body.classList.contains('home'))mountCustomHome(root,app);};
+  addEventListener('centdeck-appearance',appearanceChanged);
+  app.disposeHomeAppearance=()=>removeEventListener('centdeck-appearance',appearanceChanged);
+  mountPixelField(root);
   const $ = (s) => root.querySelector(s);
   const ta = $('.hero-prompt textarea');
   const go = () => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } startFromPrompt(app, t); };
@@ -140,6 +149,7 @@ export async function renderHome(app) {
   ], 0, 0, { anchor: e.currentTarget, minWidth: 280 });
   $('[data-a=settings]').onclick = () => app.openSettings();
   $('[data-a=theme]').onclick = toggleTheme;
+  $('[data-a=plugins]').onclick = () => app.openSettings('plugins');
   $('[data-a=preferences]').onclick = () => app.openSettings('general');
 
   // 拖文件进来就导入
@@ -157,14 +167,12 @@ export async function renderHome(app) {
 
   const grid = $('[data-projects]');
   const paint = () => {
-    const q = query.trim().toLowerCase();
-    let list = projects.filter((p) => !q || p.name.toLowerCase().includes(q));
+    let list = [...projects];
     list = list.sort((a, b) => (sortBy === 'name' ? a.name.localeCompare(b.name, 'zh') : sortBy === 'created' ? String(b.createdAt).localeCompare(String(a.createdAt)) : String(b.updatedAt).localeCompare(String(a.updatedAt))));
     $('[data-count]').textContent = projects.length ? projects.length + ' 个' : '';
     root.querySelectorAll('[data-sort] button').forEach((b) => b.classList.toggle('on', b.dataset.v === sortBy));
     grid.innerHTML = '';
     if (!projects.length) { grid.appendChild(el('<div class="empty wide">你的第一个项目，从这里开始。</div>')); return; }
-    if (!list.length) { grid.appendChild(el(`<div class="empty wide">没有名字里带「${esc(query)}」的项目</div>`)); return; }
     list.forEach((p) => {
       const [kind, kcls] = KIND[p.kind] || KIND.blank;
       const card = el(`<div class="pc">
@@ -181,7 +189,7 @@ export async function renderHome(app) {
   };
   paint();
   root.querySelectorAll('[data-sort] button').forEach((b) => { b.onclick = () => { sortBy = b.dataset.v; localStorage.setItem('cd.homeSort', sortBy); paint(); }; });
-  $('.home-search input').addEventListener('input', (e) => { query = e.target.value; paint(); });
+
 
   const tbox = $('[data-templates]');
   templates.forEach((t) => {

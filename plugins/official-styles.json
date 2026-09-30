@@ -1,0 +1,13 @@
+{
+  "manifest": {
+    "apiVersion": 1,
+    "id": "official-styles",
+    "name": "百映 · 风格画廊",
+    "version": "1.0.0",
+    "author": "CentDeck",
+    "description": "在原版绿色与黑白蓝之间自由切换。关闭后隐藏切换入口，并恢复原版绿色。",
+    "permissions": ["themes"],
+    "themes": [{"id":"noir","name":"黑白蓝 · NOIR","tokens":{}}]
+  },
+  "files": {}
+}

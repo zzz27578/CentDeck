@@ -42,7 +42,7 @@ export function buildShell(app) {
         <span class="tb-sep"></span>
         <button class="icon-btn" id="tb-insp" hidden data-tip="属性栏（选中元素时自动弹出）" data-kbd="Alt+P">${icon('sliders')}</button>
         <button class="tb-agent" id="tb-agent" data-tip="助手" data-kbd="Ctrl+K">${icon('centdeck', 18)}助手</button>
-        <button class="icon-btn" id="tb-more" data-tip="更多">${icon('more')}</button>
+        <button class="btn ghost" id="tb-settings" aria-label="设置">${icon('settings',18)}设置</button><button class="icon-btn" id="tb-more" data-tip="更多">${icon('more')}</button>
       </div>
     </header>
     <div class="work">
@@ -85,7 +85,9 @@ export function buildShell(app) {
     };
   });
   syncDev();
+  $('#tb-settings').onclick = () => app.openSettings('general');
   $('#tb-more').onclick = (e) => showMenu([
+    {label:'导出项目 ZIP',icon:'download',onClick:async()=>{if(await app.bus.flushMeta()===false)return;const a=document.createElement('a');a.href='/api/projects/'+encodeURIComponent(app.project().id)+'/export';a.download='centdeck-project.zip';a.click();}},
     {label:'Agent 工作台',icon:'centdeck',onClick:()=>app.openSettings()},
     {label:'亮色 / 暗色',icon:'palette',onClick:toggleTheme},
     {label:'设置',icon:'settings',onClick:()=>app.openSettings('general')},

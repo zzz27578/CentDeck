@@ -1,0 +1,68 @@
+CentDeck Source License 1.0
+
+Copyright (c) 2026 zzz27578 and CentDeck contributors.
+
+This is a source-available license with restrictions. It is not the MIT
+License and is not an OSI-approved open-source license.
+
+1. Grant
+Subject to this license, you may use, study, copy, modify and run the Software
+for personal, educational, internal and commercial purposes. You may create
+and distribute attributed collaborative forks and contribute modifications.
+You may charge for services, support and independently developed plugins.
+
+2. Attribution and notices
+Every redistribution of the Software or a substantial portion of it must
+include this license and existing copyright notices. Public distributions
+and hosted instances must clearly identify CentDeck as the original project,
+link to https://github.com/zzz27578/CentDeck, and describe material changes.
+You must not falsely claim authorship of the original Software or imply
+endorsement by the original authors.
+
+3. No rebranded replicas
+You may not distribute, sell, sublicense or publicly provide a substantially
+complete copy or derivative of CentDeck as a different standalone product
+whose differences are primarily a new name, logo, styling, packaging or
+distribution channel. Removing provenance does not create an independent
+product. Attribution alone does not authorize such a rebranded replica.
+Clearly identified CentDeck forks that retain provenance, disclose changes
+and are offered for collaborative development are permitted. Private use,
+internal customization, independent plugins, and independently authored
+software that merely interoperates with CentDeck are permitted.
+Contact the copyright holders for a separate license if your intended
+distribution falls outside these permissions.
+
+4. User output and third-party components
+Websites, documents and assets independently created by users are not
+covered by this license merely because CentDeck was used to produce them.
+This exception does not relicense third-party material or copied CentDeck
+implementation code. Third-party components included with the Software
+retain their original licenses; this license does not limit rights granted
+under those licenses. No trademark rights are granted except the limited
+use necessary to truthfully identify origin as required above.
+
+5. Contributions
+Unless a separate written agreement says otherwise, contributions submitted
+for inclusion in CentDeck are offered under this license. Contributors retain
+copyright in their contributions. Only submit work you have the right to license.
+
+6. Termination
+Rights under this license terminate if you materially violate its conditions.
+They are reinstated if you cure the violation within 30 days after becoming
+aware of it, unless you have previously received written notice of a similar
+violation from a copyright holder. No reinstatement is implied for repeated
+or deliberate violations.
+
+7. Disclaimer
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY
+APPLICABLE LAW, THE AUTHORS AND COPYRIGHT HOLDERS SHALL NOT BE LIABLE FOR
+ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR ITS USE.
+
+中文说明（帮助理解；许可正文以英文条款为准）
+允许学习、使用、修改、商业内部使用、保留来源的协作 Fork、插件与服务。
+分发时保留署名、许可及原项目链接，说明修改；不得冒充原创或把整体项目仅
+更名、换 Logo、改样式、重新包装后作为另一个独立产品发布。用户独立创建的
+网页不因使用百映而受本协议限制。第三方组件遵循各自原许可。软件按原样提供。

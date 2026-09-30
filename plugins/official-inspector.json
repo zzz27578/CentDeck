@@ -1,0 +1,47 @@
+{
+  "manifest": {
+    "apiVersion": 1,
+    "id": "official-inspector",
+    "name": "百映 · 项目速览",
+    "version": "1.0.0",
+    "author": "CentDeck",
+    "description": "插件开发示例：隔离面板、项目摘要工具与验收技能。",
+    "permissions": [
+      "panels",
+      "skills",
+      "tools"
+    ],
+    "panels": [
+      {
+        "name": "项目速览",
+        "file": "index.html"
+      }
+    ],
+    "tools": [
+      {
+        "name": "summary",
+        "description": "统计当前项目页面、待办草图与锁定情况",
+        "handler": "project_summary"
+      }
+    ],
+    "skills": [
+      {
+        "id": "review",
+        "name": "项目交付巡检",
+        "desc": "配合项目速览检查页面、标记和锁定状态",
+        "file": "SKILL.md"
+      }
+    ],
+    "settingsSchema": {
+      "showLocks": {
+        "type": "boolean",
+        "label": "在摘要中显示锁定状态",
+        "default": true
+      }
+    }
+  },
+  "files": {
+    "index.html": "<!doctype html><html lang='zh-CN'><meta charset='utf-8'><style>body{font:16px/1.8 system-ui;padding:30px;color:#253827;background:#f1f5eb}button{padding:12px 20px;border:0;border-radius:10px;background:#536e43;color:white}pre{white-space:pre-wrap}</style><h1>项目速览</h1><p>读取页面与草图统计，检查交付前是否还有待办。</p><button id='refresh'>读取当前项目</button><pre id='result'>请先在工作台打开项目。</pre><script>document.getElementById('refresh').onclick=()=>parent.postMessage({type:'centdeck-plugin',action:'project_summary',requestId:'summary'},'*');addEventListener('message',e=>{if(e.source===parent&&e.data.type==='centdeck-result')document.getElementById('result').textContent=JSON.stringify(e.data.result,null,2)});</script></html>",
+    "SKILL.md": "---\nname: review\ndescription: Review a CentDeck project before delivery\n---\nUse project_context and plugin_official_inspector_summary to count pages, open marks and locks. Read each changed page, check mobile layout in the browser with ui_action. Report actual evidence; do not equate a successful file save with visual acceptance. Never clear marks or locks to make a report appear complete."
+  }
+}

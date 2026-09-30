@@ -1,0 +1,66 @@
+import { el, esc, toast, confirmDlg, openModal, promptDlg } from '../core/ui.js';
+import { refreshAppearance, mountPluginFrame } from '../core/extensions.js';
+const intro=(title,text)=>`<div class="extension-intro"><h2>${title}</h2><p>${text}</p></div>`;
+function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function pick(multiple=false,directory=false,accept=''){return new Promise(resolve=>{const input=document.createElement('input');input.type='file';input.multiple=multiple;input.accept=accept;if(directory)input.webkitdirectory=true;input.onchange=()=>resolve([...input.files]);input.oncancel=()=>resolve([]);input.click();});}
+function protect(fn){return async (...args)=>{try{await fn(...args);}catch(e){toast(e.message,'error');}};}
+export async function renderExtensions(app,content,tab){
+  const request=app.api.extension;
+  if(tab==='plugins'){
+    const {plugins}=await request('extensions');if(!content.isConnected)return;
+    content.innerHTML=intro('扩展你的创作空间','插件为平台增加功能，Skills 教助手使用功能。导入的插件默认停用，你可以检查权限后启用。')+`<div class="extension-toolbar"><input class="ipt" data-search placeholder="搜索插件" aria-label="搜索插件"><button class="btn primary" data-import>导入插件 JSON</button><button class="btn" data-url>从链接下载</button><button class="btn" data-folder>导入前端文件夹</button><button class="btn" data-html>导入 HTML 风格</button></div><div class="extension-grid"></div>`;
+    const grid=content.querySelector('.extension-grid');
+    const render=(query='')=>{grid.innerHTML='';for(const p of plugins.filter(p=>(p.manifest.name+p.manifest.description).toLowerCase().includes(query.toLowerCase()))){
+      const m=p.manifest,card=el(`<article class="extension-card"><div class="extension-card-top"><span class="extension-badge">${p.official?'官方':'本地导入'}</span><label class="extension-toggle"><input type="checkbox" ${p.enabled?'checked':''} aria-label="启用 ${esc(m.name)}"><span>${p.enabled?'已启用':'已停用'}</span></label></div><h2>${esc(m.name)}</h2><p>${esc(m.description||'')}</p><div class="extension-meta">v${esc(m.version)} · ${esc(m.author||'未署名')}</div><div class="extension-tags">${m.permissions.map(x=>`<span>${esc({themes:'主页风格',panels:'隔离面板',tools:'项目摘要',skills:'Agent 技能'}[x]||x)}</span>`).join('')}</div><footer><button class="btn" data-settings>设置与详情</button><button class="btn ghost" data-download>导出插件</button>${!p.official?'<button class="btn ghost danger" data-remove>卸载</button>':''}</footer></article>`);
+      card.querySelector('input').onchange=protect(async e=>{await request('plugins/action',{id:m.id,action:e.target.checked?'enable':'disable'});await refreshAppearance();app.bus.emit('skills');await renderExtensions(app,content,tab);});
+      card.querySelector('[data-download]').onclick=()=>download(m.id+'.centdeck-plugin.json',JSON.stringify({manifest:m,files:p.files},null,2));
+      card.querySelector('[data-remove]')?.addEventListener('click',protect(async()=>{if(!await confirmDlg({title:'卸载插件',body:`卸载 ${esc(m.name)}？项目文件会保留。`,okLabel:'卸载'}))return;await request('plugins/action',{id:m.id,action:'remove'});await refreshAppearance();app.bus.emit('skills');await renderExtensions(app,content,tab);}));
+      card.querySelector('[data-settings]').onclick=()=>{
+        const body=el(`<div class="extension-details"><p>${esc(m.description||'')}</p><p>编号：<code>${esc(m.id)}</code> · API v${m.apiVersion}</p><p>权限：${esc(m.permissions.join(' / '))}</p><p>风格 ${(m.themes||[]).length} · 面板 ${(m.panels||[]).length} · 技能 ${(m.skills||[]).length} · 工具 ${(m.tools||[]).length}</p>${m.id==='official-styles'?'<p>开启后，首页右上角显示「切换风格」。关闭后立即恢复绿色。亮暗模式独立保存。</p>':''}<div data-panels></div></div>`);
+        for(const panel of m.panels||[]){const button=el(`<button class="btn">打开 ${esc(panel.name)}</button>`);button.disabled=!p.enabled;button.onclick=()=>{const host=el('<div class="plugin-panel-host"></div>');openModal({title:panel.name,body:host,width:900});mountPluginFrame(host,p,panel.file,app);};body.querySelector('[data-panels]').append(button);}
+        const fields=Object.entries(m.settingsSchema||{});
+        if(fields.length){const form=el(`<form class="extension-form">${fields.map(([key,f])=>`<label>${esc(f.label)}<input name="${esc(key)}" type="${f.type==='boolean'?'checkbox':f.type==='number'?'number':'text'}" ${f.type==='boolean'?(p.settings[key]?'checked':''):`value="${esc(p.settings[key])}"`}></label>`).join('')}<button class="btn primary">保存插件设置</button><p role="status"></p></form>`);body.append(form);form.onsubmit=protect(async e=>{e.preventDefault();const settings=Object.fromEntries(fields.map(([key,f])=>[key,f.type==='boolean'?form.elements[key].checked:f.type==='number'?Number(form.elements[key].value):form.elements[key].value]));await request('plugins/action',{id:m.id,action:'configure',settings});p.settings=settings;form.querySelector('[role=status]').textContent='已保存，重新打开面板后生效';});}
+        openModal({title:m.name+' · 插件设置',body,width:620});
+      };grid.append(card);
+    }};render();content.querySelector('[data-search]').oninput=e=>render(e.target.value);
+    async function install(bundle){await request('extensions',bundle);toast('已导入，请检查后开启插件','ok');await renderExtensions(app,content,tab);}
+    content.querySelector('[data-url]').onclick=protect(async()=>{const value=await promptDlg({title:'从链接下载插件',label:'插件 JSON 的 HTTPS 地址',placeholder:'https://raw.githubusercontent.com/.../plugin.json',okLabel:'下载并导入'});if(!value)return;const url=new URL(value);if(url.protocol!=='https:'||url.username||url.password)throw Error('请使用不含凭证的 HTTPS 地址');const r=await fetch(url,{credentials:'omit',signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('下载失败：'+r.status);const text=await r.text();if(text.length>8*1024*1024)throw Error('插件超过 8 MB');await install(JSON.parse(text));});
+    content.querySelector('[data-import]').onclick=protect(async()=>{const [f]=await pick(false,false,'.json');if(f)await install(JSON.parse(await f.text()));});
+    const importFrontend=async directory=>{
+      const selected=await pick(directory,directory,directory?'':'.html,.htm');if(!selected.length)return;
+      const files={};for(const file of selected){if(!/\.(html|css|js|json|md|svg)$/i.test(file.name))continue;const name=directory?file.webkitRelativePath.split('/').slice(1).join('/'):file.name;files[name]=await file.text();}
+      const manifestFile=Object.keys(files).find(n=>n==='manifest.json');
+      if(manifestFile){await install({manifest:JSON.parse(files[manifestFile]),files});return;}
+      const home=Object.keys(files).find(n=>n==='index.html')||Object.keys(files).find(n=>/\.html?$/.test(n));if(!home)throw Error('请选择包含 HTML 的前端文件');
+      const id='custom-'+Date.now().toString(36);await install({manifest:{apiVersion:1,id,name:selected[0].webkitRelativePath?.split('/')[0]||selected[0].name,version:'1.0.0',description:'导入的自定义主页，在隔离预览中运行；项目导航保留在外层。',permissions:['themes'],themes:[{id,name:'自定义 · '+home,home,tokens:{}}]},files});
+    };
+    content.querySelector('[data-folder]').onclick=protect(()=>importFrontend(true));content.querySelector('[data-html]').onclick=protect(()=>importFrontend(false));
+  }
+  if(tab==='skills'){
+    const skills=await request('skills');
+    content.innerHTML=intro('让助手更懂百映','内置技能面向 Agent：规范工具调用、页面修改、草图引用与真实验收。平台操作指南自动注入，其他技能按需读取。')+'<div class="extension-toolbar"><button class="btn primary" data-import>导入 SKILL.md</button><button class="btn" data-new>新建技能</button></div><div class="extension-grid"></div>';
+    const edit=(skill)=>{
+      const body=el(`<form class="extension-form"><label>技能编号<input name="id" required pattern="[a-z][a-z0-9-]{1,79}" value="${esc(skill?.id||'my-skill')}"></label><label>显示名称<input name="name" required value="${esc(skill?.name||'我的技能')}"></label><label>说明<input name="desc" value="${esc(skill?.desc||'')}"></label><label>SKILL.md<textarea name="content" rows="12">${esc(skill?.content||'---\nname: my-skill\ndescription: When to use this skill\n---\n\n先读取当前项目，再根据要求进行修改。')}</textarea></label><button class="btn primary">保存技能</button></form>`);
+      const close=openModal({title:skill?'编辑技能':'新建 Agent 技能',body,width:700});body.onsubmit=protect(async e=>{e.preventDefault();await request('skills',Object.fromEntries(new FormData(body)),'PUT');close();app.bus.emit('skills');await renderExtensions(app,content,tab);});
+    };
+    content.querySelector('[data-new]').onclick=()=>edit(null);
+    content.querySelector('[data-import]').onclick=protect(async()=>{const [file]=await pick(false,false,'.md');if(!file)return;const text=await file.text();const id=text.match(/^name:\s*(.+)$/m)?.[1]?.trim().replace(/['"]/g,'')||'skill-'+Date.now().toString(36);edit({id,name:id,content:text});});
+    for(const s of skills){const card=el(`<article class="extension-card"><div class="extension-card-top"><span class="extension-badge">${esc(s.source)}</span><label class="extension-toggle"><input type="checkbox" ${s.enabled?'checked':''} aria-label="启用 ${esc(s.name)}">启用</label></div><h2>${esc(s.name)}</h2><p>${esc(s.desc)}</p><footer><button class="btn" data-read>阅读规范</button>${s.source==='local'?'<button class="btn ghost" data-edit>编辑</button><button class="btn ghost danger" data-remove>删除</button>':''}</footer></article>`);
+      card.querySelector('input').onchange=protect(async e=>{await request('skills',{id:s.id,enabled:e.target.checked},'PUT');app.bus.emit('skills');toast('后续任务将使用新的技能配置','ok');});
+      card.querySelector('[data-read]').onclick=()=>openModal({title:s.name,body:el(`<pre class="extension-source">${esc(s.content)}</pre>`),width:800});
+      card.querySelector('[data-edit]')?.addEventListener('click',()=>edit(s));
+      card.querySelector('[data-remove]')?.addEventListener('click',protect(async()=>{await request('skills',{id:s.id,action:'remove'},'PUT');await renderExtensions(app,content,tab);}));content.querySelector('.extension-grid').append(card);
+    }
+  }
+  if(tab==='tools'){
+    const list=await request('tools');content.innerHTML=intro('同一套工具，两种调用方式','内置 Agent 与 MCP 使用相同注册表。创建工具受模式、范围、版本与锁定检查约束；插件工具随插件启停。')+`<div class="extension-tool-list">${list.map(t=>`<details><summary><code>${esc(t.name)}</code><span class="extension-badge">${t.annotations.readOnlyHint?'读取':'操作'}</span></summary><p>${esc(t.description)}</p><pre class="extension-source">${esc(JSON.stringify(t.inputSchema,null,2))}</pre></details>`).join('')}</div>`;
+  }
+  if(tab==='mcp'){
+    const config=await request('mcp/config');
+    const json=JSON.stringify({mcpServers:{centdeck:{command:config.command,args:config.args,env:config.env}}},null,2);
+    content.innerHTML=intro('把外部 AI 接到工作台','面向 Codex、Claude Code 和 DeepSeek Harness 的标准 MCP 接口。外部助手可读项目、操作已登录页面，也可调度百映内置 Agent。')+`<div class="settings-block extension-form"><label class="extension-toggle"><input type="checkbox" data-enabled ${config.enabled?'checked':''}>开启本机 MCP</label><label>接管权限<select data-mode><option value="plan" ${config.mode==='plan'?'selected':''}>只读 / 计划</option><option value="create" ${config.mode==='create'?'selected':''}>创建 / 页面操作</option></select></label><p>地址：<code>${esc(config.endpoint)}</code></p><p>stdio 配置会从本机读取连接凭证，无需复制 API 密钥。请保持百映服务运行。</p><pre class="extension-source" data-config>${esc(json)}</pre><button class="btn" data-copy>复制 MCP 配置</button><button class="btn" data-rotate>重置连接凭证</button><p role="status" data-result></p></div><div class="settings-block"><h2>接管流程</h2><ol><li>配置 MCP 客户端，调用 list_skills / read_skill 阅读 platform-guide。</li><li>使用 list_projects、ui_state 确认项目和浏览器连接。</li><li>调用 ui_action 操作页面，或 start_agent 启动内置助手。</li><li>用 agent_status 查看思考强度、执行状态和真实变更。</li></ol><p>标准 stdio 配置可用于支持该格式的客户端。各客户端界面各异；这里只声称本工作台已验证的 MCP 能力。</p></div>`;
+    const save=protect(async()=>{await request('mcp/config',{enabled:content.querySelector('[data-enabled]').checked,mode:content.querySelector('[data-mode]').value},'PUT');toast('MCP 配置已保存','ok');});content.querySelector('[data-enabled]').onchange=save;content.querySelector('[data-mode]').onchange=save;
+    content.querySelector('[data-copy]').onclick=protect(async()=>{await navigator.clipboard.writeText(json);content.querySelector('[data-result]').textContent='配置已复制';});
+    content.querySelector('[data-rotate]').onclick=protect(async()=>{await request('mcp/config',{rotate:true},'PUT');content.querySelector('[data-result]').textContent='凭证已重置；stdio 连接将在下次请求自动读取新凭证。';});
+  }
+}

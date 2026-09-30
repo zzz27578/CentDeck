@@ -17,6 +17,7 @@ const P = {
   overview: '<rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="5" rx="1.5"/><rect x="13" y="12" width="8" height="8" rx="1.5"/><rect x="3" y="14" width="8" height="6" rx="1.5"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
   play: '<path d="M7 4.5v15l12-7.5z"/>',
+  pause: '<path d="M9 5v14M15 5v14"/>',
   layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
   marks: '<path d="M6 21V4h11l-2 4 2 4H6"/>',
   sticky: '<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/><path d="M8.5 9h7M8.5 12h4"/>',

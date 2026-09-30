@@ -163,7 +163,9 @@ async function call(p, endpoint, body, signal) {
     await res.body?.cancel();
     throw new ApiError(
       502,
-      `模型接口返回 ${res.status}，请检查地址、密钥和模型权限`,
+      body?.reasoning_effort && [400, 422].includes(res.status)
+        ? `模型接口拒绝请求（${res.status}），请检查模型是否支持 ${body.reasoning_effort} 思考强度及当前请求参数；未自动降低强度`
+        : `模型接口返回 ${res.status}，请检查地址、密钥和模型权限`,
     );
   }
   let text = "";
@@ -209,10 +211,7 @@ async function complete(
     max_tokens: Math.max(1, Math.min(16384, maxTokens)),
   };
   if (tools?.length && p.tools !== false) b.tools = tools;
-  if (p.reasoning && think !== "off")
-    b.reasoning_effort =
-      { low: "low", mid: "medium", high: "high", max: "high" }[think] ||
-      "medium";
+  b.reasoning_effort = require("./reasoning").normalizeThink(think);
   const j = await call(p, "chat/completions", b, signal);
   if (!j.choices?.[0]?.message)
     throw new ApiError(502, "模型响应缺少 choices.message");

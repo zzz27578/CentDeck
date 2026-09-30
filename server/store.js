@@ -178,6 +178,7 @@ function createBlankProject(body) {
   fs.mkdirSync(path.join(dir, '.centdeck', 'pristine'), { recursive: true });
   const proj = baseProject(id, name, { kind: 'blank' });
   writeJson(path.join(dir, 'project.json'), proj);
+  require('./project-guides').ensure(dir);
   writeJson(path.join(dir, '.centdeck', 'pristine', 'project.json'), { pages: [] });
   return proj;
 }
@@ -207,6 +208,7 @@ function createProject(body) {
     pages: Array.isArray(tMeta.pages) ? tMeta.pages : [],
   });
   writeJson(path.join(dir, 'project.json'), proj);
+  require('./project-guides').ensure(dir);
   return proj;
 }
 
@@ -455,6 +457,7 @@ function importProject(body) {
     .slice(0, 80).map((file) => ({ file, title: titles[file] || file.split('/').pop().replace(/\.html?$/i, '') }));
   const proj = baseProject(id, name, { kind: 'import', pages, description: `导入的网页（${items.length} 个文件）` });
   writeJson(path.join(dir, 'project.json'), proj);
+  require('./project-guides').ensure(dir);
   copyDir(dir, path.join(dir, '.centdeck', 'pristine'), (nm) => nm === '.centdeck');
   return proj;
 }
@@ -524,7 +527,7 @@ function removePage(id, file) {
 const CONFIG_DIR = process.env.CENTDECK_CONFIG_DIR ? path.resolve(process.env.CENTDECK_CONFIG_DIR) : path.join(ROOT, 'config.local');
 const ASSISTANTS_FILE = path.join(CONFIG_DIR, 'assistants.json');
 function getAssistants() {
-  if (!fs.existsSync(ASSISTANTS_FILE)) return [{ id: 'assistant-default', name: 'Cent', role: '通用', avatar: 'centdeck', color: '#65784e', prompt: '', responsibility:'', skills: [], model: 'auto', think: 'mid' }];
+  if (!fs.existsSync(ASSISTANTS_FILE)) return [{ id: 'assistant-default', name: 'Cent', role: '通用', avatar: 'centdeck', color: '#65784e', prompt: '', responsibility:'', skills: [], model: 'auto', think: 'medium' }];
   return readJson(ASSISTANTS_FILE, '助手配置读取失败');
 }
 function saveAssistants(body) {
@@ -538,7 +541,7 @@ function saveAssistants(body) {
       avatar: (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.avatar) && a.avatar.length < 800000) || ['centdeck','sparkle', 'palette', 'edit', 'check', 'brain', 'book'].includes(a.avatar) ? a.avatar : 'centdeck',
       color: /^#[0-9a-f]{6}$/i.test(a.color) ? a.color : '#65784e', prompt: String(a.prompt || '').slice(0, 16000),
       skills: Array.isArray(a.skills) ? [...new Set(a.skills.filter(s => typeof s === 'string' && /^[\w-]{1,100}$/.test(s)))].slice(0, 50) : [],
-      model: String(a.model || 'auto').slice(0, 200), think: ['off', 'low', 'mid', 'high', 'max'].includes(a.think) ? a.think : 'mid' };
+      model: String(a.model || 'auto').slice(0, 200), think: require('./reasoning').normalizeThink(a.think) };
   });
   writeJson(ASSISTANTS_FILE, list);
   return list;

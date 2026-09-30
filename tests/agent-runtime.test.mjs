@@ -14,6 +14,7 @@ fs.mkdirSync(projects);
 let pendingSlow = null,
   requests = 0;
 const seenModels = [];
+const seenEfforts = [];
 const tool = (name, args) => ({
   role: "assistant",
   content: null,
@@ -40,6 +41,7 @@ const upstream = http.createServer(async (req, res) => {
   const b = JSON.parse(raw);
   requests++;
   seenModels.push(b.model);
+  seenEfforts.push(b.reasoning_effort);
   const goal = b.messages.find((m) => m.role === "user")?.content || "",
     results = b.messages
       .filter((m) => m.role === "tool")
@@ -278,6 +280,32 @@ try {
     });
   const source = async () =>
     (await req("GET", base + "/file?path=index.html")).content;
+  await test("六档思考强度持久化并原样发送到模型接口", async () => {
+    for (const think of ["low", "medium", "high", "xhigh", "max", "ultra"]) {
+      const saved = await req("PUT", "/api/assistants", [
+        { ...profile, think }, { ...profile, id: "helper", name: "执行者" },
+      ]);
+      assert.equal(saved[0].think, think);
+      const t = await settled(await start("EFFORT", { think }));
+      assert.equal(t.status, "completed");
+      assert.equal(seenEfforts.at(-1), think);
+    }
+    await req("POST", base + "/tasks", { assistantId: "main", text: "INVALID", think: "fake" }, 400);
+    await req("PUT", "/api/assistants", [profile, { ...profile, id: "helper", name: "执行者" }]);
+    assert.equal((await req("GET", "/api/assistants"))[0].think, "medium");
+  });
+  await test("运行中更新强度在下一次模型请求生效", async () => {
+    const t = await start("SLOW", { think: "low" });
+    await until(() => pendingSlow);
+    assert.equal(seenEfforts.at(-1), "low");
+    const changed = await req("POST", base + "/tasks/" + t.id, { action: "think", think: "ultra" });
+    assert.equal(changed.think, "ultra");
+    await req("POST", base + "/tasks/" + t.id, { action: "think", think: "fake" }, 400);
+    pendingSlow();
+    assert.equal((await settled(t)).status, "completed");
+    assert.equal(seenEfforts.at(-1), "ultra");
+    await req("POST", base + "/tasks/" + t.id, { action: "undo" });
+  });
   await test("计划模式拒绝未暴露的写入工具", async () => {
     const t = await settled(await start("ILLEGAL", { mode: "plan" }));
     assert.equal(t.status, "conflict");

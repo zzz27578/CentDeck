@@ -1,0 +1,88 @@
+/* Shared layout and the original green presentation, retained from the former
+   mixed stylesheet. Visual variants must not redefine input or dialog sizing. */
+.home-bar { grid-template-columns: 1fr auto; }
+.home-bar-right { align-items: center; }
+.home-bar-right > .btn, .home-bar-right > .icon-btn {
+  height: 32px; min-height: 32px; align-items: center; justify-content: center;
+  font-size: 13px; line-height: 20px;
+}
+.style-switch { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.style-switch[aria-pressed="true"] { color: var(--accent); }
+.home-bar-right > [data-a="theme"] { font-size: 20px; }
+.noir-field, .noir-particles { display: none; }
+
+.landing-cta, .hero-prompt [data-a="go"] { position: relative; isolation: isolate; overflow: hidden; background: #20251e; color: #fff; transition: color .28s, box-shadow .28s; }
+.landing-cta::before, .hero-prompt [data-a="go"]::before { content: ''; position: absolute; inset: 0; background: #fff; transform: translateX(-105%) skewX(-18deg); transition: transform .38s cubic-bezier(.2,.7,.2,1); z-index: -1; }
+.landing-cta:hover, .landing-cta:focus-visible, .hero-prompt [data-a="go"]:hover, .hero-prompt [data-a="go"]:focus-visible { color: #111; transform: none; box-shadow: 0 0 28px #ffffff35, 0 0 0 1px var(--line-2); }
+.landing-cta:hover::before, .landing-cta:focus-visible::before, .hero-prompt [data-a="go"]:hover::before, .hero-prompt [data-a="go"]:focus-visible::before { transform: translateX(0) skewX(0); }
+.brand-sculpture { cursor: grab; touch-action: pan-y; user-select: none; }
+.brand-sculpture.is-turning { cursor: grabbing; }
+.sculpture-face { transform-origin: 50% 50%; transform: rotateX(var(--turn-x, 0deg)) rotateY(calc(-24deg + var(--turn-y, 0deg))) rotateZ(-16deg); transition: transform .28s ease-out; }
+.is-turning .sculpture-face { transition-duration: .1s; }
+.sculpture-orbit::after { display: none; }
+.orbit-track { position: absolute; inset: 0; animation: orbit-revolve 14s linear infinite; }
+.orbit-track::after { content: ''; position: absolute; left: calc(50% - 6px); top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 24px var(--accent); }
+@keyframes orbit-revolve { to { transform: rotate(360deg); } }
+.login-step { font: 11px ui-monospace, monospace; color: var(--accent); letter-spacing: 2px; }
+.login-form { gap: 18px; }
+.login-form h1 { margin: 0; }
+.login-intro { font-size: 13px; line-height: 1.7; color: var(--text-2); margin-bottom: 8px; }
+.login-art { position: absolute; left: 66%; right: 4%; top: 24%; bottom: 12%; display: flex; flex-direction: column; justify-content: space-between; opacity: 0; transition: opacity .4s .2s; pointer-events: none; }
+.login-open .login-art { opacity: 1; }
+.login-art > span, .login-art small { color: var(--dim); font: 10px ui-monospace, monospace; letter-spacing: 2px; }
+.login-art-mark { display: grid; place-items: center; flex: 1; color: var(--accent); background: repeating-radial-gradient(ellipse at center, transparent 0 32px, var(--line) 33px 34px, transparent 35px 65px); }
+.login-art-mark svg { width: min(70%, 240px); }
+.login-art strong { font-size: clamp(24px, 2.6vw, 44px); line-height: 1.5; font-weight: 500; margin: 24px 0; }
+
+.comp-bar { flex-wrap: wrap; gap: 8px 10px; padding-top: 12px; }
+.comp-pick { min-height: 34px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; gap: 6px; max-width: 100%; }
+.comp-pick span { max-width: 160px; }
+.comp-bar [data-a="model"] { flex: 1 1 135px; }
+.comp-bar [data-a="think"] { flex: 0 0 auto; }
+.comp-controls { flex-wrap: wrap; gap: 10px; }
+.hero-prompt { display: flex; flex-direction: column; overflow: hidden; }
+.hero-prompt textarea { height: 104px; min-height: 104px; padding: 22px 24px 12px; flex: none; }
+.prompt-actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 14px 14px 24px; }
+.prompt-actions .prompt-label { position: static; inset: auto; flex: 0 0 auto; }
+.hero-prompt .prompt-actions [data-a="go"] { position: relative; inset: auto; flex: 0 0 auto; margin-left: auto; min-height: 44px; height: auto; gap: 24px; padding: 12px 22px; }
+.hero-prompt [data-a="go"] span { transition: transform .25s; }
+.hero-prompt [data-a="go"]:hover span { transform: translate(2px,-2px); }
+
+::view-transition-old(root) { animation: style-out .2s ease both; }
+::view-transition-new(root) { animation: style-in .32s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes style-out { to { opacity: 0; } }
+@keyframes style-in { from { opacity: 0; clip-path: inset(0 0 8% 0); } to { opacity: 1; clip-path: inset(0); } }
+
+@media(max-width:650px) {
+  .landing-cover header { padding:16px;gap:10px; }
+  .landing-cover .wordmark { font-size:16px;gap:5px; }
+  .landing-cover .wordmark-sub { display:none; }
+  .landing-cover nav { gap:6px; }
+  .landing-cover nav .btn { padding:0 12px; }
+  .landing-cover nav > [data-theme] { min-width:32px;min-height:44px; }
+  .home-bar { padding:0 16px;gap:8px; }
+  .home-bar-right { gap:6px; }
+  .home-bar-right > [data-a="settings"] { display:none; }
+  .home-bar .wordmark { gap:5px;font-size:15px; }
+  .home-bar .wordmark svg { width:28px; }
+  .login-art { display:none; }
+  .hero-prompt textarea { padding:18px 18px 12px; }
+  .prompt-actions { padding:0 12px 12px 18px;gap:10px; }
+  .hero-prompt .prompt-actions [data-a="go"] { padding:12px 15px;gap:12px; }
+  .home-bar-right .style-switch { padding:0 8px; }
+  .home-bar-right .style-switch .ico { width:18px;height:18px; }
+}
+@media(max-width:390px) {
+  .home-bar .wordmark small { display:none; }
+  .landing-cover nav > a { display:none; }
+  .landing-cover nav .style-switch { padding:0 6px; }
+  .landing-cover .style-switch .ico { display:none; }
+}
+@media(max-height:680px) {
+  .login-under { overflow-y:auto;padding-block:24px; }
+  .login-form { gap:10px; }
+  .login-monogram { display:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; }
+}

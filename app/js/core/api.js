@@ -47,6 +47,7 @@ async function request(method, url, body, opts = {}) {
 
 // 所有方法接受可选 opts：{ toast: false 关闭自动错误提示, withError: 错误处理回调 }
 export const api = {
+  extension: (url, body, method) => request(method || (body ? 'POST' : 'GET'), '/api/' + url, body),
   auth: () => request('GET','/api/auth',null,{toast:false}),
   login: body => request('POST','/api/auth',body,{toast:false}),
   account: body => request('PUT','/api/auth',body,{toast:false}),

@@ -1,99 +1,144 @@
+<div align="center">
+
 # CentDeck · 百映
 
-> **AI 负责写网页，你负责指和改。**
+**AI 写前端，你在画布上指和改。**
 
-CentDeck（百映）是一个给不会写代码的人用的 AI 网页工作台。AI 做出来的网页会完整摊开在一块画布上；哪里不对，点一下、圈一下就能指给 AI。改个字、对个齐这种小事，像做 PPT 一样自己动手，改完直接存进代码，不花 AI 额度。
+**An AI frontend workbench. Build with agents, refine on a visual canvas.**
 
-名字由来：Cent（百）+ Deck（一叠页面）——百页尽映，是为"百映"。
+[中文](#中文) · [English](#english) · [插件开发](docs/插件开发规范.md) · [MCP & Skills](docs/MCP与Skills.md) · [贡献 / Contributing](CONTRIBUTING.md)
 
-## 它帮你做到四件事
+</div>
 
-- **看得见**：所有页面、弹窗、跳转关系摊在无限画布上，像 PPT 一样真实放映。
-- **指得准**：点选、圈选、@，把"右边那个按钮"精确定位到代码行，不靠口述。
-- **改得动**：改字、对齐、换字号自己动手；每次修改亮一盏"三灯"——绿灯直接写回、黄灯提示连带影响、红灯恢复原样并转成 AI 任务。
-- **花得省**：能手动的不花 token；需要 AI 时为不同助手指定模型，按任务分工，并设置步数与用量上限。
+![CentDeck 插件管理](docs/screenshots/plugins.png)
 
-## 快速开始
+## 中文
 
-环境要求：Node.js 22 及以上（本机开发使用 v24）。不需要安装任何依赖。
+CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页编辑**的本地工作台。把页面、弹窗、设计方案放在同一块画布上；用点选、框选、草图和引用精确告诉 AI 要改哪里。改字、对齐、调字号等小修改直接写回真实源码，不必每次调用模型。
 
-1. **启动**：双击 `CentDeck.bat`（Windows），或命令行执行 `node server/server.js`（macOS / Linux 可用 `bash start.sh`）。启动后自动打开浏览器，默认地址 `http://localhost:8420`（端口被占用会自动后移，也可用 `PORT` 环境变量指定）。
-2. **首次登录**：用户名和密码均为 `centdeck`。登录后必须设置至少 8 位的新密码，用户名可保留。账号单独保存在 `config.local/account.json`；忘记账号时关闭服务，直接编辑该文件后重启。此文件按本地可编辑需求保存，不提交到 GitHub。
-3. **开始一个项目**，三种方式任选：
-   - 在首页输入框里描述想做的网站，或新建**空白项目**——直接进入空画布并打开助手，方案版数默认 1，可选 2 / 3 / 4；在 Agent 工作台配置兼容接口后即可生成页面；
-   - **从模板开始**：内置两个完整示例（四页官网、两页后台），方便测试各种功能；
-   - **导入网页**：选择 HTML 文件或整个文件夹，也可以直接拖进首页。导入后会逐页体检，告诉你哪些地方能直接改、哪些交给 AI 更稳。
-4. **退出**：在启动的终端窗口里输入 `exit` 或 `q` 回车，或直接 Ctrl+C，即停止监听。
-5. **一键还原**：右上角"更多"里的"一键还原"，把项目恢复到刚创建 / 刚导入时的样子（需二次确认）。
+**双击 `CentDeck.bat` → 浏览器打开 → 开始创作。** 保持原生 JavaScript、免构建、本地文件夹的交付方式；需要 Node.js 22+，没有 npm 安装步骤。内置 HTML 解析器随源码提供。
 
-你的项目保存在 `projects/` 目录，一个项目就是一个普通文件夹，可打包带走、可用 Git 管理。
+### 你可以做什么
 
-## 当前状态（2026-09-30）
+- **创建真实前端**：自然语言创建项目、自定义 OpenAI 兼容 API、手动填写或发现模型，使用自己的提供商与密钥。
+- **灵活的 Agent 工作台**：自定义助手、角色、职责、提示词、Skills、模型和六档思考强度；计划/创建模式、范围限制、步骤与 token 预算、反问、停止、继续和一层多 Agent 协作。
+- **可视化精修**：页面总览、DOM 与源码映射、文字与属性修改、拖动、缩放、三灯判定、锁定、撤销和历史。动态生成或无法可靠定位的元素会说明限制。
+- **草图指挥**：画笔、箭头、框选、便签、参考图、全局编号、@ 引用和可复制任务单。
+- **电脑与手机**：分别预览和修改；真实页面放映、跳转与弹窗，手机修改可写入独立媒体查询。
+- **Skills 与工具**：内置平台操作规范自动给 Agent 使用，其他技能按需加载；查看、启停、导入和编辑 SKILL.md；真实工具注册表。
+- **MCP 接管**：标准 stdio 适配器和本机 JSON-RPC HTTP 端点；外部 AI 可读写项目、操作已登录页面、添加草图，或启动内置 Agent。面向 Codex、Claude Code、DeepSeek Harness 等支持 MCP 的客户端。
+- **插件管理**：导入 JSON 包、前端文件夹、HTML 风格或 HTTPS 下载链接；查看权限、启停、设置、导出与卸载。官方“风格画廊”默认启用，关闭即恢复绿色并隐藏风格切换；官方“项目速览”演示面板 + Skills + 工具。
+- **带走你的项目**：源码、图片和项目说明都在普通文件夹里，可用 Git 管理；编辑器“更多 → 导出项目 ZIP”打包交付。
 
-- [x] **任何写法的网页都能改**：解析器换成和浏览器同一套规则的 parse5（已放在项目里，免安装）。缩进的、压成一行的、省略结束标签的、表格没写 tbody 的、带 `&nbsp;` 的都能直接改字、拖动、调大小，只写回真正变了的那几个字；实在对不上的地方（脚本生成的内容、浏览器自动纠正过的标签）会说明原因，并可以一键记成草图标记交给 AI
-- [x] **导入网页**：单个文件、多个文件、整个文件夹都行；自动体检分"完整可改 / 大部分能改 / 只能查看"并用大白话说明；有问题时可以把"整理格式"的要求一键放进助手输入框
-- [x] **首页**：描述想做的网站直接开始；空白项目 / 模板 / 导入三个入口；项目搜索、排序、重命名；删除要输入项目名确认
-- [x] **总览（参考 Google Stitch）**：右侧工具条——指针、框选、画笔、橡皮、便签、取色、手；框选页面上的一块会直接变成助手输入框里的引用；右键页面"@ 引用到助手"；弹窗子页面可以拖动摆放；空白项目直接打开助手输入区；画布便签可编号、拖动、换色、引用并撤销；每套方案有独立设计规范板，展示配色 / 字体 / 字号 / 组件并连接其页面，可选用整套方案或单页、定向应用规范；新建 / 删除页面
-- [x] **电脑 / 手机切换**：顶部一键切换，总览和编辑都按真实手机尺寸显示；在手机模式下调的位置、大小、字号只写进手机专用的 `@media` 样式，电脑版不受影响；切换手机时检测视口声明、响应式样式和外部样式可检查性
-- [x] **编辑手感**：交互 / 选择 / 文字三个工具分开；属性栏选中元素时自动弹出，文字 / 布局页签分开，支持字重、行高、字间距、颜色与对齐，可以关掉、按钮召回；右键菜单点空白处就关；拖出可移动范围会画成一条箭头标记（去掉了虚影）
-- [x] **草图**：画笔、箭头、方框、圆圈、便签钉、**参考图**（像 Word 里的浮动图片，放在最上层，随意拖动、拖角缩放；也可以直接粘贴或把图片拖进来）、橡皮；每个标记有全局编号，可以 @ 编号、@ 颜色、@ 全部
-- [x] **放映**：在当前浏览器直接打开项目网页，电脑按真实视口显示；仅保留右下角手机切换与退出按钮；手机使用 393px 视口，不再套浏览器外壳；Esc 返回工作台。
-- [x] **快捷键可改**：按 ? 打开快捷键面板，点按键就能改；撤销、删除、方向键等基础键固定不可改
-- [x] **Agent 工作台**：统一管理助手、提供商、任务与设置；自定义角色、职责、默认提示词、技能、模型和思考强度，支持上传头像；支持任意 OpenAI 兼容 `/v1` 接口，发现或手动输入模型。助手支持停靠、悬浮、折叠、隐藏与召回。
-- [x] **真实任务执行**：计划 / 创建模式、引用页面与标记、图片和文本附件、文件读取与版本保护、原子多文件提交、独立风格方案、停止、提问与继续、撤销，以及可选的一层多助手协作。任务及对话按项目保存，重启后的未完成任务可手动恢复。
-- [x] **品牌与账号**：原创 CentDeck 图标、带平滑切换的首页与登录页、项目与模板入口、亮暗主题；设置内有 GitHub、检查更新和重启。
-- [ ] **后续扩展**：本机 MCP / ACP、外部助手接管、自动视觉验收、供应商故障自动切换。当前版本未实现这些扩展。
-- [ ] **第三步**：插件生态、完整导出与应用
+### 开始使用
 
-## 操作速查
+1. 获取仓库源码；确保 `node --version` 为 22 或以上。
+2. Windows 双击 `CentDeck.bat`。macOS / Linux 可运行 `bash start.sh`，或 `node server/server.js`。
+3. 默认地址为 `http://localhost:8420`；占用时自动顺延。终端输入 `exit` / `q` 或按 Ctrl+C 退出。
+4. 初始账号和密码均为 `centdeck`，首次登录必须修改密码。
+5. 首页可描述需求、创建空白项目、使用模板或导入已有 HTML/文件夹。
+6. 首页或编辑器顶部的“设置”可直接进入管理。先在“模型提供商”填写 API 地址、密钥和模型，再进入助手的创建模式。
 
-| 想做什么 | 怎么做 |
+模型接口使用 `/v1` 基础地址，并需要支持 `chat/completions`。创建任务需要工具调用；图片引用需要相应视觉能力。思考等级 `low / medium / high / xhigh / max / ultra` 按原值作为 `reasoning_effort` 发送，上游必须支持所选参数；不支持时明确报错，不擅自降档。费用由你的模型提供商计算。
+
+### 插件、Skills、MCP 各管什么
+
+| 层 | 服务对象 | 示例 |
+|---|---|---|
+| 插件 | 平台用户 | 主页风格、隔离面板、受管扩展工具 |
+| Skills | 内置与外部 Agent | 施工规范、设计方案、草图修改、页面验收 |
+| MCP | 外部 AI 客户端 | 读文件、提交修改、控制页面、调度内置助手 |
+
+v1 插件支持设计变量、自定义主页、隔离面板、技能和受管项目摘要工具。自定义主页使用沙箱；同包 CSS/普通 JS 可内联，网络与任意宿主脚本不开放。框架适配器、任意第三方服务端工具和专业时间轴不属于当前已实现扩展点。HTTPS 下载受浏览器 CORS 限制，无法直接下载时可先下载 JSON 再本地导入。
+
+### 一个实际案例
+
+**余白 YUBAI**：用 MCP 读取版本并提交的双页品牌工作室网站，包含响应式布局、作品分类、咨询弹窗、本地表单摘要和案例跳转。完整源码位于 [examples/yubai](examples/yubai)，可直接导入百映。表单是本地演示，不发送真实咨询。
+
+![余白前端案例](docs/screenshots/yubai-desktop.png)
+
+### 本地数据与边界
+
+- `projects/<id>/`：项目源码、`project.json`、设计规范和 `.centdeck/` 历史/任务。
+- `config.local/`：本地账号、提供商密钥、助手及插件设置；Git 忽略，不随项目 ZIP 导出。
+- `app/skills/`：官方 Agent Skills；`plugins/`：官方插件示例。
+- 当前只监听回环地址。它是单机工作台，不是公网多人服务。预览运行导入网页的代码，请只打开你信任的项目。
+- MCP 的模式与写入保护约束受管接口；拥有直接文件系统权限的外部程序仍可绕过接口修改文件。
+- 源码包 ZIP 不含隐藏历史目录；需要全部历史时保留整个项目文件夹。
+
+### 验证状态
+
+基础引擎、接口、Agent 调度、六档思考参数、停止与迟到结果、版本冲突、锁定、多文件提交和扩展/MCP 回归均有测试。已实际通过 MCP 控制浏览器、添加/撤销草图、调用内置 Agent 隔离测试提供商并核对任务结果。交付案例已检查桌面、393px 手机、筛选、弹窗、表单与跳转。
+
+**真实模型验收取决于可用提供商。** 本次本机已有接口在模型发现时返回 401，因此不能将隔离测试提供商的成功当作真实模型联网生成成功；也未测试其它 AI 客户端。详细记录见 [收尾验收](docs/收尾验收.md)。
+
+```sh
+node --experimental-vm-modules tests/frontend-syntax.test.mjs
+node tests/agent-runtime.test.mjs
+node tests/extensions.test.mjs
+node tests/mcp-transport.test.mjs
+node tests/api.test.mjs
+node tests/engine.test.mjs
+node tests/scan.test.mjs
+node tests/token-source.test.mjs
+node tests/workspace-state.test.mjs
+```
+
+## English
+
+**CentDeck is a local AI frontend builder and visual website workbench.** Put pages, dialogs and design variants on one canvas. Point, select, sketch and reference exactly what your agent should change. Refine text, alignment and typography directly in the source without spending model tokens on every small edit.
+
+Double-click `CentDeck.bat`, open the browser and start building. Node.js 22+ is required. Native JavaScript, no build step, no npm installation, ordinary project folders.
+
+### Highlights
+
+- **Bring your own API**: custom OpenAI-compatible endpoints, provider keys, model discovery or manual model IDs, optional vision and tool calling.
+- **Agent studio**: customizable assistants, prompts, skills, models, six reasoning levels, plan/create modes, scoped edits, budgets, questions, cancellation, resumption and one-level multi-agent collaboration.
+- **Visual editing**: overview canvas, source mapping, text/property editing, drag/resize, writeback confidence, locks, undo and history. Unsupported dynamic elements are reported rather than silently rewritten.
+- **Sketch feedback**: drawings, arrows, boxes, notes, reference images, numbered marks and precise agent references.
+- **MCP integration**: a standard stdio bridge and local JSON-RPC HTTP endpoint. External agents can inspect/edit projects, operate the signed-in browser and invoke built-in agents. Intended for MCP-capable clients including Codex, Claude Code and DeepSeek Harness.
+- **Plugin framework**: import bundles or frontend files, download via HTTPS, inspect permissions, enable/disable and export. Official Style Gallery controls the home style picker; disabling it restores original green. Project Inspector demonstrates a sandbox panel, skill and managed tool.
+- **Portable output**: real HTML/CSS/JS, desktop/mobile previews, a presentation view and project ZIP export.
+
+### Quick start
+
+1. Download or clone this repository and have Node.js 22+ available.
+2. Run `CentDeck.bat`, `bash start.sh`, or `node server/server.js`.
+3. Sign in with `centdeck / centdeck` and change the initial password.
+4. Open Settings directly from the home/editor toolbar. Configure a provider and model before using an agent.
+5. Create a project, import a frontend folder or start from a template. Choose **Create** when you want the agent to write files.
+
+The default address is `http://localhost:8420`. Exit with `exit`, `q` or Ctrl+C in the terminal. Reasoning levels are transmitted unchanged as `reasoning_effort`; unsupported provider values produce an error. API costs are paid to your provider.
+
+### Scope and verification
+
+Plugin API v1 supports design tokens, isolated custom homes/panels, skills and managed project-summary tools. It does not run arbitrary server-side plugin code. Bundled CSS and classic JavaScript can be inlined; remote assets and module-based frontend builds are outside the custom-home contract.
+
+Tests cover runtime guards, six reasoning values, conflict handling and extension/MCP behavior. A real MCP client operated the browser, added and undid marks, and invoked the built-in scheduler against an isolated test provider. The YUBAI frontend was written through MCP and checked on desktop/mobile with real interactions. The locally configured real provider returned HTTP 401, so real-provider generation remains unverified. Other AI clients were not tested.
+
+Project files stay in `projects/`. Secrets and local configuration stay in Git-ignored `config.local/`. The app listens on loopback and is intended for local use. Project previews execute the imported project's code; open trusted projects. Direct filesystem access is outside MCP's permission boundary.
+
+## 文档 / Documentation
+
+| 文档 | 内容 / Contents |
 |---|---|
-| 切换视图 | 顶部"总览 / 编辑 / 放映"，或 Alt+1、Alt+2、F5（从当前页放映） |
-| 电脑 / 手机 | 顶部"电脑 / 手机"开关 |
-| 像访客一样点页面 | 交互工具 **E**：按钮、弹窗、表单、跳转都是真的 |
-| 选中、拖动 | 选择工具 **R**：点一下选中，按住直接拖；Shift+Enter 选外面一层，Tab 选下一个 |
-| 改字 | 文字工具 **T** 点进去，或双击文字；回车确认，Esc 取消 |
-| 缩放元素 | 拖选中框的角点 = 等比缩放；拖边线 = 改宽 / 高 |
-| 微调位置 | 方向键 1 像素，Shift+方向键 10 像素 |
-| 画草图 | D 画笔、A 箭头、F 方框、G 圆圈、S 便签钉、I 插参考图、X 橡皮 |
-| 总览工具 | R 指针、M 框选（引用给助手）、D 画笔、X 橡皮、S 便签、C 取色、H 手 |
-| 属性栏 | 选中元素时自动弹出；Alt+P 开 / 关 |
-| 缩放画面 | Ctrl+滚轮；Shift+1 适应屏幕；Ctrl+0 实际大小；空格+拖动平移 |
-| 撤销 / 重做 | Ctrl+Z / Ctrl+Shift+Z（改代码、画标记、摆页面都能撤） |
-| 召唤助手 | Ctrl+K；右键页面、元素、标记都能"@ 引用到助手" |
-| 全部快捷键 / 改键 | 按 ?（Shift+/） |
+| [项目说明](docs/项目说明书.md) | Product vision and original design |
+| [技术架构与计划](docs/技术架构与三步计划.md) | Original architecture and roadmap |
+| [收尾验收](docs/收尾验收.md) | Plan comparison, evidence and remaining limitations |
+| [插件开发规范](docs/插件开发规范.md) | Bilingual plugin contract and working examples |
+| [MCP 与 Skills](docs/MCP与Skills.md) | Bilingual connection guide and agent workflow |
+| [CONTRIBUTING](CONTRIBUTING.md) | Contributions, tests, issues and PRs |
 
-设计规范直接显示在总览画布上，每套方案单独关联页面。
+## 许可与贡献 / License and contributions
 
-左侧统一为「网页结构」：总览看页面关系，编辑看实际 DOM 及对应源码行号，默认不自动展开。设计风格应用更新规范变量；导入页面中写死的颜色 / 尺寸仍需手动调整或由 AI 整理。手机体检属于启发式检查，没有断点不等于不支持手机。
+源码使用 [CentDeck Source License 1.0](LICENSE)：允许使用、修改、商业使用与保留来源的协作 Fork；要求保留署名和许可，禁止冒充原创、去除来源并把整体项目换牌再分发。用户用百映创建的独立网页不因此受此许可约束。第三方组件保留自己的许可，见 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)。
 
-## AI 配置
+Source is available under the **CentDeck Source License 1.0**, allowing use, modification, commercial use and attributed collaborative forks, while prohibiting false authorship and rebranding the substantially complete project as another product. Independently created user websites are not covered by this license merely because they were made with CentDeck. Third-party components retain their own licenses.
 
-打开「助手管理」进入 Agent 工作台 → 模型提供商 → 新建接口，填写 `/v1` 基础地址与密钥；本地无密钥服务可勾选免密钥。发现模型后选用一个作为默认，也可手动添加模型 ID。图片引用需启用图片能力，创建模式需要模型支持工具调用。真实接口费用由提供商计算。
+该协议含额外限制，**不是 MIT，也不属于 OSI 认可的标准开源许可**。/ This restricted source-available license is **not MIT or an OSI-approved open-source license**.
 
-- 账号：`config.local/account.json`
-- 提供商：`config.local/settings.json`（密钥仅服务端使用）
-- 助手配置：`config.local/assistants.json`
-- 任务与变更：`projects/<项目>/.centdeck/`
+**欢迎 PR 和 Issues。** 报 Bug、分享前端案例、改进文档、贡献技能或插件，都欢迎。
 
-检查更新仅比较 GitHub 版本，不会自动拉取覆盖文件；重启会断开登录，未完成任务转为暂停。
+**PRs and issues are welcome** — bug reports, frontend examples, documentation, skills and plugins.
 
-## 文档
-
-| 文档 | 内容 |
-|---|---|
-| [docs/项目说明书.md](docs/项目说明书.md) | 产品是什么、给谁用、六个创新点、与同类产品对比 |
-| [docs/技术架构与三步计划.md](docs/技术架构与三步计划.md) | 主体 + 插件架构、AI 接入方式、技能与规范、三步计划 |
-
-## 技术形态（已确认）
-
-一个监听本机端口的本地网页服务：双击启动 → 自动在浏览器打开工作台 → 开始使用；不用时在终端里退出，即停止监听。
-
-界面用原生 JavaScript 写成，零依赖、不需要构建，双击就能用。项目就是一个普通文件夹：Git 可管，外部 AI（Claude Code、Codex 等）以后可以通过本地服务提供的 MCP 接口直接接管编辑。
-
-开发自测（全部使用本地代码或隔离配置，不读取真实密钥）：`node --experimental-vm-modules tests/frontend-syntax.test.mjs`（浏览器模块语法）、`node tests/agent-runtime.test.mjs`（账号 / 提供商 / Agent 集成）、`node tests/engine.test.mjs`（改字 / 挪位 / 手机样式写回）、`node tests/scan.test.mjs`（总览识别链接和弹窗）、`node tests/api.test.mjs`（服务端接口及助手配置，使用独立临时配置）、`node tests/token-source.test.mjs`（设计规范源码插入）、`node tests/workspace-state.test.mjs`（保存失败恢复、撤销与响应式检测）。
-
-## 许可
-
-待定（开源与发布方式尚未确定）。
+关键词 / Keywords: **AI frontend builder · vibe coding · visual website editor · local-first · BYOK · custom API · MCP · Agent Skills · multi-agent · plugin framework · HTML CSS JavaScript · 前端工作台 · 可视化编辑 · 自定义 API · AI 网页生成**

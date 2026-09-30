@@ -1,5 +1,13 @@
 [
   {
+    "id": "platform-guide",
+    "name": "百映平台操作指南",
+    "icon": "book",
+    "desc": "工具、Skills、MCP、草图与真实页面验收规范；默认注入",
+    "file": "platform-guide/SKILL.md",
+    "tier": "expert"
+  },
+  {
     "id": "design-variants",
     "name": "出几版方案",
     "icon": "overview",

@@ -18,12 +18,9 @@ export function createAgent(app) {
   const floats = new Map(); // session → 窗口元素
   const sessions = [];
 
-  fetch("/app/skills/index.json")
-    .then((r) => r.json())
-    .then((j) => {
-      skills = j;
-    })
-    .catch(() => {});
+  const loadSkills = () => fetch('/api/skills').then(r=>r.json()).then(r=>{skills=r.data.filter(s=>s.enabled);}).catch(()=>{});
+  loadSkills();
+  app.bus.on('skills',loadSkills);
   const loadSettings = () =>
     app.api
       .getSettings({ toast: false })
@@ -456,18 +453,7 @@ export function createAgent(app) {
       s.syncTasks(taskList);
     }),
   );
-  app.bus.registerPanel({
-    id: "assistants",
-    title: "助手管理",
-    icon: "brain",
-    views: ["overview", "edit"],
-    onClick: mgr.manage,
-    render(box) {
-      box.innerHTML =
-        '<div class="p-sec"><p>配置助手的职责、技能和模型，召回已隐藏的窗口。</p><button class="btn primary block" style="margin-top:12px">打开助手管理</button></div>';
-      box.querySelector("button").onclick = mgr.manage;
-    },
-  });
+
   return {
     mount,
     toggle,

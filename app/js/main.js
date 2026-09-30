@@ -1,3 +1,5 @@
+import { refreshAppearance } from './core/extensions.js';
+import { connectWorkbench } from './core/mcp-client.js';
 // main.js —— 入口：应用上下文、打开项目、视图切换（总览/编辑/放映）、锁定、插件装配
 import { api, setApiErrorHandler } from './core/api.js';
 import { createBus } from './core/bus.js';
@@ -132,6 +134,7 @@ app.refreshProject = async () => {
 app.toggleAgent = (force) => agent.toggle(force);
 
 // ---------- 装配 ----------
+await refreshAppearance();
 await requireLogin(app);
 views.overview = createOverview(app);
 views.edit = createEditor(app);
@@ -160,3 +163,5 @@ window.addEventListener('beforeunload', () => { if (app.state.project && bus.sav
 const initial=new URLSearchParams(location.search);
 if(initial.has('project')){await app.openProject(initial.get('project'));if(initial.get('view')==='edit'&&app.project()?.pages.some(p=>p.file===initial.get('page')))await app.openPage(initial.get('page'));history.replaceState(null,'','/');}
 else renderHome(app);
+
+connectWorkbench(app);

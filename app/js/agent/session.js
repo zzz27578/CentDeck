@@ -5,13 +5,8 @@ import { mark } from "../core/brand.js";
 import { avatar, taskStatus } from "./studio.js";
 import { refLabel, refKey, mentionItems, describeRefs } from "./refs.js";
 
-export const THINK = [
-  { id: "off", label: "不思考", hint: "最快最省，适合改字换色" },
-  { id: "low", label: "浅想", hint: "小范围调整" },
-  { id: "mid", label: "适中", hint: "日常推荐" },
-  { id: "high", label: "深想", hint: "改版、复杂交互" },
-  { id: "max", label: "最深", hint: "整体诊断、规划整站" },
-];
+import { THINK, normalizeThink } from "../core/reasoning.js";
+export { THINK };
 export const ROLES = [
   "通用",
   "总览设计",
@@ -33,7 +28,7 @@ export function createSession(app, mgr, opts) {
     name: opts.name || "助手",
     role: opts.role || "通用",
     model: opts.model || "auto",
-    think: opts.think || "mid",
+    think: normalizeThink(opts.think),
     avatar: opts.avatar || "centdeck",
     color: opts.color || "#65784e",
     prompt: opts.prompt || "",
@@ -66,9 +61,9 @@ export function createSession(app, mgr, opts) {
       <div class="comp-bar">
         <button class="icon-btn sm" data-a="plus" data-tip="上传文件、引用页面或元素">${icon("plus", 18)}</button>
         <button class="icon-btn sm" data-a="at" data-tip="@ 引用页面、元素、标记">${icon("at", 17)}</button>
-        <button class="comp-pick" data-a="skill" data-tip="用哪个技能（按 CentDeck 的规则来做）">${icon("book", 14)}<span>技能</span></button>
+        <button class="comp-pick" data-a="skill" data-tip="选择技能">${icon("book", 14)}<span>技能</span></button>
         <button class="comp-pick" data-a="model" data-tip="选模型">${icon("brain", 14)}<span></span>${icon("chevDown", 12)}</button>
-        <button class="comp-pick" data-a="think" data-tip="思考强度：越深越慢也越贵">${icon("sparkle", 14)}<span></span>${icon("chevDown", 12)}</button>
+        <button class="comp-pick" data-a="think" data-tip="思考强度">${icon("sparkle", 14)}<span></span>${icon("chevDown", 12)}</button>
         <span class="grow"></span>
         <button class="comp-send" data-a="send" data-tip="发送" data-kbd="Enter">${icon("send", 17)}</button>
       </div>
@@ -76,6 +71,9 @@ export function createSession(app, mgr, opts) {
     </div></div>`);
   s.root = root;
   const q = (sel) => root.querySelector(sel);
+  let collaborationTouched=false;
+  q('[data-collab]').addEventListener('change',()=>{collaborationTouched=true;});
+  app.api.extension('preferences').then(p=>{if(!collaborationTouched&&!s.msgs.length&&!s.task)q('[data-collab]').value=p.collaboration;}).catch(()=>{});
   const ta = q("textarea"),
     fileIpt = q("input[type=file]");
 
@@ -148,7 +146,7 @@ export function createSession(app, mgr, opts) {
   function paintPickers() {
     q("[data-a=model] span").textContent = mgr.modelLabel(s.model);
     q("[data-a=think] span").textContent = (
-      THINK.find((t) => t.id === s.think) || THINK[2]
+      THINK.find((t) => t.id === s.think) || THINK[1]
     ).label;
     q(".ag-name").textContent = s.name;
     q(".ag-avatar").innerHTML = avatar(s, 25);
@@ -312,7 +310,12 @@ export function createSession(app, mgr, opts) {
             label: t.label,
             hint: t.hint,
             checked: t.id === s.think,
-            onClick: () => {
+            onClick: async () => {
+              try {
+                if (s.task && !["completed", "cancelled"].includes(s.task.status)) {
+                  await app.api.taskAction(app.project().id, s.task.id, { action: "think", think: t.id });
+                }
+              } catch { return; }
               s.think = t.id;
               mgr.saveProfiles();
               paintPickers();
@@ -332,7 +335,7 @@ export function createSession(app, mgr, opts) {
     if (a === "skill")
       showMenu(
         [
-          { title: "技能：让 AI 按 CentDeck 的规则来做" },
+          { title: "技能" },
           ...mgr.skills().map((k) => ({
             label: k.name,
             hint: k.desc,

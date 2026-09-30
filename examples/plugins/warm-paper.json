@@ -1,0 +1,15 @@
+{
+  "manifest": {
+    "apiVersion": 1,
+    "id": "warm-paper",
+    "name": "暖纸 · 主页风格",
+    "version": "1.0.0",
+    "author": "CentDeck Examples",
+    "description": "可导入的独立风格示例：暖纸色设计变量与自定义前端主页。",
+    "permissions": ["themes"],
+    "themes": [{"id":"warm-paper","name":"暖纸 · Warm Paper","home":"index.html","tokens":{"--accent":"#895633","--bg":"#f8f1e6","--text":"#352b22"}}]
+  },
+  "files": {
+    "index.html": "<!doctype html><html lang='zh-CN'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><style>*{box-sizing:border-box}body{margin:0;padding:8vw;background:#f8f1e6;color:#352b22;font:16px/1.8 system-ui}small{letter-spacing:3px;color:#895633}h1{font-weight:500;font-size:clamp(36px,6vw,76px);line-height:1.35;margin:30px 0}p{color:#766453}button{margin-top:18px;background:#895633;color:#fff;border:0;border-radius:30px;padding:16px 26px;cursor:pointer}button:focus-visible{outline:3px solid #352b22;outline-offset:4px}</style><small>WARM PAPER / CREATIVE SPACE</small><h1>慢一点，<br>让好想法长出来。</h1><p>从下方选择一个项目，继续你的创作。<br>这一页由独立插件提供，你随时可以换回绿色。</p><button onclick=\"parent.postMessage({type:'centdeck-plugin',action:'open_settings'},'*')\">管理我的插件 ↗</button></html>"
+  }
+}

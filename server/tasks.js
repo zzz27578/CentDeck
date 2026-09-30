@@ -71,6 +71,7 @@ function scopeOf(scope) {
   return [...new Set(scope)].slice(0, 100);
 }
 function start(id, b, parent = null) {
+  b={...require("./extensions").preferences(),...b};
   const assistant = store.getAssistants().find((x) => x.id === b.assistantId);
   if (!assistant) throw new ApiError(400, "请选择助手");
   const selected = b.model || assistant.model || "auto";
@@ -109,7 +110,7 @@ function start(id, b, parent = null) {
     name: assistant.name,
     role: assistant.role,
     model: `${selectedProvider.provider.id}:${selectedProvider.model}`,
-    think: b.think || assistant.think || "mid",
+    think: require("./reasoning").normalizeThink(b.think || assistant.think),
     goal: b.text,
     mode,
     scope,
@@ -156,22 +157,11 @@ function start(id, b, parent = null) {
     ...new Set([...(assistant.skills || []), ...(b.skills || [])]),
   ];
   let skillsText = "";
-  const catalog = JSON.parse(
-    fs.readFileSync(
-      path.join(store.ROOT, "app", "skills", "index.json"),
-      "utf8",
-    ),
-  );
-  for (const sid of skills) {
-    const skill = catalog.find((s) => s.id === sid);
-    if (skill)
-      skillsText +=
-        "\n" +
-        fs.readFileSync(
-          path.join(store.ROOT, "app", "skills", skill.file),
-          "utf8",
-        );
-  }
+  const catalog = require('./extensions').skills().filter(s => s.enabled);
+  const selectedSkills = new Set(['platform-guide', ...skills]);
+  for (const skill of catalog) if(selectedSkills.has(skill.id)) skillsText += '\n' + skill.content;
+  skillsText += '\n按需使用 list_skills / read_skill 获取其他技能。';
+  t.skills = catalog.filter(s => selectedSkills.has(s.id)).map(s => s.id);
   t.messages = [
     {
       role: "system",
@@ -232,10 +222,6 @@ const str = { type: "string" },
   arr = { type: "array", items: str };
 function toolsFor(t) {
   const ts = [
-    def("read_page", "读取项目文件及版本，修改前必须调用", { path: str }, [
-      "path",
-    ]),
-    def("project_context", "获取页面、规范、标记和任务进度", {}),
     def(
       "request_input",
       "保存问题并等待用户回答",
@@ -245,33 +231,6 @@ function toolsFor(t) {
   ];
   if (t.mode === "create")
     ts.push(
-      def(
-        "write_files",
-        "原子提交文件；必须携带 read_page 返回的 baseHash。局部改字请用 patch_text",
-        {
-          files: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                path: str,
-                content: str,
-                baseHash: str,
-                title: str,
-              },
-              required: ["path", "content", "baseHash"],
-              additionalProperties: false,
-            },
-          },
-        },
-        ["files"],
-      ),
-      def(
-        "patch_text",
-        "只替换唯一匹配的原文；其他区域变化可保留",
-        { path: str, before: str, after: str },
-        ["path", "before", "after"],
-      ),
       def(
         "publish_variant",
         "发布独立风格方案；页面文件名为相对路径，自动放入 variants 目录",
@@ -311,7 +270,8 @@ function toolsFor(t) {
         ["assistantId", "text", "scope"],
       ),
     );
-  return ts;
+  const shared = require('./tools').list(t.mode).filter(x=>x.name!=='ui_action').map(x=>({type:'function',function:{name:x.name,description:x.description,parameters:x.inputSchema}}));
+  return [...ts.filter(x=>!require('./tools').has(x.function.name)), ...shared];
 }
 function groupRoot(t) {
   return t.parent ? get(t.project, t.parent) : t;
@@ -339,13 +299,8 @@ function commit(t, files, epoch, group) {
   return result;
 }
 async function tool(t, name, a, epoch) {
-  if (name === "project_context")
-    return { project: store.getProject(t.project), tasks: list(t.project) };
-  if (name === "read_page") {
-    const content = changes.read(t.project, a.path);
-    t.readSet[a.path] = { hash: changes.hash(content), content };
-    return { path: a.path, content, baseHash: changes.hash(content) };
-  }
+  if(name==='ui_action')throw new ApiError(403,'页面操作由外部 MCP 接管；内置任务只能在指定项目中通过受管文件工具修改');
+  if(require('./tools').has(name)) return require('./tools').execute(name,a,{project:t.project,mode:t.mode,readSet:t.readSet,guard:()=>guard(t,epoch),commit:files=>commit(t,files,epoch)});
   if (name === "request_input") {
     t.question = {
       id: uid(),
@@ -355,37 +310,6 @@ async function tool(t, name, a, epoch) {
     t.status = "waiting_user";
     event(t, "question", t.question.question);
     return { waiting: true };
-  }
-  if (name === "write_files") {
-    for (const f of a.files || []) {
-      if (t.readSet[f.path]?.hash !== f.baseHash)
-        throw new ApiError(409, "提交前必须读取文件版本");
-    }
-    return commit(t, a.files, epoch);
-  }
-  if (name === "patch_text") {
-    guard(t, epoch);
-    const base = t.readSet[a.path]?.content;
-    if (
-      typeof base !== "string" ||
-      !a.before ||
-      base.split(a.before).length !== 2
-    )
-      throw new ApiError(409, "原文必须在已读取文件中唯一匹配");
-    const now = changes.read(t.project, a.path);
-    if (typeof now !== "string" || now.split(a.before).length !== 2)
-      throw new ApiError(409, "目标已变化，请重新读取");
-    return commit(
-      t,
-      [
-        {
-          path: a.path,
-          content: now.replace(a.before, () => a.after),
-          baseHash: changes.hash(now),
-        },
-      ],
-      epoch,
-    );
   }
   if (name === "publish_variant") {
     guard(t, epoch);
@@ -604,7 +528,10 @@ function pump() {
 }
 function action(id, tid, b) {
   const t = get(id, tid);
-  if (b.action === "cancel" || b.action === "pause" || b.action === "mode") {
+  if (b.action === "think") {
+    t.think = require("./reasoning").normalizeThink(b.think);
+    event(t, "reasoning", `思考强度已更新为 ${t.think}，下一次模型调用生效`);
+  } else if (b.action === "cancel" || b.action === "pause" || b.action === "mode") {
     const affected = load(id).filter((x) => x.id === t.id || x.parent === t.id);
     for (const x of affected) {
       controllers.get(x.id)?.abort();
@@ -678,4 +605,4 @@ function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
-module.exports = { start, list, action, subscribe, load };
+module.exports = { start, list, action, subscribe, load, toolsFor };
