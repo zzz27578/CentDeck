@@ -9,7 +9,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(ROOT, 'templates');
-const PROJECTS_DIR = path.join(ROOT, 'projects');
+const PROJECTS_DIR = process.env.CENTDECK_PROJECTS_DIR ? path.resolve(process.env.CENTDECK_PROJECTS_DIR) : path.join(ROOT, 'projects');
 const HISTORY_LIMIT = 20;
 const ID_RE = /^[A-Za-z0-9_-]+$/;
 
@@ -54,7 +54,9 @@ function readJson(file, missMsg) {
 }
 
 function writeJson(file, obj) {
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2) + '\n', 'utf8');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file + '.tmp', JSON.stringify(obj, null, 2) + '\n', 'utf8');
+  fs.renameSync(file + '.tmp', file);
 }
 
 function copyDir(src, dest, excludeName) {
@@ -223,7 +225,18 @@ function saveProject(id, body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new ApiError(400, 'project.json 必须是一个 JSON 对象');
   }
-  writeJson(path.join(dir, 'project.json'), { ...body, id });
+  const { _base, tokens, ...incoming }=body;
+  let next=incoming;
+  if(_base&&typeof _base==='object'){
+    const current=readJson(path.join(dir,'project.json'),'项目缺失');next={...current};
+    for(const k of new Set([...Object.keys(_base),...Object.keys(incoming)])){
+      if(['tokens','_base','id'].includes(k))continue;
+      if(JSON.stringify(incoming[k])===JSON.stringify(_base[k]))continue;
+      if(JSON.stringify(current[k])!==JSON.stringify(_base[k])&&JSON.stringify(current[k])!==JSON.stringify(incoming[k]))throw new ApiError(409,'项目设置已变化，请刷新后重试：'+k);
+      if(incoming[k]===undefined)delete next[k];else next[k]=incoming[k];
+    }
+  }
+  writeJson(path.join(dir, 'project.json'), { ...next, id });
   return getProject(id);
 }
 
@@ -249,6 +262,10 @@ function writeProjectFile(id, body) {
     throw new ApiError(400, '缺少 content 参数或 content 不是字符串');
   }
   const target = resolveProjectFile(dir, relPath);
+  if (body.baseHash != null) {
+    const existing = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
+    if (crypto.createHash('sha256').update(existing).digest('hex') !== body.baseHash) throw new ApiError(409, '文件已被其他编辑修改，请刷新后重试');
+  }
   let hid = null;
   if (fs.existsSync(target)) {
     if (!fs.statSync(target).isFile()) throw new ApiError(400, '目标路径不是文件');
@@ -504,56 +521,28 @@ function removePage(id, file) {
 }
 
 // ---------- 模型与接口设置（存在本机 config.local/，被 .gitignore 忽略；密钥永远不完整返回给浏览器） ----------
-const CONFIG_DIR = path.join(ROOT, 'config.local');
-const SETTINGS_FILE = path.join(CONFIG_DIR, 'settings.json');
-const PROVIDERS = [
-  { id: 'anthropic', name: 'Anthropic（Claude）', baseUrl: 'https://api.anthropic.com', models: ['claude-opus-4-7', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] },
-  { id: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', models: [] },
-  { id: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com', models: [] },
-  { id: 'qwen', name: '通义千问（阿里云百炼）', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: [] },
-  { id: 'gemini', name: 'Google Gemini', baseUrl: 'https://generativelanguage.googleapis.com', models: [] },
-  { id: 'ollama', name: '本地模型（Ollama）', baseUrl: 'http://localhost:11434', models: [], noKey: true },
-  { id: 'custom', name: '自定义（兼容 OpenAI 接口）', baseUrl: '', models: [] },
-];
-function readSettingsRaw() {
-  try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch { return {}; }
+const CONFIG_DIR = process.env.CENTDECK_CONFIG_DIR ? path.resolve(process.env.CENTDECK_CONFIG_DIR) : path.join(ROOT, 'config.local');
+const ASSISTANTS_FILE = path.join(CONFIG_DIR, 'assistants.json');
+function getAssistants() {
+  if (!fs.existsSync(ASSISTANTS_FILE)) return [{ id: 'assistant-default', name: 'Cent', role: '通用', avatar: 'centdeck', color: '#65784e', prompt: '', responsibility:'', skills: [], model: 'auto', think: 'mid' }];
+  return readJson(ASSISTANTS_FILE, '助手配置读取失败');
 }
-function getSettings() {
-  const raw = readSettingsRaw();
-  const saved = raw.providers || {};
-  return {
-    providers: PROVIDERS.map((p) => {
-      const s = saved[p.id] || {};
-      const key = typeof s.apiKey === 'string' ? s.apiKey : '';
-      return {
-        id: p.id, name: p.name, noKey: !!p.noKey,
-        enabled: !!s.enabled, baseUrl: s.baseUrl != null ? s.baseUrl : p.baseUrl,
-        models: Array.isArray(s.models) && s.models.length ? s.models : p.models,
-        hasKey: !!key, keyHint: key ? '••••' + key.slice(-4) : '',
-      };
-    }),
-    roles: raw.roles || { economy: '', expert: '' },
-  };
-}
-function saveSettings(body) {
-  const raw = readSettingsRaw();
-  raw.providers = raw.providers || {};
-  (Array.isArray(body && body.providers) ? body.providers : []).forEach((p) => {
-    if (!PROVIDERS.some((d) => d.id === p.id)) return;
-    const cur = raw.providers[p.id] || {};
-    if (typeof p.enabled === 'boolean') cur.enabled = p.enabled;
-    if (typeof p.baseUrl === 'string') cur.baseUrl = p.baseUrl.trim();
-    if (Array.isArray(p.models)) cur.models = p.models.map(String).map((s) => s.trim()).filter(Boolean);
-    if (typeof p.apiKey === 'string' && p.apiKey.trim()) cur.apiKey = p.apiKey.trim();
-    if (p.apiKey === null) delete cur.apiKey;
-    raw.providers[p.id] = cur;
+function saveAssistants(body) {
+  if (!Array.isArray(body) || body.length > 100) throw new ApiError(400, '助手列表格式不正确（最多 100 个）');
+  const ids = new Set();
+  const list = body.map(a => {
+    if (!a || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || ids.has(a.id)) throw new ApiError(400, '助手编号无效或重复');
+    ids.add(a.id);
+    if (typeof a.name !== 'string' || !a.name.trim()) throw new ApiError(400, '助手名字不能为空');
+    return { id: a.id, name: a.name.trim().slice(0, 60), role: String(a.role || '通用').slice(0,80), responsibility: String(a.responsibility || '').slice(0,4000),
+      avatar: (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.avatar) && a.avatar.length < 800000) || ['centdeck','sparkle', 'palette', 'edit', 'check', 'brain', 'book'].includes(a.avatar) ? a.avatar : 'centdeck',
+      color: /^#[0-9a-f]{6}$/i.test(a.color) ? a.color : '#65784e', prompt: String(a.prompt || '').slice(0, 16000),
+      skills: Array.isArray(a.skills) ? [...new Set(a.skills.filter(s => typeof s === 'string' && /^[\w-]{1,100}$/.test(s)))].slice(0, 50) : [],
+      model: String(a.model || 'auto').slice(0, 200), think: ['off', 'low', 'mid', 'high', 'max'].includes(a.think) ? a.think : 'mid' };
   });
-  if (body && body.roles && typeof body.roles === 'object') raw.roles = { economy: String(body.roles.economy || ''), expert: String(body.roles.expert || '') };
-  fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(raw, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
-  return getSettings();
+  writeJson(ASSISTANTS_FILE, list);
+  return list;
 }
-
 // 删除项目：目录自包含（.centdeck 快照/历史都在里面），整体移除
 function deleteProject(id) {
   const dir = projectDir(id);
@@ -562,6 +551,7 @@ function deleteProject(id) {
 }
 
 module.exports = {
+  CONFIG_DIR,
   ROOT,
   TEMPLATES_DIR,
   PROJECTS_DIR,
@@ -576,8 +566,10 @@ module.exports = {
   importProject,
   addPage,
   removePage,
-  getSettings,
-  saveSettings,
+  getSettings: () => require('./providers').getSettings(),
+  saveSettings: body => require('./providers').saveSettings(body),
+  getAssistants,
+  saveAssistants,
   getProject,
   saveProject,
   deleteProject,

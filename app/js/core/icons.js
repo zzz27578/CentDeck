@@ -1,5 +1,6 @@
 // 内联线性图标（24 网格，描边 currentColor）
 const P = {
+  centdeck: '<path d="M18 5H10a7 7 0 000 14h3M18 10h-6a2 2 0 000 4h6m-2 3 3 2-3 2"/>',
   pointer: '<path d="M5 3l14 7-6 2-2 6z"/><path d="M13 12l5 5"/>',
   select: '<path d="M4 4l6.5 16 2.2-6.8L19.5 11z"/>',
   hand: '<path d="M8 13V5.5a1.5 1.5 0 013 0V11m0-1V4.5a1.5 1.5 0 013 0V11m0-4.5a1.5 1.5 0 013 0V13a7 7 0 01-7 7h-.6a6 6 0 01-4.6-2.2L3.3 15a1.6 1.6 0 012.4-2.1L8 15"/>',
@@ -70,6 +71,12 @@ const P = {
   undock: '<rect x="3" y="7" width="13" height="13" rx="2"/><path d="M9 4h11v11"/>',
   fullscreen: '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
   sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  forward: '<path d="M9 5l7 7-7 7"/>',
+  sticky2: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4"/>',
+  droplet: '<path d="M12 3.5s5.5 5.4 5.5 9.3A5.5 5.5 0 016.5 12.8C6.5 8.9 12 3.5 12 3.5z"/>',
+  swatch: '<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>',
+  swatch2: '<rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/>',
 };
 
 export function icon(name, size = 18, extra = '') {

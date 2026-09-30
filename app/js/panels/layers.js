@@ -1,46 +1,29 @@
-// 图层：按代码结构列出本页元素，点一下就在页面上选中并滚到它
-import { esc } from '../core/ui.js';
+// 网页结构按实际渲染后的 DOM 列出，同时标明源码行号或动态元素。
+import { el, esc } from '../core/ui.js';
 
-const ICON = { text: '文', image: '图', control: '钮', container: '块' };
-
-export function setupLayers(app) {
-  app.bus.registerPanel({
-    id: 'layers', title: '图层', icon: 'layers', views: ['edit'],
-    render(host) {
-      const paint = () => {
-        const ed = app.editor;
-        if (!ed.frame) { host.innerHTML = '<div class="empty">打开一页后这里显示它的结构</div>'; return; }
-        const els = ed.frame.parsed.elements;
-        const sel = ed.selection;
-        const kids = new Map();
-        els.forEach((e) => { const k = e.parent == null ? -1 : e.parent; if (!kids.has(k)) kids.set(k, []); kids.get(k).push(e); });
-        const rows = [];
-        const walk = (k, d) => (kids.get(k) || []).forEach((e) => {
-          if (e.tag === 'br' || (d > 0 && ['path', 'circle', 'rect', 'stop', 'line', 'polyline', 'g', 'defs', 'linearGradient', 'text', 'ellipse', 'textPath'].includes(e.tag))) return;
-          const t = e.textOnly && e.text.trim() ? e.text.trim().slice(0, 18) : '';
-          rows.push(`<div class="list-row layer ${sel && sel.loc === e.loc ? 'on' : ''}" data-cd-loc="${e.loc}" style="padding-left:${10 + d * 13}px">
-            <span class="chip" style="width:22px;justify-content:center;padding:0">${ICON[e.type] || '块'}</span>
-            <div class="grow"><div class="t1">&lt;${esc(e.tag)}&gt;${e.classes && e.classes[0] ? `<span style="color:var(--dim)">.${esc(e.classes[0])}</span>` : ''} ${esc(t)}</div></div>
-            <span class="t2">${e.line}</span></div>`);
-          walk(e.loc, d + 1);
-        });
-        walk(-1, 0);
-        host.innerHTML = rows.join('') || '<div class="empty">这一页没有元素</div>';
-        host.querySelectorAll('[data-cd-loc]').forEach((r) => {
-          r.onclick = () => {
-            const loc = +r.dataset.cdLoc;
-            ed.select(loc);
-            const n = ed.frame.elByLoc(loc);
-            if (n) n.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          };
-        });
-        const on = host.querySelector('.on');
-        if (on) on.scrollIntoView({ block: 'nearest' });
-      };
-      paint();
-      this._a = app.bus.on('select', () => host.isConnected && paint());
-      this._b = app.bus.on('rendered', () => host.isConnected && paint());
-    },
-    onHide() { if (this._a) this._a(); if (this._b) this._b(); },
-  });
+export function renderPageStructure(app, host) {
+  const paint = () => {
+    const ed = app.editor;
+    if (!ed.frame?.doc?.body) { host.innerHTML = '<div class="empty">打开一页后这里显示它的结构</div>'; return; }
+    host.innerHTML = '<p class="hint" style="padding:12px">这是网页实际的盒子结构。行号表示源码位置；“动态”表示运行后生成或浏览器补出的元素。</p>';
+    const byLoc = new Map(ed.frame.parsed.elements.map(e => [e.loc,e]));
+    let count = 0;
+    const walk = (parent, depth) => {
+      for (const node of parent.children) {
+        if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|BR)$/.test(node.tagName) || count >= 2000) continue;
+        const loc = node.getAttribute('data-cd-loc'), source = loc == null ? null : byLoc.get(+loc);
+        const name = node.tagName.toLowerCase();
+        const text = [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join(' ').slice(0,28);
+        const row = el(`<button class="list-row layer ${ed.sel === node ? 'on' : ''}" style="width:100%;text-align:left;padding-left:${10+Math.min(depth,16)*12}px"><span class="grow"><span class="t1">&lt;${esc(name)}&gt;${node.classList.length ? '.'+esc(node.classList[0]) : ''} ${esc(text)}</span></span><span class="t2">${source ? source.line : '动态'}</span></button>`);
+        row.onclick = () => { ed.select(node); node.scrollIntoView({block:'center',behavior:'smooth'}); };
+        host.appendChild(row); count++;
+        if (name !== 'svg') walk(node,depth+1);
+      }
+    };
+    walk(ed.frame.doc.body,0);
+    if (!count) host.appendChild(el('<div class="empty">这一页没有可显示的元素</div>'));
+  };
+  paint();
+  const off = [app.bus.on('select',() => host.isConnected && paint()),app.bus.on('rendered',() => host.isConnected && paint())];
+  return () => off.forEach(fn => fn());
 }

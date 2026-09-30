@@ -6,7 +6,7 @@ import { withBase } from '../engine/frame.js';
 const SPA_MARK = /__NEXT_DATA__|data-reactroot|ng-version=|data-v-app|data-server-rendered|__NUXT__|window\.__remixContext/;
 const TW_CDN = /cdn\.tailwindcss\.com|@tailwindcss\/browser/;
 
-// 在看不见的框里真正渲染一遍，数一数有多少内容是脚本生成的（源码里没有）
+// 在看不见的框里真正渲染一遍，数一数有多少页面元素在运行后没有源码对应位置（源码里没有）
 function renderCount(html, baseHref) {
   return new Promise((resolve) => {
     const f = document.createElement('iframe');
@@ -67,10 +67,10 @@ export async function checkPage(file, src, { baseHref, fileSet }) {
     issues.push({ level: 'red', text: '这是打包后的 React / Vue 页面：内容都是脚本运行时生成的，代码里找不到对应的文字和位置。可以正常预览、圈选、画草图，修改交给 AI。' });
     bump('red');
   }
-  if (grade !== 'red') {
+  {
     const { total, gen } = await renderCount(src, baseHref);
-    if (total > 10 && gen / total > 0.6) { issues.push({ level: 'red', text: `页面上 ${Math.round((gen / total) * 100)}% 的内容是脚本生成的：这些地方只能查看和圈选，修改交给 AI。` }); bump('red'); }
-    else if (total > 10 && gen / total > 0.2) { issues.push({ level: 'yellow', text: `约 ${Math.round((gen / total) * 100)}% 的内容是脚本生成的：这部分不能直接改字，其余照常。` }); bump('yellow'); }
+    if (total > 0 && gen / total > 0.6) { issues.push({ level: 'red', text: `页面上 ${Math.round((gen / total) * 100)}% 的页面元素在运行后没有源码对应位置：这些地方只能查看和圈选，修改交给 AI。` }); bump('red'); }
+    else if (total > 0 && gen / total > 0.2) { issues.push({ level: 'yellow', text: `约 ${Math.round((gen / total) * 100)}% 的页面元素在运行后没有源码对应位置：这部分不能直接改字，其余照常。` }); bump('yellow'); }
   }
   return { file, grade, issues };
 }

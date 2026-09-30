@@ -1,7 +1,50 @@
 [
-  { "id": "design-variants", "name": "出几版方案", "icon": "overview", "desc": "按一句话描述，在总览画布上画出几版风格不同的页面", "file": "design-variants.md", "tier": "expert" },
-  { "id": "design-system", "name": "配色与按钮样式", "icon": "palette", "desc": "出几套配色、字号、圆角和按钮样式，做成可直接应用的设计规范", "file": "design-system.md", "tier": "expert" },
-  { "id": "tidy-import", "name": "整理导入的网页", "icon": "code", "desc": "把导入的网页整理成 CentDeck 能直接编辑的写法，看起来完全不变", "file": "tidy-import.md", "tier": "economy" },
-  { "id": "apply-marks", "name": "按草图标记修改", "icon": "marks", "desc": "按用户画的草图标记和写的要求逐条修改，只动相关的代码", "file": "apply-marks.md", "tier": "economy" },
-  { "id": "page-edit", "name": "改这一页", "icon": "edit", "desc": "按用户的描述修改当前页面或选中的元素", "file": "page-edit.md", "tier": "economy" }
+  {
+    "id": "design-variants",
+    "name": "出几版方案",
+    "icon": "overview",
+    "desc": "按一句话描述，在总览画布上画出几版风格不同的页面",
+    "file": "design-variants/SKILL.md",
+    "tier": "expert"
+  },
+  {
+    "id": "design-system",
+    "name": "配色与按钮样式",
+    "icon": "palette",
+    "desc": "出几套配色、字号、圆角和按钮样式，做成可直接应用的设计规范",
+    "file": "design-system/SKILL.md",
+    "tier": "expert"
+  },
+  {
+    "id": "tidy-import",
+    "name": "整理导入的网页",
+    "icon": "code",
+    "desc": "把导入的网页整理成 CentDeck 能直接编辑的写法，看起来完全不变",
+    "file": "tidy-import/SKILL.md",
+    "tier": "economy"
+  },
+  {
+    "id": "apply-marks",
+    "name": "按草图标记修改",
+    "icon": "marks",
+    "desc": "按用户画的草图标记和写的要求逐条修改，只动相关的代码",
+    "file": "apply-marks/SKILL.md",
+    "tier": "economy"
+  },
+  {
+    "id": "page-edit",
+    "name": "改这一页",
+    "icon": "edit",
+    "desc": "按用户的描述修改当前页面或选中的元素",
+    "file": "page-edit/SKILL.md",
+    "tier": "economy"
+  },
+  {
+    "id": "centdeck-orchestrate",
+    "name": "任务统筹",
+    "icon": "layers",
+    "desc": "按需分工、依赖和问题处理",
+    "file": "centdeck-orchestrate/SKILL.md",
+    "tier": "expert"
+  }
 ]

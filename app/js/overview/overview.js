@@ -9,7 +9,8 @@ import { withBase } from '../engine/frame.js';
 import { scanPage } from './scan.js';
 import { createCanvasTools } from './canvas-tools.js';
 import { onViewportChange } from '../core/viewport.js';
-import { renderEmpty } from './empty.js';
+import { renderPageStructure } from '../panels/layers.js';
+import { createStyleCard } from './design-boards.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const SUB = 0.42;                 // 子页面卡片相对主页面的比例
@@ -20,14 +21,29 @@ export function createOverview(app) {
   let linkMode = localStorage.getItem('cd.ovLinks') || 'main', showSubs = localStorage.getItem('cd.ovSubs') !== '0';
   let VW = 1920, VH = 969;
   const byFile = (f) => pages.find((p) => p.file === f);
-  let offVp = null;
+  let offVp = null, generation = 0, flight = 0;
   const tctx = {
-    host: null, world: null, cam: () => cam, select: (f) => select(f), redraw: () => drawLinks(),
+    host: null, world: null, cam: () => cam, sampleColor, select: (f) => select(f), redraw: () => { drawLinks(); styleCard.drawLinks(); },
     toWorld: (x, y) => { const r = host.getBoundingClientRect(); return { x: (x - r.left - cam.x) / cam.z, y: (y - r.top - cam.y) / cam.z }; },
     cards: () => pages.flatMap((p) => [{ file: p.file, title: p.title, x: p.x, y: p.y, w: VW, h: cardH(p), scale: 1 },
       ...subs(p).map((pop, i) => { const sp = subPos(p, i); return { file: p.file, title: p.title, popup: pop.title, x: sp.x, y: sp.y, w: VW * SUB, h: VH * SUB, scale: SUB }; })]),
   };
+  function sampleColor(x, y) {
+    const pt = tctx.toWorld(x, y);
+    const p = pages.find(p => pt.x >= p.x && pt.x <= p.x + VW && pt.y >= p.y && pt.y <= p.y + cardH(p));
+    if (!p) return null;
+    const f = p.body.querySelector('iframe');
+    try {
+      const d = f.contentDocument, w = f.contentWindow;
+      let n = d.elementFromPoint(pt.x - p.x, (pt.y - p.y) % VH);
+      let value = n && n.childNodes.length && [...n.childNodes].some(x => x.nodeType === 3 && x.textContent.trim()) ? w.getComputedStyle(n).color : null;
+      while (!value && n) { const bg = w.getComputedStyle(n).backgroundColor; if (bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') value = bg; n = n.parentElement; }
+      const parts = (value || 'rgb(255,255,255)').match(/[\d.]+/g);
+      return '#' + parts.slice(0,3).map(v => Math.round(+v).toString(16).padStart(2,'0')).join('');
+    } catch { return null; }
+  }
   const tools = createCanvasTools(app, tctx);
+  const styleCard = createStyleCard(app, tctx);
   // 弹窗子卡片的位置：默认排在所属页面下方，拖动后记住偏移
   const subKey = (pop) => pop.id || pop.title;
   function subPos(p, i) {
@@ -46,11 +62,13 @@ export function createOverview(app) {
     const zv = host.parentElement && host.parentElement.querySelector('.zoom-val');
     if (zv) zv.textContent = Math.round(cam.z * 100) + '%';
     cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(drawLinks);
+    raf = requestAnimationFrame(() => { drawLinks(); styleCard.drawLinks(); });
   }
   function flyTo(target, ms = 320) {
-    const from = { ...cam }, t0 = performance.now();
+    const from = { ...cam }, t0 = performance.now(), myFlight = ++flight;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { cam = target; applyCam(); return; }
     const step = (t) => {
+      if (!host || myFlight !== flight) return;
       const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
       cam = { x: from.x + (target.x - from.x) * e, y: from.y + (target.y - from.y) * e, z: from.z + (target.z - from.z) * e };
       applyCam();
@@ -66,6 +84,7 @@ export function createOverview(app) {
   function bounds(list = pages) {
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
     list.forEach((p) => { const b = blockRect(p); x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y - 60); x2 = Math.max(x2, b.x + b.w); y2 = Math.max(y2, b.y + b.h); });
+    styleCard.bounds().forEach(b=>{x1=Math.min(x1,b.x);y1=Math.min(y1,b.y);x2=Math.max(x2,b.x+b.w);y2=Math.max(y2,b.y+b.h);});
     return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
   }
   const cardH = (p) => (p.expanded ? Math.max(VH, p.docH || VH) : VH);
@@ -125,7 +144,7 @@ export function createOverview(app) {
         ${p.scan.popups.length ? `<span class="chip blue">${icon('popup', 11)}${p.scan.popups.length} 个弹窗</span>` : ''}
         <span class="chip">${p.scan.sections.length} 个版块</span>
         <button data-a="expand" class="ov-tbtn" data-tip="${p.expanded ? '收起到首屏' : '展开全长（一格一屏）'}">${icon(p.expanded ? 'collapse' : 'expand', 13)}${p.expanded ? '收起' : '展开全长'}</button>
-        <button data-a="edit" class="ov-tbtn" data-tip="进入编辑（双击卡片也行）">${icon('edit', 13)}编辑</button></div>
+        <button data-a="choose" class="ov-tbtn" data-tip="加入或移出选定页面">${icon('check',13)}选用</button><button data-a="edit" class="ov-tbtn" data-tip="进入编辑（双击卡片也行）">${icon('edit', 13)}编辑</button></div>
       <div class="ov-body"></div><div class="ov-mask"></div><div class="ov-marks"></div></div>`);
     const body = card.querySelector('.ov-body');
     body.appendChild(makeTile(p, 0, null, (f) => onFirstTile(p, f)));
@@ -135,10 +154,11 @@ export function createOverview(app) {
     world.insertBefore(card, svg);
     card.querySelector('[data-a=expand]').onclick = (e) => { e.stopPropagation(); toggleExpand(p); };
     card.querySelector('[data-a=edit]').onclick = (e) => { e.stopPropagation(); openEdit(p); };
+    card.querySelector('[data-a=choose]').onclick = async e=>{e.stopPropagation();const proj=app.project(),old=proj.selectedPages||[],next=old.includes(p.file)?old.filter(f=>f!==p.file):[...old,p.file];await bus.doMeta({label:'挑选方案页面',apply:()=>proj.selectedPages=next,revert:()=>proj.selectedPages=old});styleCard.refresh();};
     const title = card.querySelector('.ov-title');
     title.addEventListener('pointerdown', (e) => dragCard(e, p));
-    card.addEventListener('pointerdown', (e) => { if (e.button === 0 && !e.target.closest('.ov-title')) select(p.file); });
-    card.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) openEdit(p); });
+    card.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ov-title')) dragCard(e,p); });
+    card.addEventListener('dblclick', (e) => { if (tools.tool === 'pointer' && !e.target.closest('button')) openEdit(p); });
     card.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); select(p.file); cardMenu(p, e.clientX, e.clientY); });
     buildSubs(p);
   }
@@ -149,6 +169,7 @@ export function createOverview(app) {
     c.style.width = VW + 'px';
     c.style.height = cardH(p) + 'px';
     c.classList.toggle('on', selected === p.file);
+    c.querySelector('[data-a=choose]')?.classList.toggle('on',!!app.project().selectedPages?.includes(p.file));
     (p.subCards || []).forEach((s, i) => { const sp = subPos(p, i); s.style.left = sp.x + 'px'; s.style.top = sp.y + 'px'; });
   }
   function buildSubs(p) {
@@ -263,7 +284,7 @@ export function createOverview(app) {
     ], x, y);
   }
   function dragCard(e, p) {
-    if (e.button !== 0 || e.target.closest('button')) return;
+    if (e.button !== 0 || tools.tool !== 'pointer' || isSpaceDown() || e.target.closest('button')) return;
     e.preventDefault();
     e.stopPropagation();
     select(p.file);
@@ -276,6 +297,7 @@ export function createOverview(app) {
       p.x = Math.round(ox + dx); p.y = Math.round(oy + dy);
       placeCard(p);
       drawLinks();
+      styleCard.drawLinks();
     };
     const up = () => {
       window.removeEventListener('pointermove', mv, true);
@@ -304,7 +326,7 @@ export function createOverview(app) {
     path.setAttribute('d', d);
     path.setAttribute('class', 'ov-link ' + cls);
     svg.appendChild(path);
-    if (label && at) {
+    if (label && at && cam.z >= 0.35) {
       const g = el(`<div class="ov-label ${cls}" style="left:${at.x}px;top:${at.y}px">${label}</div>`);
       world.appendChild(g);
     }
@@ -338,7 +360,7 @@ export function createOverview(app) {
         if (!T) return;
         const hot = selected && (selected === p.file || selected === to);
         const dim = selected && !hot;
-        const all = linkMode === 'all' || selected === p.file;
+        const all = linkMode === 'all' || (selected === p.file && cam.z >= 0.35);
         const body = ls.filter((l) => !l.nav);
         const use = all ? ls : [(body[0] || ls[0])];
         use.forEach((l) => {
@@ -369,11 +391,11 @@ export function createOverview(app) {
         if (!s) return;
         const sp = subPos(p, i), sx = sp.x + (VW * SUB) / 2, sy = sp.y;
         const cls = `pop ${selected && selected !== p.file ? 'dim' : ''}`;
-        const maxLines = selected === p.file ? 99 : 2;   // 同一个弹窗有很多按钮（比如表格每行的"查看"）时只画两条，选中该页再全画
+        const maxLines = selected === p.file && cam.z >= 0.35 ? 99 : 1;
         pop.triggers.forEach((tr, k) => {
           const t = trig(p, tr.loc);
           if (!t) return;
-          world.appendChild(el(`<div class="ov-trig" style="left:${t.x + t.w}px;top:${t.y}px" data-tip="打开弹窗：${esc(pop.title)}">${icon('popup', 11)}</div>`));
+          if (cam.z >= 0.35) world.appendChild(el(`<div class="ov-trig" style="left:${t.x + t.w}px;top:${t.y}px" data-tip="打开弹窗：${esc(pop.title)}">${icon('popup', 11)}</div>`));
           if (k >= maxLines) return;
           const a = { x: t.x + t.w / 2, y: t.y + t.h };
           const label = selected === p.file && k < 3 ? `点「${esc(tr.text || '按钮')}」打开` : null;
@@ -407,12 +429,14 @@ export function createOverview(app) {
       applyCam();
     }, { passive: false });
     host.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('.ov-tools, .ov-empty')) return;
+      if (e.target.closest('.ov-tools')) return;
+      if (tools.tool !== 'hand' && !isSpaceDown() && e.button !== 1 && e.target.closest('.ov-sticky, .ov-style-card') && tools.tool !== 'eraser') return;
       if (!isSpaceDown() && tools.down(e)) return;
       const onCard = e.target.closest('.ov-card, .ov-sub');
-      if (!(e.button === 1 || (e.button === 0 && (!onCard || isSpaceDown() || tools.tool === 'hand')))) return;
+      if (e.button === 0 && tools.tool === 'pointer' && !isSpaceDown()) { if (!onCard) select(null); return; }
+      if (!(e.button === 1 || (e.button === 0 && (isSpaceDown() || tools.tool === 'hand')))) return;
       e.preventDefault();
-      if (onCard) e.stopPropagation();
+      e.stopPropagation();
       if (!onCard && e.button === 0 && tools.tool === 'pointer') select(null);
       const sx = e.clientX, sy = e.clientY, ox = cam.x, oy = cam.y;
       host.classList.add('panning');
@@ -506,7 +530,7 @@ export function createOverview(app) {
     drawLinks();
     syncToolbar();
   }
-  function rebuild() { if (!world) return; autoLayout(false); pages.forEach(placeCard); drawLinks(); }
+  function rebuild() { if (!world) return; autoLayout(false); pages.forEach(placeCard); drawLinks(); styleCard.drawLinks(); }
   let toolbar = null;
   function syncToolbar() {
     if (!toolbar) return;
@@ -516,6 +540,7 @@ export function createOverview(app) {
 
   // ---------- 进出视图 ----------
   async function enter(wrap) {
+    const currentGeneration = ++generation;
     const vp = getViewport();
     VW = vp.w; VH = vp.h;
     host = el('<div class="stage-host ov-host"></div>');
@@ -547,7 +572,7 @@ export function createOverview(app) {
     toolbar.querySelector('[data-a=subs]').onclick = toggleSubs;
     toolbar.querySelector('[data-a=layout]').onclick = relayout;
     toolbar.querySelector('[data-a=add]').onclick = addPage;
-    toolbar.querySelector('[data-a=style]').onclick = () => app.openPanel(app.activePanel() === 'tokens' ? null : 'tokens');
+    toolbar.querySelector('[data-a=style]').onclick = () => styleCard.show();
     tctx.host = host;
     tctx.world = world;
     tools.mount(wrap);
@@ -555,9 +580,9 @@ export function createOverview(app) {
     toolbar.querySelectorAll('[data-lm]').forEach((b) => { b.onclick = () => { linkMode = b.dataset.lm; localStorage.setItem('cd.ovLinks', linkMode); syncToolbar(); drawLinks(); }; });
     syncToolbar();
     bindCanvas();
-    app.setHint('滚轮缩放 · 拖空白处平移 · 拖页面标题摆位置 · 双击页面进入编辑 · 框选工具把一块区域引用给助手 · 右键更多');
+    app.setHint('滚轮缩放 · 空格平移 · 拖动页面 · 双击编辑');
     app.setStatusRight(`${vp.device === 'mobile' ? '手机' : '电脑'} ${VW}×${VH}`);
-    if (!app.project().pages.length) { renderEmpty(app, host, { addPage }); return; }
+    if (!app.project().pages.length) { cam = {x: 100, y: 120, z: 1}; applyCam(); app.toggleAgent(true); return; }
     const proj = app.project();
     const set = new Set(proj.pages.map((p) => p.file));
     const L = layout();
@@ -565,20 +590,23 @@ export function createOverview(app) {
     for (const pg of proj.pages) {
       let src = '';
       try { src = await app.api.readFile(proj.id, pg.file); } catch { src = '<title>读取失败</title>'; }
-      if (!host) return;
+      if (!host || currentGeneration !== generation) return;
       pages.push({ file: pg.file, title: pg.title, src, parsed: parse(src), scan: scanPage(pg.file, src, set), expanded: !!(L[pg.file] && L[pg.file].expanded) });
     }
     autoLayout(false);
     pages.forEach(buildCard);
+    styleCard.mount();
     const b = fitRect(bounds());
     cam = { ...b, z: b.z * 0.9, x: b.x + host.clientWidth * 0.05, y: b.y + host.clientHeight * 0.05 };
     applyCam();
     flyTo(b, 420);
-    if (!app.activePanel()) app.openPanel('structure');
+    if (app.activePanel() === 'structure') app.openPanel('structure');
   }
   function leave() {
+    generation++; flight++;
     if (offVp) { offVp(); offVp = null; }
     cancelAnimationFrame(raf);
+    tools.unmount(); styleCard.unmount();
     host = world = svg = toolbar = null;
     pages = [];
     selected = null;
@@ -586,11 +614,12 @@ export function createOverview(app) {
 
   // ---------- 左侧"结构"面板 ----------
   bus.registerPanel({
-    id: 'structure', title: '网站结构', icon: 'overview', views: ['overview'],
+    id: 'structure', title: '网页结构', icon: 'overview', views: ['overview', 'edit'],
     render(box) {
+      if (app.view() === 'edit') { this._layerOff = renderPageStructure(app, box); return; }
       const paint = () => {
         box.innerHTML = '';
-        if (!pages.length) { box.appendChild(el('<div class="empty">读取中…</div>')); return; }
+        if (!pages.length) { box.appendChild(el('<div class="empty">还没有页面</div>')); return; }
         pages.forEach((p) => {
           const outs = [...new Set(p.scan.links.filter((l) => !l.self).map((l) => l.to))];
           const row = el(`<div class="tree-page ${selected === p.file ? 'on' : ''}">
@@ -612,7 +641,7 @@ export function createOverview(app) {
       this._o2 = bus.on('ov-ready', () => box.isConnected && paint());
       setTimeout(paint, 900);
     },
-    onHide() { if (this._o1) this._o1(); if (this._o2) this._o2(); },
+    onHide() { if (this._layerOff) { this._layerOff(); this._layerOff = null; } if (this._o1) this._o1(); if (this._o2) this._o2(); },
   });
 
   const inOv = () => app.state.view === 'overview' && !!host;
@@ -621,7 +650,7 @@ export function createOverview(app) {
   bindKey('Enter', { label: '进入编辑选中页', group: '总览', when: () => inOv() && !!selected, run: () => openEdit(byFile(selected)) });
   bindKey('Esc', { hidden: true, when: () => inOv() && !!selected, run: () => select(null) });
   bus.on('source', () => { /* 编辑写回后回到总览会重新读取 */ });
-  bus.on('stack', () => { if (inOv()) rebuild(); });
+  bus.on('stack', () => { if (inOv()) { rebuild(); tools.repaint(); styleCard.refresh(); } });
 
   return { enter, leave, refresh: rebuild };
 }

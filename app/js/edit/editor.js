@@ -225,13 +225,13 @@ export function createEditor(app) {
     if (!res || res.light === 'red') { if (res && !res.unchanged) showVerdict(ed, res, { label }); return { ok: false, red: true, result: res }; }
     const after = res.newSource;
     const scroll = { x: ed.frame.win.scrollX, y: ed.frame.win.scrollY };
-    const sync = async (src) => {
-      await api.writeFile(pid, page, src);
+    const sync = async (src, expected) => {
+      await api.writeFile(pid, page, src, {expectedContent:expected});
       if (ed.frame && ed.page === page) await ed.frame.render(src, { scroll });
       bus.emit('source', page);
     };
     try {
-      await bus.do({ label, page, apply: () => sync(after), revert: () => sync(before) });
+      await bus.do({ label, page, apply: () => sync(after,before), revert: () => sync(before,after) });
     } catch { return { ok: false }; }
     if (!silent) showVerdict(ed, res, { label });
     return { ok: true, result: res };

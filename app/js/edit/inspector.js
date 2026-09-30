@@ -45,17 +45,21 @@ export function renderInspector(ed, info, clear) {
       ${getDevice() === 'mobile' && !info.generated ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">手机模式：这里改的位置、大小、字号、颜色只对手机屏幕生效；文字内容两边共用。</div>' : ''}
       ${!info.generated && info.transformAnim ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">带动画：挪位和缩放走独立通道，不会和动画打架。</div>' : ''}
     </div>
+    <div class="insp-tabs seg"><button data-tab="text">文字</button><button data-tab="layout">布局</button></div>
     <div class="insp-body ${locked || info.generated ? 'disabled' : ''}">
       <div class="p-sec" data-sec="text" hidden><div class="p-sec-title">文字内容<span class="grow"></span><span style="font-weight:400">双击页面文字也能改</span></div><div data-host="text"></div></div>
-      <div class="p-sec"><div class="p-sec-title">字体</div>
+      <div class="p-sec" data-sec="font"><div class="p-sec-title">字体</div>
         <div class="p-row"><label>字号</label><div class="num"><span>px</span><input type="number" data-k="fs" min="6" max="200"></div>
           <input type="range" data-k="fsr" min="8" max="96" style="flex:1.4;accent-color:var(--accent)"></div>
+        <div class="p-row"><label>字重</label><select class="sel" data-k="weight" aria-label="字重">${[100,200,300,400,500,600,700,800,900].map(v => `<option value="${v}">${v}</option>`).join('')}</select></div>
+        <div class="p-row"><label>行高</label><div class="num"><span>px</span><input type="number" data-k="lh" aria-label="行高" min="1" step="0.5" placeholder="自动"></div></div>
+        <div class="p-row"><label>字间距</label><div class="num"><span>px</span><input type="number" data-k="ls" aria-label="字间距" step="0.1"></div></div>
         <div class="p-row"><label>字体</label><select class="sel" data-k="ff"></select></div>
         <div class="p-row"><label>颜色</label><div class="swatches" data-host="sw"></div><input type="color" class="color-ipt" data-k="color" data-tip="自定义颜色"></div>
         <div class="p-row"><label>样式</label><div class="seg"><button data-k="bold" data-tip="加粗"><b>B</b></button></div>
           <div class="seg" data-k="align"><button data-v="left" data-tip="左对齐">左</button><button data-v="center" data-tip="居中">中</button><button data-v="right" data-tip="右对齐">右</button></div></div>
       </div>
-      <div class="p-sec"><div class="p-sec-title">位置与大小<span class="grow"></span><span style="font-weight:400">拖动或方向键也行</span></div>
+      <div class="p-sec" data-sec="layout"><div class="p-sec-title">位置与大小<span class="grow"></span><span style="font-weight:400">拖动或方向键也行</span></div>
         <div class="p-row"><label>偏移</label><div class="num"><span>X</span><input type="number" data-k="x"></div><div class="num"><span>Y</span><input type="number" data-k="y"></div></div>
         <div class="p-row"><label>尺寸</label><div class="num"><span>宽</span><input type="number" data-k="w" min="4"></div><div class="num"><span>高</span><input type="number" data-k="h" min="4"></div></div>
         <div class="p-row"><label>缩放</label><div class="range-row" style="flex:1"><input type="range" data-k="sc" min="20" max="300" step="5"><span class="val" data-k="scv"></span></div></div>
@@ -66,6 +70,9 @@ export function renderInspector(ed, info, clear) {
         <button class="btn small danger" data-a="del">${icon('trash', 14)}删除</button></div></div>
     </div>`;
   const q = (s) => box.querySelector(s);
+  const setTab = tab => { box.querySelectorAll('[data-tab]').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-pressed', b.dataset.tab === tab); }); q('[data-sec=font]').hidden = tab !== 'text'; q('[data-sec=layout]').hidden = tab !== 'layout'; q('[data-sec=text]').hidden = tab !== 'text' || !textGaps(e).some(g => g.text.trim()); };
+  box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  setTab(ed.tool === 'text' || info.hasText ? 'text' : 'layout');
   q('[data-a=parent]').onclick = () => ed.selectParent();
   q('[data-a=close]').onclick = () => ed.toggleInspector(false);
   const lockB = q('[data-a=lock]');
@@ -98,6 +105,16 @@ export function renderInspector(ed, info, clear) {
   }
 
   // 字体
+  q('[data-k=weight]').value = parseInt(cs.fontWeight) || 400;
+  q('[data-k=weight]').onchange = e => ed.applyStyle({'font-weight':e.target.value}, '改字重');
+  const lh = q('[data-k=lh]'), ls = q('[data-k=ls]');
+  lh.value = cs.lineHeight === 'normal' ? '' : parseFloat(cs.lineHeight);
+  ls.value = parseFloat(cs.letterSpacing) || 0;
+  lh.onchange = () => { if (!lh.value || +lh.value > 0) ed.applyStyle({'line-height':lh.value ? lh.value+'px' : null}, '改行高'); };
+  ls.onchange = () => { if (Number.isFinite(+ls.value)) ed.applyStyle({'letter-spacing':ls.value+'px'}, '改字间距'); };
+  [lh, ls].forEach(input => input.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); input.onchange(); }
+  }));
   const fs = Math.round(parseFloat(cs.fontSize));
   const fsI = q('[data-k=fs]'), fsR = q('[data-k=fsr]');
   fsI.value = fs; fsR.value = Math.min(96, Math.max(8, fs));

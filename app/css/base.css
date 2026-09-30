@@ -181,3 +181,6 @@ textarea.ipt { height: auto; padding: 7px 9px; resize: vertical; line-height: 1.
 .kh-reset { width: 20px; height: 20px; border-radius: 5px; color: var(--dim); }
 .kh-reset:hover { background: var(--bg-2); color: var(--text); }
 .kh-lock { font-style: normal; font-size: 11px; opacity: .55; }
+
+[hidden] { display: none !important; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

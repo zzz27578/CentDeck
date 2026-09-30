@@ -140,12 +140,6 @@
 .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
 .range-row .val { width: 42px; text-align: right; font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
 
-/* ---------- 放映：全屏、100% 真实比例、没有任何工具条 ---------- */
-body.presenting .topbar, body.presenting .rail, body.presenting .drawer, body.presenting .inspector,
-body.presenting .agent, body.presenting .statusbar, body.presenting .agent-float { display: none !important; }
-.present-host { position: fixed; inset: 0; z-index: 9000; background: #fff; }
-.pv-full { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
-
 /* ---------- 源码 / 素材 面板 ---------- */
 .code-view { margin: 0; padding: 6px 0 20px; font: 11.5px/1.7 ui-monospace, Consolas, monospace; color: #3b4150; overflow-x: auto; }
 .code-view .cv { display: flex; white-space: pre; padding-right: 12px; }
@@ -166,3 +160,9 @@ body.presenting .agent, body.presenting .statusbar, body.presenting .agent-float
 @keyframes viewIn { from { opacity: 0; } }
 .ed-empty { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-2); }
 .ed-empty b { font-size: 18px; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .stage-wrap > * { animation: none; } }
+
+.insp-tabs { margin: 10px 14px; }
+.insp-tabs button { flex: 1; }
+.mobile-report { margin: 14px 0; padding-left: 20px; line-height: 1.8; }
+.mobile-report li { margin-bottom: 8px; }

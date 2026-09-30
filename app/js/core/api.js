@@ -4,6 +4,9 @@
 // toast 提示由 main.js 注入（参数 withError 中的 toast），避免本模块依赖界面。
 
 const BASE = '';
+const bases=new Map();
+function remember(p){const copy=structuredClone(p);delete copy.tokens;bases.set(p.id,copy);return p;}
+async function sha(text){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text||''));return [...new Uint8Array(bytes)].map(n=>n.toString(16).padStart(2,'0')).join('');}
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -22,7 +25,7 @@ async function request(method, url, body, opts = {}) {
   try {
     res = await fetch(BASE + url, {
       method,
-      headers: body != null ? { 'Content-Type': 'application/json' } : undefined,
+      headers: { 'X-CentDeck': '1', ...(body != null ? { 'Content-Type': 'application/json' } : {}) },
       body: body != null ? JSON.stringify(body) : undefined,
       cache: 'no-store',
     });
@@ -44,6 +47,17 @@ async function request(method, url, body, opts = {}) {
 
 // 所有方法接受可选 opts：{ toast: false 关闭自动错误提示, withError: 错误处理回调 }
 export const api = {
+  auth: () => request('GET','/api/auth',null,{toast:false}),
+  login: body => request('POST','/api/auth',body,{toast:false}),
+  account: body => request('PUT','/api/auth',body,{toast:false}),
+  logout: () => request('DELETE','/api/auth'),
+  system: () => request('GET','/api/system'),
+  updates: () => request('GET','/api/system/updates'),
+  restart: () => request('POST','/api/system/restart',{}),
+  models: id => request('GET',`/api/providers/${encodeURIComponent(id)}/models`),
+  tasks: id => request('GET',`/api/projects/${encodeURIComponent(id)}/tasks`),
+  startTask: (id,body) => request('POST',`/api/projects/${encodeURIComponent(id)}/tasks`,body),
+  taskAction: (id,tid,body) => request('POST',`/api/projects/${encodeURIComponent(id)}/tasks/${encodeURIComponent(tid)}`,body),
   listTemplates: (opts) => request('GET', '/api/templates', null, opts),
   listProjects: (opts) => request('GET', '/api/projects', null, opts),
   createProject: (template, name, opts) => request('POST', '/api/projects', { template, name }, opts),
@@ -53,13 +67,16 @@ export const api = {
   removePage: (id, file, opts) => request('DELETE', `/api/projects/${encodeURIComponent(id)}/pages?file=${encodeURIComponent(file)}`, null, opts),
   getSettings: (opts) => request('GET', '/api/settings', null, opts),
   saveSettings: (s, opts) => request('PUT', '/api/settings', s, opts),
-  getProject: (id, opts) => request('GET', `/api/projects/${encodeURIComponent(id)}`, null, opts),
-  saveProject: (id, proj, opts) => request('PUT', `/api/projects/${encodeURIComponent(id)}`, proj, opts),
+  getAssistants: (opts) => request('GET', '/api/assistants', null, opts),
+  saveAssistants: (list, opts) => request('PUT', '/api/assistants', list, opts),
+  getProject: (id, opts) => request('GET', `/api/projects/${encodeURIComponent(id)}`, null, opts).then(remember),
+  saveProject: (id, proj, opts) => request('PUT', `/api/projects/${encodeURIComponent(id)}`, {...proj,_base:bases.get(id)}, opts).then(remember),
   readFile: (id, path, opts) =>
     request('GET', `/api/projects/${encodeURIComponent(id)}/file?path=${encodeURIComponent(path)}`, null, opts)
       .then((d) => d.content),
-  writeFile: (id, path, content, opts) =>
-    request('PUT', `/api/projects/${encodeURIComponent(id)}/file`, { path, content }, opts),
+  writeFile: async (id, path, content, opts={}) =>
+    request('PUT', `/api/projects/${encodeURIComponent(id)}/file`, { path, content, ...(opts.expectedContent!==undefined?{baseHash:await sha(opts.expectedContent)}:{}) }, opts),
+  commitFiles: async (id, files) => request('POST',`/api/projects/${encodeURIComponent(id)}/changes`,{files:await Promise.all(files.map(async f=>({path:f.path,content:f.content,baseHash:await sha(f.before)})))}),
   listHistory: (id, opts) => request('GET', `/api/projects/${encodeURIComponent(id)}/history`, null, opts),
   restoreHistory: (id, hid, opts) =>
     request('POST', `/api/projects/${encodeURIComponent(id)}/history/${encodeURIComponent(hid)}/restore`, {}, opts),

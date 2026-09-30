@@ -9,6 +9,10 @@ const path = require('node:path');
 const readline = require('node:readline');
 const { spawn } = require('node:child_process');
 const store = require('./store');
+const auth = require('./auth');
+const tasks = require('./tasks');
+const providers = require('./providers');
+const system = require('./system');
 
 const { ApiError } = store;
 
@@ -165,6 +169,31 @@ async function handle(req, res) {
   const method = req.method || 'GET';
   const url = new URL(req.url || '/', 'http://127.0.0.1');
   const pathname = url.pathname;
+  auth.checkOrigin(req);
+  if (pathname === '/api/auth') {
+    if(method==='GET'){sendData(res,auth.publicSession(auth.session(req)));return;}
+    if(method==='POST'){sendData(res,auth.login(req,res,await readJsonBody(req)));return;}
+    if(method==='PUT'){sendData(res,auth.update(req,res,await readJsonBody(req)));return;}
+    if(method==='DELETE'){sendData(res,auth.logout(req,res));return;}
+  }
+  if(pathname.startsWith('/api/'))auth.requireSession(req);
+  if(pathname==='/api/system'&&method==='GET'){sendData(res,await system.info());return;}
+  if(pathname==='/api/system/updates'&&method==='GET'){try{sendData(res,await system.updates());}catch{throw new ApiError(502,'暂时无法连接 GitHub 检查更新');}return;}
+  if(pathname==='/api/system/restart'&&method==='POST'){
+    sendData(res,{restarting:true});
+    setTimeout(()=>{const port=activeServer.address().port;const child=spawn(process.execPath,['-e',`setTimeout(()=>require(${JSON.stringify(__filename)}),700)`],{cwd:ROOT,env:{...process.env,PORT:String(port),CENTDECK_NO_OPEN:'1'},detached:true,stdio:'ignore',windowsHide:true});child.unref();shutdown();},200);return;
+  }
+  const pm=pathname.match(/^\/api\/providers\/([\w-]+)\/models$/);
+  if(pm&&method==='GET'){sendData(res,await providers.discover(pm[1]));return;}
+  const tm=pathname.match(/^\/api\/projects\/([^/]+)\/tasks(?:\/([^/]+))?$/);
+  if(tm){const id=decodeURIComponent(tm[1]);if(method==='GET'){sendData(res,tasks.list(id));return;}if(method==='POST'){const b=await readJsonBody(req);sendData(res,tm[2]?tasks.action(id,tm[2],b):tasks.start(id,b));return;}throw new ApiError(405,'任务接口只支持 GET / POST');}
+  const cm=pathname.match(/^\/api\/projects\/([^/]+)\/changes$/);
+  if(cm&&method==='POST'){const b=await readJsonBody(req);sendData(res,require('./changes').commit(decodeURIComponent(cm[1]),b.files));return;}
+  const em=pathname.match(/^\/api\/projects\/([^/]+)\/events$/);
+  if(em&&method==='GET'){
+    const id=decodeURIComponent(em[1]);store.projectDir(id);res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache',Connection:'keep-alive'});
+    const send=()=>res.write('data: '+JSON.stringify(tasks.list(id))+'\n\n');send();const off=tasks.subscribe(p=>{if(p===id)send();});const heart=setInterval(()=>res.write(': alive\n\n'),25000);req.on('close',()=>{off();clearInterval(heart);});return;
+  }
 
   if (method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
     serveAppIndex(res);
@@ -219,6 +248,11 @@ async function handle(req, res) {
     if (method === 'GET') { sendData(res, store.getSettings()); return; }
     if (method === 'PUT') { sendData(res, store.saveSettings(await readJsonBody(req))); return; }
     throw new ApiError(405, '设置接口只支持 GET / PUT');
+  }
+  if (pathname === '/api/assistants') {
+    if (method === 'GET') { sendData(res, store.getAssistants()); return; }
+    if (method === 'PUT') { sendData(res, store.saveAssistants(await readJsonBody(req))); return; }
+    throw new ApiError(405, '助手接口只支持 GET / PUT');
   }
 
   m = pathname.match(/^\/api\/projects\/([^/]+)\/pages$/);
@@ -286,6 +320,15 @@ async function handle(req, res) {
     const dir = store.projectDir(decodeURIComponent(m[1]));
     serveStatic(res, dir, m[2] || '', '预览文件', { denyMeta: true });
     return;
+  }
+
+  m = pathname.match(/^\/show\/([^/]+)\/(.+)$/);
+  if(m&&method==='GET'){
+    if(!auth.session(req)||auth.session(req).mustChange){res.writeHead(302,{Location:'/?project='+encodeURIComponent(decodeURIComponent(m[1]))});res.end();return;}
+    const id=decodeURIComponent(m[1]),rel=decodeURIComponent(m[2]);
+    const html=require('./presentation').render(id,rel,url);
+    if(html!=null){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);}
+    else serveStatic(res,store.projectDir(id),m[2],'预览资源',{denyMeta:true});return;
   }
 
   m = pathname.match(/^\/tpl\/([^/]+)(\/.*)?$/);
@@ -385,7 +428,7 @@ function listen(port, attemptsLeft) {
     console.error(`启动失败：${err && err.message ? err.message : err}`);
     process.exit(1);
   });
-  server.listen(port, () => {
+  server.listen(port, '127.0.0.1', () => {
     activeServer = server;
     printBanner(port);
     // 自测/无头环境可用 CENTDECK_NO_OPEN=1 跳过自动打开浏览器
@@ -403,4 +446,5 @@ function requestedPort() {
   return Number.isInteger(n) && n > 0 && n < 65536 ? n : DEFAULT_PORT;
 }
 
+auth.account();
 listen(requestedPort(), MAX_PORT_ATTEMPTS);

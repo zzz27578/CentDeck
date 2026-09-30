@@ -3,6 +3,7 @@ import { icon } from '../core/icons.js';
 import { el, esc, showMenu, toast, confirmDlg, closeMenu, menuOpen, anyModalOpen, closeTopModal, segSync } from '../core/ui.js';
 import { getDevice, setDevice } from '../core/viewport.js';
 import { bindKey, showKeyHelp } from '../core/keys.js';
+import { mark, toggleTheme } from '../core/brand.js';
 
 const VIEWS = [
   { id: 'overview', label: '总览', icon: 'overview', kbd: 'Alt+1' },
@@ -11,12 +12,16 @@ const VIEWS = [
 ];
 
 export function buildShell(app) {
+  app.disposeShell?.();
+  const disposers = [];
+  app.disposeShell = () => disposers.forEach(fn => fn());
+  const listen = (event, fn) => disposers.push(app.bus.on(event, fn));
   document.body.className = 'wb';
   const root = document.getElementById('app');
   root.innerHTML = `
     <header class="topbar">
       <div class="tb-left">
-        <button class="tb-logo" id="tb-home" data-tip="回到首页 · 切换项目"><span class="brand-mark">百</span>CentDeck</button>
+        <button class="tb-logo" id="tb-home" data-tip="回到首页">${mark(32)}CentDeck</button>
         <span class="tb-sep"></span>
         <span class="tb-proj" id="tb-proj"></span>
         <button class="tb-page" id="tb-page" hidden data-tip="切换页面"><span></span>${icon('chevDown', 14)}</button>
@@ -36,7 +41,7 @@ export function buildShell(app) {
         <button class="icon-btn" id="tb-redo" data-tip="重做" data-kbd="Ctrl+Shift+Z">${icon('redo')}</button>
         <span class="tb-sep"></span>
         <button class="icon-btn" id="tb-insp" hidden data-tip="属性栏（选中元素时自动弹出）" data-kbd="Alt+P">${icon('sliders')}</button>
-        <button class="tb-agent" id="tb-agent" data-tip="召唤助手" data-kbd="Ctrl+K">${icon('sparkle', 16)}助手</button>
+        <button class="tb-agent" id="tb-agent" data-tip="助手" data-kbd="Ctrl+K">${icon('centdeck', 18)}助手</button>
         <button class="icon-btn" id="tb-more" data-tip="更多">${icon('more')}</button>
       </div>
     </header>
@@ -81,6 +86,9 @@ export function buildShell(app) {
   });
   syncDev();
   $('#tb-more').onclick = (e) => showMenu([
+    {label:'Agent 工作台',icon:'centdeck',onClick:()=>app.openSettings()},
+    {label:'亮色 / 暗色',icon:'palette',onClick:toggleTheme},
+    {label:'设置',icon:'settings',onClick:()=>app.openSettings('general')},
     { label: '快捷键一览', icon: 'keyboard', kbd: '?', onClick: showKeyHelp },
     '-',
     { label: '一键还原到模板初始状态', icon: 'reset', danger: true, onClick: () => resetProject(app) },
@@ -95,7 +103,7 @@ export function buildShell(app) {
   // ---------- 保存状态 / 撤销状态 ----------
   const saveEl = $('#save-state');
   const saveText = { saved: '已保存', saving: '保存中…', dirty: '待保存…', error: '保存失败' };
-  app.bus.on('savestate', (s) => { saveEl.className = 'save-state ' + s; saveEl.lastElementChild.textContent = saveText[s] || s; });
+  listen('savestate', (s) => { saveEl.className = 'save-state ' + s; saveEl.lastElementChild.textContent = saveText[s] || s; });
   const syncStack = () => {
     const u = $('#tb-undo'), r = $('#tb-redo');
     if (!u) return;
@@ -104,7 +112,7 @@ export function buildShell(app) {
     const top = app.bus.peekUndo();
     u.setAttribute('data-tip', top ? '撤销：' + top.label : '撤销');
   };
-  app.bus.on('stack', syncStack);
+  listen('stack', syncStack);
   syncStack();
 
   // ---------- 左侧栏与抽屉 ----------
@@ -118,7 +126,7 @@ export function buildShell(app) {
       const b = el(`<button class="icon-btn ${activePanel === p.id ? 'on' : ''}" data-tip="${esc(p.title)}" data-tip-place="right" ${p.kbd ? `data-kbd="${p.kbd}"` : ''}>${icon(p.icon, 19)}</button>`);
       const n = p.badge ? p.badge(app) : 0;
       if (n) b.appendChild(el(`<span class="badge">${n}</span>`));
-      b.onclick = () => openPanel(activePanel === p.id ? null : p.id);
+      b.onclick = () => p.onClick ? p.onClick() : openPanel(activePanel === p.id ? null : p.id);
       rail.appendChild(b);
     });
     rail.appendChild(el('<div class="grow"></div>'));
@@ -142,8 +150,8 @@ export function buildShell(app) {
   app.openPanel = openPanel;
   app.activePanel = () => activePanel;
   app.renderRail = renderRail;
-  app.bus.on('panels', renderRail);
-  app.bus.on('project', renderRail);
+  listen('panels', renderRail);
+  listen('project', renderRail);
 
   // ---------- 视图切换条 ----------
   app.syncViewSwitch = () => {
@@ -163,6 +171,7 @@ export function buildShell(app) {
       const p = app.bus.panels().find((x) => x.id === activePanel);
       if (p && p.views && !p.views.includes(app.state.view)) openPanel(null);
     }
+    if (activePanel) openPanel(activePanel);
     renderRail();
   };
   app.setHint = (html) => { refs.hint.innerHTML = html || ''; };
@@ -201,6 +210,6 @@ export function bindShellKeys(app) {
   bindKey('?', { label: '快捷键一览', group: '通用', run: () => { showKeyHelp(); } });
   bindKey('Alt+1', { id: 'view.overview', label: '总览', group: '视图', when: inWb, run: () => { app.setView('overview'); } });
   bindKey('Alt+2', { id: 'view.edit', label: '编辑', group: '视图', when: inWb, run: () => { app.setView('edit'); } });
-  bindKey('F5', { id: 'view.present', label: '放映（从首页）', group: '视图', field: true, when: inWb, run: () => { app.present(null); } });
+  bindKey('F5', { id: 'view.present', label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
   bindKey('Shift+F5', { id: 'view.presentHere', label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
 }

@@ -11,12 +11,14 @@ import { setupSketch } from './sketch/sketch.js';
 import { createAgent } from './agent/agent.js';
 import { openSettings } from './agent/settings.js';
 import { showKeyHelp } from './core/keys.js';
-import { setupLayers } from './panels/layers.js';
 import { setupNotes } from './panels/notes.js';
 import { setupAssets } from './panels/assets.js';
 import { setupTokens } from './panels/tokens.js';
 import { setupHistory } from './panels/history.js';
 import { setupCodeview } from './panels/codeview.js';
+import { checkMobileProject } from './shell/responsive.js';
+import { onViewportChange } from './core/viewport.js';
+import { requireLogin } from './shell/auth.js';
 
 setApiErrorHandler(toastError);
 const bus = createBus({ api, onError: toastError });
@@ -62,9 +64,11 @@ app.setElementLock = (file, selector, on) => {
 // ---------- 视图 ----------
 const views = {};
 
-app.goHome = () => {
+app.goHome = async () => {
+  if (app.state.project && await bus.flushMeta() === false) return;
   if (app.state.view && views[app.state.view]) views[app.state.view].leave();
   app.state = { project: null, view: null, page: null, presentFrom: null };
+  bus.emit('project',null);
   bus.clearStacks();
   renderHome(app);
 };
@@ -72,14 +76,16 @@ app.goHome = () => {
 app.openProject = async (id) => {
   let proj;
   try { proj = await api.getProject(id); } catch { return; }
+  if (app.state.project && await bus.flushMeta() === false) return;
   if (app.state.view && views[app.state.view]) views[app.state.view].leave();
   app.state = { project: proj, view: null, page: proj.pages[0] ? proj.pages[0].file : null, presentFrom: null };
   bus.clearStacks();
   bus.bindProject(() => app.state.project);
   buildShell(app);
-  agent.mount(app.refs.agent);
+  await agent.mount(app.refs.agent);
   bus.emit('project', proj);
   await app.setView('overview');
+  checkMobileProject(app);
 };
 
 app.setView = async (v, opts = {}) => {
@@ -119,12 +125,14 @@ app.reloadView = async () => {
 
 app.refreshProject = async () => {
   app.state.project = await api.getProject(app.state.project.id);
+  bus.bindProject(()=>app.state.project);
   bus.emit('project', app.state.project);
 };
 
 app.toggleAgent = (force) => agent.toggle(force);
 
 // ---------- 装配 ----------
+await requireLogin(app);
 views.overview = createOverview(app);
 views.edit = createEditor(app);
 views.present = createPresent(app);
@@ -132,18 +140,23 @@ app.editor = views.edit;
 app.overview = views.overview;
 const agent = createAgent(app);
 app.agent = agent;
-app.openSettings = () => openSettings(app);
+app.openSettings = section => openSettings(app, section);
 app.showKeys = () => showKeyHelp(app);
 
 setupSketch(app);
-setupLayers(app);
 setupNotes(app);
 setupAssets(app);
 setupTokens(app);
 setupHistory(app);
 setupCodeview(app);
 bindShellKeys(app);
+onViewportChange(() => checkMobileProject(app));
+bus.on('rendered', () => checkMobileProject(app));
+let aiRefresh=Promise.resolve();
+bus.on('ai-commit',()=>{aiRefresh=aiRefresh.catch(()=>{}).then(async()=>{if(!app.project())return;if(await bus.flushMeta()===false)return;await app.refreshProject();await app.reloadView();});});
 
 window.addEventListener('beforeunload', () => { if (app.state.project && bus.saveState === 'dirty') bus.flushMeta(); });
 
-renderHome(app);
+const initial=new URLSearchParams(location.search);
+if(initial.has('project')){await app.openProject(initial.get('project'));if(initial.get('view')==='edit'&&app.project()?.pages.some(p=>p.file===initial.get('page')))await app.openPage(initial.get('page'));history.replaceState(null,'','/');}
+else renderHome(app);

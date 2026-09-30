@@ -1,5 +1,6 @@
 // 设计规范（手动版）：颜色、字号 / 间距 / 圆角阶梯、预设风格；"应用到全站"一次改所有页面
-import { el, esc, toast, confirmDlg } from '../core/ui.js';
+import { el, esc, toast } from '../core/ui.js';
+import { injectTokens } from './token-source.js';
 import { icon } from '../core/icons.js';
 
 export const PRESETS = {
@@ -9,13 +10,15 @@ export const PRESETS = {
   暗夜紫: { colors: { brand: '#9d7bff', brandDeep: '#7a5ae0', accent: '#4cc9f0', bg: '#14121c', text: '#eceaf4', muted: '#9a94b0', card: '#1e1b2a', border: '#332e48' }, fontSizes: ['12px', '14px', '16px', '20px', '28px', '46px'], spacing: ['8px', '16px', '24px', '40px', '64px'], radius: ['10px', '16px', '26px'] },
 };
 const VAR = { brand: 'brand', brandDeep: 'brand-deep', accent: 'accent', bg: 'bg', text: 'text', muted: 'muted', card: 'card', border: 'border' };
-function toCss(t) {
+export function toCss(t) {
   const L = [':root{'];
   Object.entries(t.colors || {}).forEach(([k, v]) => L.push(`  --${VAR[k] || k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}:${v};`));
   ['fs-s', 'fs-m', 'fs-body', 'fs-h3', 'fs-h2', 'fs-h1'].forEach((n, i) => { if ((t.fontSizes || [])[i]) L.push(`  --${n}:${t.fontSizes[i]};`); });
   (t.spacing || []).forEach((v, i) => L.push(`  --sp-${i + 1}:${v};`));
   ['radius-s', 'radius', 'radius-l'].forEach((n, i) => { if ((t.radius || [])[i]) L.push(`  --${n}:${t.radius[i]};`); });
+  if (t.fontFamily) L.push(`  --font-body:${t.fontFamily};`);
   L.push('}');
+  if (t.fontFamily) L.push('body{font-family:var(--font-body)}');
   return L.join('\n');
 }
 
@@ -24,27 +27,31 @@ export function setupTokens(app) {
   const cur = () => { const p = app.project(); if (!p.tokens) p.tokens = { colors: {}, fontSizes: [], spacing: [], radius: [] }; return p.tokens; };
   const replaceAll = (t, next) => { Object.keys(t).forEach((k) => delete t[k]); Object.assign(t, JSON.parse(JSON.stringify(next))); };
 
-  async function applyToSite() {
+  async function applyToSite(options={}) {
     const proj = app.project();
-    const ok = await confirmDlg({ title: '应用到全站', okLabel: '应用', body: `按当前规范重写 <b>${proj.pages.length} 个页面</b>里的 &lt;style id="cd-tokens"&gt;，并保存 design/tokens.json。` });
-    if (!ok) return;
+    const pages = proj.pages.filter(p => (!options.files||options.files.includes(p.file))&&!app.pageLocked(p.file) && !(proj.locks?.elements || []).some(l => l.page === p.file));
+    if (!pages.length) { toast('没有可应用的页面：先创建页面或解除锁定'); return; }
+    const tokens = structuredClone(options.tokens||cur());
+    const edits = [];
     try {
-      await app.api.writeFile(proj.id, 'design/tokens.json', JSON.stringify(cur(), null, 2) + '\n');
-      const block = `<style id="cd-tokens">${toCss(cur())}</style>`;
-      for (const pg of proj.pages) {
-        const src = await app.api.readFile(proj.id, pg.file);
-        const re = /<style\s+id="cd-tokens"[^>]*>[\s\S]*?<\/style>/i;
-        const next = re.test(src) ? src.replace(re, () => block) : src.replace('</head>', block + '\n</head>');
-        if (next !== src) await app.api.writeFile(proj.id, pg.file, next);
+      for (const pg of pages) {
+        const before = await app.api.readFile(proj.id, pg.file);
+        const after = injectTokens(before, toCss(tokens));
+        if (before !== after) edits.push({file:pg.file, before, after});
       }
-      app.bus.clearStacks();
-      toast(`已应用到 ${proj.pages.length} 个页面`, 'ok');
-      await app.reloadView();
-    } catch { /* api 已提示 */ }
+      const write = async direction => {
+        if(edits.length)await app.api.commitFiles(proj.id,edits.map(c=>({path:c.file,content:c[direction],before:c[direction==='after'?'before':'after']})));
+        if (app.project()?.id === proj.id) await app.reloadView();
+      };
+      await app.bus.flushMeta();
+      await bus.do({label:'应用设计风格到全站',apply:()=>write('after'),revert:()=>write('before')});
+      toast(`已应用到 ${pages.length} 页${proj.pages.length > pages.length ? '，已跳过有锁定内容的页面' : ''}，可撤销`, 'ok');
+    } catch { /* API 已提示 */ }
   }
+  app.tokens = { applyToSite };
 
   bus.registerPanel({
-    id: 'tokens', title: '设计规范', icon: 'palette', views: ['edit', 'overview'],
+    id: 'tokens', title: '设计规范', icon: 'palette', views: ['edit'],
     render(host) {
       const paint = () => {
         const t = cur();
@@ -81,6 +88,9 @@ export function setupTokens(app) {
           colors.appendChild(row);
         });
         host.appendChild(colors);
+        const font = el(`<label class="p-sec set-field">字体<input class="ipt" value="${esc(t.fontFamily || '')}" placeholder="例如 Microsoft YaHei, sans-serif"></label>`);
+        font.querySelector('input').onchange = e => { const value = e.target.value.trim(); if (/[;{}<>]/.test(value)) { toast('请填写有效字体名称', 'err'); return; } const old=t.fontFamily; bus.doMeta({label:'修改规范字体',apply:()=>{t.fontFamily=value;},revert:()=>{t.fontFamily=old;}}); };
+        host.appendChild(font);
         [['字号阶梯', 'fontSizes'], ['间距阶梯', 'spacing'], ['圆角', 'radius']].forEach(([label, key]) => {
           const g = el(`<div class="p-sec"><div class="p-sec-title">${label}</div><input class="ipt" value="${esc((t[key] || []).join(', '))}"></div>`);
           const i = g.querySelector('input');
@@ -92,7 +102,7 @@ export function setupTokens(app) {
           };
           host.appendChild(g);
         });
-        const acts = el(`<div class="p-sec"><button class="btn primary block" data-apply>${icon('check', 15)}应用到全站</button>
+        const acts = el(`<div class="p-sec"><p class="hint" style="margin-bottom:10px">应用配色、字号和圆角规范。页面中单独写死的样式需手动调整，或交给助手统一。</p><button class="btn primary block" data-apply>${icon('check', 15)}应用到全站</button>
           <div class="p-actions" style="margin-top:8px"><button class="btn small" data-exp>导出 tokens.json</button><button class="btn small" data-imp>导入</button></div></div>`);
         acts.querySelector('[data-apply]').onclick = applyToSite;
         acts.querySelector('[data-exp]').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(cur(), null, 2)], { type: 'application/json' })); a.download = 'tokens.json'; a.click(); };

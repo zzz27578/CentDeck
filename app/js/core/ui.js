@@ -9,6 +9,7 @@ export function esc(s) {
 export function el(html) {
   const t = document.createElement('template');
   t.innerHTML = html.trim();
+  t.content.querySelectorAll('button[data-tip]').forEach(b => { if (!b.hasAttribute('aria-label')) b.setAttribute('aria-label', b.dataset.tip); });
   return t.content.firstElementChild;
 }
 export const uid = (p = 'x') => p + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);

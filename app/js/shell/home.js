@@ -2,6 +2,7 @@
 import { icon } from '../core/icons.js';
 import { el, esc, toast, openModal, promptDlg, showMenu } from '../core/ui.js';
 import { getViewport } from '../core/viewport.js';
+import { mark, toggleTheme } from '../core/brand.js';
 import { pickFiles, filesFromDrop, runImport } from './importer.js';
 
 const KIND = { template: ['模板', 'blue'], blank: ['空白', ''], import: ['导入', 'green'] };
@@ -83,7 +84,6 @@ async function startFromPrompt(app, text) {
     const proj = await app.api.createBlank(name);
     await app.openProject(proj.id);
     app.agent.prefill(text, { skill: 'design-variants' });
-    toast('描述已经放进助手：接入模型后按发送，就会在画布上铺出几版方案', 'ok', 5200);
   } catch { /* 已提示 */ }
 }
 
@@ -93,24 +93,23 @@ export async function renderHome(app) {
   root.innerHTML = `
     <div class="home-page">
       <header class="home-bar">
-        <div class="brand"><span class="brand-mark">百</span>CentDeck<small>百映</small></div>
+        <div class="wordmark">${mark(38)}<b>CentDeck</b><small>百映</small></div>
         <label class="home-search">${icon('search', 16)}<input placeholder="搜索项目" value="${esc(query)}"></label>
         <div class="home-bar-right">
-          <button class="btn ghost" data-a="settings" data-tip="配置模型和 API 接口">${icon('brain', 16)}模型设置</button>
-          <button class="icon-btn" data-a="keys" data-tip="快捷键" data-kbd="?">${icon('keyboard')}</button>
+          <button class="btn ghost" data-a="settings">${icon('centdeck', 18)}Agent 工作台</button>
+          <button class="icon-btn" data-a="theme" aria-label="切换亮暗模式">◐</button><button class="icon-btn" data-a="preferences" aria-label="设置">${icon('settings')}</button>
         </div>
       </header>
       <section class="home-hero">
-        <h1>今天想做一个什么样的网站？</h1>
-        <p>描述一下，助手会在画布上铺出几版方案；也可以从模板开始，或者导入已经做好的网页接着改。</p>
+        <div class="home-orbit">${mark(76)}</div><span class="home-eyebrow">YOUR NEXT POSSIBILITY</span><h1>好设计，始于一个想法。</h1>
         <div class="hero-prompt">
-          <textarea rows="2" placeholder="比如：一家精品咖啡店的官网，温暖的奶咖色调，要有菜单、门店地图和线上预约"></textarea>
-          <button class="btn primary" data-a="go">${icon('sparkle', 16)}开始设计</button>
+          <textarea rows="2" aria-label="网站需求" placeholder="描述你想创建的网站…"></textarea>
+          <span class="prompt-label">${icon('centdeck',18)}CentDeck</span><button class="btn primary" data-a="go">开始设计 ↗</button>
         </div>
         <div class="entry-row">
-          <button class="entry" data-a="blank"><span class="entry-ico">${icon('plus', 22)}</span><b>空白项目</b><small>从零开始，用助手生成页面</small></button>
-          <button class="entry" data-a="tpl"><span class="entry-ico">${icon('overview', 22)}</span><b>从模板开始</b><small>两个完整的示例网站</small></button>
-          <button class="entry" data-a="import"><span class="entry-ico">${icon('upload', 22)}</span><b>导入网页</b><small>HTML 文件或整个文件夹，也能直接拖进来</small></button>
+          <button class="entry" data-a="blank">${icon('plus', 18)}空白项目</button>
+          <button class="entry" data-a="tpl">${icon('overview', 18)}浏览模板</button>
+          <button class="entry" data-a="import">${icon('upload', 18)}导入网页</button>
         </div>
       </section>
       <section class="home-sec">
@@ -140,7 +139,8 @@ export async function renderHome(app) {
     { label: '选择整个文件夹…', icon: 'layers', hint: '推荐：图片、样式都能带上', onClick: async () => { const f = await pickFiles(true); if (f.length) runImport(app, f); } },
   ], 0, 0, { anchor: e.currentTarget, minWidth: 280 });
   $('[data-a=settings]').onclick = () => app.openSettings();
-  $('[data-a=keys]').onclick = () => app.showKeys();
+  $('[data-a=theme]').onclick = toggleTheme;
+  $('[data-a=preferences]').onclick = () => app.openSettings('general');
 
   // 拖文件进来就导入
   let depth = 0;
@@ -163,7 +163,7 @@ export async function renderHome(app) {
     $('[data-count]').textContent = projects.length ? projects.length + ' 个' : '';
     root.querySelectorAll('[data-sort] button').forEach((b) => b.classList.toggle('on', b.dataset.v === sortBy));
     grid.innerHTML = '';
-    if (!projects.length) { grid.appendChild(el('<div class="empty wide">还没有项目。在上面描述你想做的网站，或者从模板开始。</div>')); return; }
+    if (!projects.length) { grid.appendChild(el('<div class="empty wide">你的第一个项目，从这里开始。</div>')); return; }
     if (!list.length) { grid.appendChild(el(`<div class="empty wide">没有名字里带「${esc(query)}」的项目</div>`)); return; }
     list.forEach((p) => {
       const [kind, kcls] = KIND[p.kind] || KIND.blank;

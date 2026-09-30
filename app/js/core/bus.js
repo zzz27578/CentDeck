@@ -36,24 +36,34 @@ export function createBus(deps) {
   let metaSaving = null; // 进行中的保存 Promise
   let getProject = () => null;
   let afterMetaSaved = null;
+  let savedTokens = 'null';
 
   async function flushMeta() {
+    clearTimeout(metaTimer);
+    if (metaSaving) { try { await metaSaving; } catch { /* 本次保存仍可重试 */ } }
     const proj = getProject();
     if (!proj) return;
     setSaveState('saving');
     // 提交前剥掉 tokens（tokens 由 design/tokens.json 承载，GET 时合并进来，PUT 时不应写进 project.json）
-    const body = { ...proj };
+    const body = structuredClone(proj);
     delete body.tokens;
     try {
-      metaSaving = api.saveProject(proj.id, body, { toast: false });
-      await metaSaving;
+      const tokenData = JSON.stringify(proj.tokens || null);
+      metaSaving = (async () => {
+        if (tokenData !== savedTokens) { await api.writeFile(proj.id, 'design/tokens.json', tokenData + '\n', {toast:false}); savedTokens = tokenData; }
+        return api.saveProject(proj.id, body, { toast: false });
+      })();
+      const saved=await metaSaving;
+      if(saved){for(const key of new Set([...Object.keys(body),...Object.keys(saved)])){if(key==='tokens'||JSON.stringify(saved[key])===JSON.stringify(body[key]))continue;if(JSON.stringify(proj[key])===JSON.stringify(body[key])){if(saved[key]===undefined)delete proj[key];else proj[key]=saved[key];}}}
       metaSaving = null;
       setSaveState('saved');
       if (afterMetaSaved) afterMetaSaved();
+      return true;
     } catch (e) {
       metaSaving = null;
       setSaveState('error');
       if (onError) onError(e);
+      return false;
     }
   }
   // 元数据保存做 400ms 防抖（连续打勾、拖画布不刷爆接口）
@@ -133,8 +143,8 @@ export function createBus(deps) {
     const cmd = {
       label: label || '修改项目设置',
       page: null,
-      apply: async () => { apply(proj); await flushMeta(); },
-      revert: async () => { revert(proj); await flushMeta(); },
+      apply: async () => { apply(proj); if (await flushMeta() === false) { revert(proj); emit('stack'); throw new Error('项目保存失败，修改已撤回'); } },
+      revert: async () => { revert(proj); if (await flushMeta() === false) { apply(proj); emit('stack'); throw new Error('撤销保存失败'); } },
     };
     return do_(cmd);
   }
@@ -173,7 +183,7 @@ export function createBus(deps) {
     // 保存状态
     get saveState() { return saveState; },
     setSaveState, saveMeta, flushMeta,
-    bindProject(getter, afterSave) { getProject = getter; afterMetaSaved = afterSave || null; },
+    bindProject(getter, afterSave) { getProject = getter; savedTokens = JSON.stringify(getter()?.tokens || null); afterMetaSaved = afterSave || null; },
     // 命令栈
     do: do_, undo, redo, doMeta,
     get canUndo() { return undoStack.length > 0; },

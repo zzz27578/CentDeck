@@ -7,7 +7,8 @@ import { getViewport } from '../core/viewport.js';
 import { exportTaskSheet } from './tasksheet.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
-export const COLORS = ['#e5484d', '#f5a524', '#16a34a', '#3b82f6', '#8b5cf6', '#1f2430'];
+import {COLORS,notePalette} from '../core/note-colors.js';
+export {COLORS};
 export const TYPE_NAME = { pen: '画笔', arrow: '箭头', rect: '方框', ellipse: '圆圈', note: '便签钉', image: '参考图', verdict: '修改受阻' };
 const TOOLS = [
   { id: 'pen', label: '画笔', tip: '画笔：随手圈画', icon: 'pen', kbd: 'D' },
@@ -163,9 +164,9 @@ export function setupSketch(app) {
     const [px, py] = pinPos(m);
     cardEl = el(`<div class="sk-card" data-id="${m.id}" style="left:${px + 14}px;top:${py + 10}px">
       <div class="skc-head"><i style="background:${m.color}"></i><span>${esc(TYPE_NAME[m.type] || '标记')}</span>${m.meta ? `<small>${esc(m.meta)}</small>` : ''}</div>
-      <textarea class="ipt" rows="3" placeholder="写一句要求，比如：这个按钮挪到标题右边、换成品牌色">${esc(m.text || '')}</textarea>
+      <textarea class="ipt" rows="3" aria-label="便签内容" placeholder="添加批注…">${esc(m.text || '')}</textarea>
       <div class="skc-acts">
-        <div class="skc-colors">${COLORS.map((c) => `<button data-c="${c}" style="background:${c}" class="${c === m.color ? 'on' : ''}"></button>`).join('')}</div>
+        ${notePalette(m.color)}
         <span class="grow"></span>
         <button class="icon-btn sm ${m.done ? 'on' : ''}" data-a="done" data-tip="${m.done ? '标为未完成' : '打勾完成'}">${icon('check', 15)}</button>
         <button class="icon-btn sm" data-a="del" data-tip="删除" data-kbd="Del">${icon('trash', 15)}</button>
@@ -175,8 +176,9 @@ export function setupSketch(app) {
     const save = () => { const v = ta.value.trim(); if (v !== (m.text || '')) update(m, { text: v }, '写标记要求', ed); };
     ta.addEventListener('blur', save);
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ta.value = m.text || ''; ta.blur(); select(ed, null); } });
-    cardEl.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => update(m, { color: b.dataset.c }, '换标记颜色', ed); });
-    cardEl.querySelector('[data-a=done]').onclick = () => update(m, { done: !m.done }, m.done ? '标记改为未完成' : '标记打勾完成', ed);
+    cardEl.querySelectorAll('button').forEach(b=>b.onpointerdown=e=>e.preventDefault());
+    cardEl.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => update(m, { color: b.dataset.c, text:ta.value }, '换标记颜色', ed); });
+    cardEl.querySelector('[data-a=done]').onclick = () => update(m, { done: !m.done, text:ta.value }, m.done ? '标记改为未完成' : '标记打勾完成', ed);
     cardEl.querySelector('[data-a=del]').onclick = () => remove([m], ed);
     const n = nodes.get(m.id);
     if (n && n.off) cardEl.style.translate = n.pin.style.translate;

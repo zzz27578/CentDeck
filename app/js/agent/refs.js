@@ -6,6 +6,7 @@ const COLOR_NAME = { '#e5484d': '红色', '#f5a524': '橙色', '#16a34a': '绿�
 export const colorName = (c) => COLOR_NAME[String(c || '').toLowerCase()] || '其它颜色';
 
 export function refLabel(r) {
+  if (r.kind === 'canvas-note') return { icon: 'sticky2', text: `便签 #${r.no} ${(r.text || '').slice(0, 20)}`, color: r.color };
   if (r.kind === 'page') return { icon: r.popup ? 'popup' : 'file', text: r.title };
   if (r.kind === 'region') return { icon: 'marquee', text: `${r.title} · 框选 ${r.rect.w}×${r.rect.h}` };
   if (r.kind === 'element') return { icon: 'target', text: r.title };
@@ -15,7 +16,7 @@ export function refLabel(r) {
   if (r.kind === 'file') return { icon: 'paperclip', text: r.name };
   return { icon: 'info', text: r.title || '引用' };
 }
-export const refKey = (r) => [r.kind, r.page, r.popup, r.no, r.color, r.selector, r.rect && [r.rect.x, r.rect.y, r.rect.w, r.rect.h].join(','), r.name].join('|');
+export const refKey = (r) => [r.kind, r.id, r.page, r.popup, r.no, r.color, r.selector, r.rect && [r.rect.x, r.rect.y, r.rect.w, r.rect.h].join(','), r.name].join('|');
 
 const pageTitle = (app, f) => ((app.project().pages.find((p) => p.file === f) || {}).title || f);
 
@@ -40,12 +41,15 @@ export function mentionItems(app, add) {
       onClick: () => add({ kind: 'mark', no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'} · ${pageTitle(app, m.page)}` }),
     }));
   }
+  const notes = app.project().canvasNotes || [];
+  if (notes.length) items.push('-', {title: '画布便签'}, ...notes.map(n => ({ label: `便签 #${n.no} ${(n.text || '').slice(0,24)}`, icon: 'sticky2', onClick: () => add({ kind: 'canvas-note', id: n.id, no: n.no, text: n.text, color: n.color }) })));
   return items;
 }
 
 // 发送时附带的"引用说明"（第二步会把它和对应的代码片段一起交给模型）
 export function describeRefs(app, refs) {
   return refs.map((r) => {
+    if (r.kind === 'canvas-note') { const n = (app.project().canvasNotes || []).find(n => n.id === r.id) || r; return `画布便签 #${n.no}（${colorName(n.color)}）：${n.text || ''}`; }
     if (r.kind === 'region') return `页面「${r.title}」上框选的区域：左 ${r.rect.x}、上 ${r.rect.y}、宽 ${r.rect.w}、高 ${r.rect.h}（${r.page}）`;
     if (r.kind === 'page') return `页面「${r.title}」（${r.page}）`;
     if (r.kind === 'element') return `元素 ${r.title}`;
