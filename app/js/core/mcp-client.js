@@ -1,13 +1,41 @@
-import { uid } from './ui.js';
+import {collectControls,activeScope,visibleControl,fillControl,previewText} from './mcp-dom.js';
+
 export function connectWorkbench(app){
-  const clientId=crypto.randomUUID();let controls=new Map(),busy=false;const ids=new WeakMap();let sequence=0;
+  const documentId=crypto.randomUUID();
+  let clientId;
+  try{const navigation=performance.getEntriesByType('navigation')[0]?.type;clientId=(['reload','back_forward'].includes(navigation)&&sessionStorage.getItem('cd.mcpClient'))||crypto.randomUUID();sessionStorage.setItem('cd.mcpClient',clientId);}catch{clientId=crypto.randomUUID();}
+  let controls=new Map(),sequence=0,polling=false,stopped=false,executing=0,chain=Promise.resolve();
+  const ids=new WeakMap(),received=new Set(),results=new Map();
+  function preview(){
+    if(app.view()!=='edit'||!app.editor?.frame?.doc||!visibleControl(app.editor.frame.iframe))return null;
+    const frame=app.editor.frame;
+    return {doc:frame.doc,win:frame.win,page:app.state.page};
+  }
   function snapshot(){
-    const next=new Map();let i=0;
-    const scope=[...document.querySelectorAll('.modal-mask.show .modal')].at(-1)||document;
-    const list=[...scope.querySelectorAll('button,input:not([type=password]),textarea,select,a[href]')].filter(n=>n.offsetParent&&!n.closest('[inert]')&&!n.disabled).slice(0,160).map(n=>{if(!ids.has(n))ids.set(n,'c'+(++sequence));const id=ids.get(n);next.set(id,n);return {id,tag:n.tagName.toLowerCase(),label:(n.getAttribute('aria-label')||n.getAttribute('data-tip')||n.textContent||n.getAttribute('placeholder')||n.name||'').trim().slice(0,110)};});
-    controls=next;return {focused:document.hasFocus(),projectId:app.project()?.id||null,projectName:app.project()?.name||null,page:app.state.page,view:app.view(),studio:document.querySelector('.studio h1')?.textContent||null,controls:list};
+    const next=new Map();
+    const identify=(n,context)=>{if(!ids.has(n))ids.set(n,documentId.slice(0,8)+'-c'+(++sequence));const id=ids.get(n);next.set(id,{node:n,context,doc:n.ownerDocument,page:context==='preview'?app.state.page:null});return id;};
+    const list=collectControls(document,'workbench',identify),p=preview();let pageState=null;
+    if(p){
+      const pageControls=collectControls(p.doc,'preview',identify),d=p.doc.documentElement;
+      pageState={page:p.page,ready:!app.editor.loading,title:p.doc.title,viewport:{width:p.win.innerWidth,height:p.win.innerHeight,scrollX:p.win.scrollX,scrollY:p.win.scrollY,scrollWidth:d.scrollWidth,scrollHeight:d.scrollHeight,horizontalOverflow:d.scrollWidth>p.win.innerWidth+1},text:previewText(p.doc),controls:pageControls};
+      list.push(...pageControls);
+    }
+    controls=next;
+    return {focused:document.hasFocus(),hidden:document.hidden,busy:executing>0,documentId,projectId:app.project()?.id||null,projectName:app.project()?.name||null,page:app.state.page,view:app.view(),studio:document.querySelector('.studio h1')?.textContent||null,controls:list,preview:pageState};
+  }
+  const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function settle(){await delay(100);for(let i=0;i<60&&app.view()==='edit'&&app.editor?.loading;i++)await delay(50);}
+  function control(c){
+    const record=controls.get(c.target),n=record?.node;
+    if(!n||!visibleControl(n)||n.disabled)throw Error('STALE_CONTROL：控件已变化或不可操作，请重新 ui_state');
+    if(record.context==='preview'&&(preview()?.doc!==record.doc||record.page!==app.state.page))throw Error('STALE_CONTROL：网页已切换，请重新 ui_state');
+    const scope=activeScope(n.ownerDocument);if(scope!==n.ownerDocument&&!scope.contains(n))throw Error('控件被弹窗遮挡，请先处理当前弹窗');
+    return record;
   }
   async function action(c){
+    if(c.expiresAt&&Date.now()>c.expiresAt)throw Error('COMMAND_EXPIRED：操作已过期，未执行，请核对当前状态');
+    if(c.documentId&&c.documentId!==documentId)throw Error('DOCUMENT_REPLACED：请重新 ui_state 获取刷新后的控件');
+    if(c.projectId&&c.action!=='open_project'&&app.project()?.id!==c.projectId)throw Error('PROJECT_CHANGED：当前标签页已切换项目，操作未执行');
     if(c.action==='open_project')await app.openProject(c.projectId);
     else if(c.action==='open_settings')await app.openSettings(c.section||'general');
     else if(c.action==='close_settings')document.querySelector('.studio [data-close]')?.click();
@@ -15,19 +43,39 @@ export function connectWorkbench(app){
     else if(c.action==='set_view'){if(!['overview','edit','present'].includes(c.view))throw Error('视图无效');await app.setView(c.view);}
     else if(c.action==='refresh'){if(app.project()){await app.refreshProject();await app.reloadView();}}
     else if(c.action==='click'||c.action==='fill'){
-      const n=controls.get(c.target);if(!n?.isConnected||!n.offsetParent||n.closest('[inert]'))throw Error('控件已变化，请重新 ui_state');
-      if(c.action==='click')n.click();else {if(!n.matches('input:not([type=password]),textarea,select'))throw Error('目标不是可填写控件');n.value=c.value||'';n.dispatchEvent(new Event('input',{bubbles:true}));n.dispatchEvent(new Event('change',{bubbles:true}));}
+      const r=control(c),n=r.node;
+      if(r.context==='preview')app.editor.setTool('interact');
+      if(c.action==='click')n.click();else fillControl(n,c.value);
+    }else if(c.action==='scroll'){
+      if(c.target)control(c).node.scrollIntoView({block:'center',behavior:'instant'});
+      else {const p=preview();if(!p)throw Error('请先打开编辑页，或传入控件 target');const x=c.x??p.win.scrollX,y=c.y??p.win.scrollY;if(![x,y].every(Number.isFinite))throw Error('滚动坐标需要数字');p.win.scrollTo({left:x,top:y,behavior:'instant'});}
     }else if(c.action==='add_mark'){
       const p=app.project(),page=c.page||app.state.page;if(!p?.pages.some(x=>x.file===page))throw Error('请先打开需要标记的页面');
-      const mark=await app.sketch.addRaw({page,type:'note',color:'#e57b48',text:c.text||'请检查此处',pts:[[c.x||120,c.y||120]],done:false});
-      await app.bus.flushMeta();await app.reloadView();return {mark,snapshot:snapshot()};
-    }else if(c.action==='undo'){await app.bus.undo();await app.bus.flushMeta();}
+      const mark=await app.sketch.addRaw({page,type:'note',color:'#e5484d',text:c.text||'请检查此处',pts:[[c.x??120,c.y??120]],done:false});
+      if(await app.bus.flushMeta()===false)throw Error('标记保存失败');await app.reloadView();return {mark,snapshot:snapshot()};
+    }else if(c.action==='undo'){await app.bus.undo();if(await app.bus.flushMeta()===false)throw Error('撤销保存失败');}
     else throw Error('不支持的页面操作');
-    return snapshot();
+    await settle();return snapshot();
   }
-  async function poll(){if(busy)return;busy=true;try{
-    const {commands}=await app.api.extension('ui/heartbeat',{clientId,state:snapshot()});
-    for(const c of commands){let result,error;try{result=await action(c);}catch(e){error=e.message;}await app.api.extension('ui/result',{clientId,id:c.id,result,error});}
-  }catch{}finally{busy=false;}}
-  poll();const timer=setInterval(poll,800);addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+  async function sendResults(){
+    for(const [id,payload] of results){try{await app.api.extension('ui/result',payload);results.delete(id);}catch{return;}}
+  }
+  async function poll(){
+    if(polling||stopped)return;polling=true;
+    try{
+      await sendResults();
+      const {commands=[]}=await app.api.extension('ui/heartbeat',{clientId,documentId,state:snapshot()});
+      for(const c of commands){
+        if(received.has(c.id))continue;received.add(c.id);
+        chain=chain.then(async()=>{executing++;let result,error;try{result=await action(c);}catch(e){error=e.message;}finally{executing--;}
+          results.set(c.id,{clientId,documentId,id:c.id,result,error});await sendResults();});
+      }
+    }catch{}finally{polling=false;}
+  }
+  let timer=setInterval(poll,800);poll();
+  const wake=()=>poll();document.addEventListener('visibilitychange',wake);addEventListener('focus',wake);
+  const hide=()=>{stopped=true;clearInterval(timer);};
+  const show=e=>{if(e.persisted){stopped=false;clearInterval(timer);timer=setInterval(poll,800);poll();}};
+  addEventListener('pagehide',hide);addEventListener('pageshow',show);
+  return {clientId,documentId,snapshot,dispose(){hide();document.removeEventListener('visibilitychange',wake);removeEventListener('focus',wake);removeEventListener('pagehide',hide);removeEventListener('pageshow',show);}};
 }

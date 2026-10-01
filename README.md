@@ -90,6 +90,10 @@ node tests/composer.test.mjs
 node --experimental-vm-modules tests/workbench-interactions.test.mjs
 node tests/external-agent.test.mjs
 node tests/external-runtime.test.mjs
+node tests/mcp-improvements.test.mjs
+node tests/mcp-client.test.mjs
+node tests/capture-page.test.mjs
+node tests/frame-scheduling.test.mjs
 ```
 
 ## English

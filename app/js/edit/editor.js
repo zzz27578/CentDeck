@@ -194,6 +194,7 @@ export function createEditor(app) {
     const proj = app.project();
     let src;
     try { src = await api.readFile(proj.id, file); } catch { return; }
+    ed.loading=true;
     if (ed.page !== file) { ed.sel = null; ed.selSelector = null; }
     ed.page = file;
     app.state.page = file;
@@ -211,7 +212,7 @@ export function createEditor(app) {
     ed.stage.device.appendChild(ed.ov.root);
     ed.measure = ed.frame.makeMeasure(() => ed.stage.size);
     hideVerdict(ed);
-    await ed.frame.render(src, { keepScroll: false });
+    try { await ed.frame.render(src, { keepScroll: false }); } finally { ed.loading=false; }
     ed.chrome.syncLabel();
     app.syncViewSwitch();
     bus.emit('page', file);

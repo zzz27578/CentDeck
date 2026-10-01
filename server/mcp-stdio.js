@@ -10,7 +10,7 @@ async function handle(line){
   let message;try{message=JSON.parse(line);}catch{return;}
   try {
     const config=extensions.mcpConfig();
-    const response=await fetch(endpoint+'/mcp',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.token,'X-CentDeck':'1',...(session?{'Mcp-Session-Id':session}:{})},body:JSON.stringify(message),signal:AbortSignal.timeout(20000)});
+    const response=await fetch(endpoint+'/mcp',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.token,'X-CentDeck':'1',...(session?{'Mcp-Session-Id':session}:{})},body:JSON.stringify(message),signal:AbortSignal.timeout(45000)});
     if(response.headers.has('Mcp-Session-Id'))session=response.headers.get('Mcp-Session-Id');
     if(message.id===undefined)return;
     const data=await response.json();process.stdout.write(JSON.stringify(data)+'\n');

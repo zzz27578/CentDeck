@@ -24,10 +24,10 @@ function target(id, file) {
     file.includes(":") ||
     file.startsWith(".") ||
     file.split("/").some((x) => x === ".." || x === "." || !x) ||
-    !/\.(html?|css|js|json|svg)$/i.test(file) ||
+    !/\.(html?|css|js|json|svg|md)$/i.test(file) ||
     file === "project.json"
   )
-    throw new ApiError(400, "仅能修改项目的网页、样式、脚本、SVG 和设计 JSON");
+    throw new ApiError(400, "仅能修改项目内的网页、样式、脚本、SVG、JSON 和 Markdown 说明");
   const base = store.projectDir(id),
     full = store.safeJoin(base, file);
   let p = path.dirname(full);
@@ -72,6 +72,9 @@ function commit(
     )
       throw new ApiError(423, "目标或其依赖存在锁定：" + c.path);
     const before = read(id, c.path);
+    const page=project.pages.find(p=>p.file===c.path);
+    if(c.title!==undefined&&(typeof c.title!=='string'||!c.title.trim()||c.title.length>120||!/\.html?$/i.test(c.path)))throw new ApiError(400,'页面标题需要 1–120 个字符，且仅适用于 HTML');
+    if(page && ((c.title!==undefined&&c.baseTitle!==page.title)||(c.baseTitle!==undefined&&c.baseTitle!==page.title)))throw new ApiError(409,'页面标题已变化，请重新读取：'+c.path);
     if (c.baseHash !== hash(before))
       throw new ApiError(409, "文件已变化，请重新读取：" + c.path);
     const remove = allowDelete && c.content === null;
@@ -93,7 +96,7 @@ function commit(
       !/<[a-z][\s\S]*>/i.test(c.content)
     )
       throw new ApiError(400, "页面缺少 HTML 元素");
-    return { ...c, full, before, remove, afterHash: hash(c.content) };
+    return { ...c, full, before, remove, beforeTitle:page?.title, afterTitle:/\.html?$/i.test(c.path)?c.title?.trim()||page?.title||c.path.replace(/\.html?$/i,''):undefined, afterHash: hash(c.content) };
   });
   guard();
   const dir = store.projectDir(id),
@@ -144,16 +147,12 @@ function commit(
       )
         delete project.selectedDesignGroup;
     }
-    for (const c of prepared)
-      if (
-        !c.remove &&
-        /\.html?$/i.test(c.path) &&
-        !project.pages.some((p) => p.file === c.path)
-      )
-        project.pages.push({
-          file: c.path,
-          title: c.title || c.path.replace(/\.html?$/i, ""),
-        });
+    for (const c of prepared) {
+      if(c.remove||!/\.html?$/i.test(c.path))continue;
+      const page=project.pages.find(p=>p.file===c.path);
+      if(page){if(c.title!==undefined)page.title=c.title.trim();}
+      else project.pages.push({file:c.path,title:c.title?.trim()||c.path.replace(/\.html?$/i,'')});
+    }
     if (group) {
       project.designGroups = project.designGroups || [];
       const old = project.designGroups.find((g) => g.id === group.id);
@@ -189,6 +188,7 @@ function commit(
       path: c.path,
       hash: c.afterHash,
       ...(c.remove ? { deleted: true } : {}),
+      ...(c.title!==undefined ? { title:c.title.trim() } : {}),
     })),
     check: "格式与版本校验通过",
   };
@@ -231,6 +231,8 @@ function undo(id, txid) {
       path: c.path,
       content: c.before,
       baseHash: c.afterHash,
+      ...(c.beforeTitle!==undefined?{title:c.beforeTitle}:{}),
+      ...(c.afterTitle!==undefined?{baseTitle:c.afterTitle}:{}),
     })),
     { allowDelete: true },
   );

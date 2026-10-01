@@ -19,13 +19,15 @@ try{
   bridge=spawn(process.execPath,['server/mcp-stdio.js'],{env:process.env,windowsHide:true,stdio:['pipe','pipe','pipe']});
   const pending=new Map();let id=0;
   const lines=readline.createInterface({input:bridge.stdout});lines.on('line',line=>{const r=JSON.parse(line);pending.get(r.id)?.(r);pending.delete(r.id);});
-  function rpc(method,params={}){return new Promise((resolve,reject)=>{const n=++id,t=setTimeout(()=>reject(Error('RPC timeout '+method)),12000);pending.set(n,r=>{clearTimeout(t);r.error?reject(Error(r.error.message)):resolve(r.result);});bridge.stdin.write(JSON.stringify({jsonrpc:'2.0',id:n,method,params})+'\n');});}
+  function rpc(method,params={}){return new Promise((resolve,reject)=>{const n=++id,t=setTimeout(()=>reject(Error('RPC timeout '+method)),35000);pending.set(n,r=>{clearTimeout(t);r.error?reject(Error(r.error.message)):resolve(r.result);});bridge.stdin.write(JSON.stringify({jsonrpc:'2.0',id:n,method,params})+'\n');});}
   const init=await rpc('initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'transport-test',version:'1.0.0'}});assert.equal(init.serverInfo.name,'centdeck');
   bridge.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
   const list=await rpc('tools/list');assert(list.tools.some(t=>t.name==='start_agent'));assert(list.tools.some(t=>t.name==='ui_action'));
   const project=await rpc('tools/call',{name:'create_project',arguments:{name:'Wire test'}});assert(!project.isError);const pid=JSON.parse(project.content[0].text).id;
   const read=await rpc('tools/call',{name:'read_page',arguments:{projectId:pid,path:'index.html'}});const {baseHash}=JSON.parse(read.content[0].text);
   const write=await rpc('tools/call',{name:'write_files',arguments:{projectId:pid,files:[{path:'index.html',baseHash,content:'<html><h1>Standard MCP</h1></html>'}]}});assert(!write.isError);
+  let captureAvailable=true;try{require('../server/capture').browserPath();}catch{captureAvailable=false;}
+  if(captureAvailable){const image=await rpc('tools/call',{name:'capture_page',arguments:{projectId:pid,path:'index.html',width:393,height:852}});assert(!image.isError,image.content[0].text);assert.equal(image.content[1].type,'image');assert.equal(JSON.parse(image.content[0].text).viewport.width,393);}
   const resources=await rpc('resources/list');assert(resources.resources.some(r=>r.uri==='centdeck://skills/platform-guide'));
   ext.mcpConfig({mode:'plan'});const denied=await rpc('tools/call',{name:'create_project',arguments:{name:'denied'}});assert(denied.isError);
   console.log('MCP wire: bearer rejection, stdio initialize/notification/list/read/write/resources and mode revocation passed');

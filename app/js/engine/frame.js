@@ -16,6 +16,14 @@ function running(el) {
   try { return !!(el.getAnimations && el.getAnimations().some((a) => a.playState === 'running')); } catch { return false; }
 }
 
+// Browsers suspend requestAnimationFrame in background tabs. Rendering must
+// still finish so a remote page operation does not hold the command queue.
+export function afterPaint(callback) {
+  let settled=false,frame,timer;
+  const done=()=>{if(settled)return;settled=true;clearTimeout(timer);cancelAnimationFrame(frame);callback();};
+  frame=requestAnimationFrame(done);timer=setTimeout(done,80);
+}
+
 export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) {
   const frames = [0, 1].map(() => {
     const f = document.createElement('iframe');
@@ -51,7 +59,7 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
           try { href = back.contentWindow.location.href; } catch { /* 忽略 */ }
           if (href && href !== 'about:srcdoc' && onNavigate) onNavigate(href);
         };
-        requestAnimationFrame(() => requestAnimationFrame(() => {
+        afterPaint(() => afterPaint(() => {
           if (my !== token || destroyed) return resolve(false);
           source = nextSource;
           parsed = nextParsed;

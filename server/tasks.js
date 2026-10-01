@@ -276,7 +276,7 @@ function toolsFor(t) {
         ["assistantId", "text", "scope"],
       ),
     );
-  const shared = require('./tools').list(t.mode).filter(x=>x.name!=='ui_action').map(x=>({type:'function',function:{name:x.name,description:x.description,parameters:x.inputSchema}}));
+  const shared = require('./tools').list(t.mode).filter(x=>!['ui_action','capture_page'].includes(x.name)).map(x=>({type:'function',function:{name:x.name,description:x.description,parameters:x.inputSchema}}));
   return [...ts.filter(x=>!require('./tools').has(x.function.name)), ...shared];
 }
 function groupRoot(t) {
@@ -305,7 +305,7 @@ function commit(t, files, epoch, group) {
   return result;
 }
 async function tool(t, name, a, epoch) {
-  if(name==='ui_action')throw new ApiError(403,'页面操作由外部 MCP 接管；内置任务只能在指定项目中通过受管文件工具修改');
+  if(['ui_action','capture_page'].includes(name))throw new ApiError(403,'页面操作和截图由外部 MCP 接管；内置任务只能在指定项目中通过受管文件工具修改');
   if(require('./tools').has(name)) return require('./tools').execute(name,a,{project:t.project,mode:t.mode,readSet:t.readSet,guard:()=>guard(t,epoch),commit:files=>commit(t,files,epoch)});
   if (name === "request_input") {
     t.question = {

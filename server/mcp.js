@@ -14,7 +14,7 @@ const extra=[
   {name:'agent_status',description:'读取任务结果、思考强度和已保存变更',inputSchema:{type:'object',properties:{projectId:str},required:['projectId']}},
   {name:'agent_action',description:'停止、暂停或继续内置任务；更改思考强度',inputSchema:{type:'object',properties:{projectId:str,taskId:str,action:{type:'string',enum:['cancel','pause','resume','think']},think:str},required:['projectId','taskId','action']}},
 ];
-function catalog(mode){return [...extra.filter(t=>mode==='create'||!['external_requests','external_claim','external_respond','create_project','start_agent','agent_action'].includes(t.name)),...registry.list(mode).map(t=>({...t,inputSchema:{...t.inputSchema,properties:{projectId:str,...t.inputSchema.properties}}}))];}
+function catalog(mode){return [...extra.filter(t=>mode==='create'||!['external_requests','external_claim','external_respond','create_project','start_agent','agent_action'].includes(t.name)),...registry.list(mode).map(t=>({...t,inputSchema:{...t.inputSchema,properties:{...(registry.projectTool(t.name)?{projectId:str}:{}),...t.inputSchema.properties},required:[...new Set([...(registry.projectTool(t.name)?['projectId']:[]),...(t.inputSchema.required||[])])]}}))];}
 async function dispatch(body,sessionId){
   const config=extensions.mcpConfig();
   if(!config.enabled)throw new store.ApiError(403,'MCP 已停用');
@@ -34,7 +34,10 @@ async function dispatch(body,sessionId){
   if(method!=='tools/call')return {error:{code:-32601,message:'Method not found'}};
   try {
     const a=params.arguments||{}, name=params.name;
-    if(!catalog(config.mode).some(t=>t.name===name))throw new store.ApiError(403,'工具不可用或 MCP 处于只读模式');
+    const definition=catalog(config.mode).find(t=>t.name===name);
+    if(!definition)throw new store.ApiError(403,'工具不可用或 MCP 处于只读模式');
+    for(const key of definition.inputSchema.required||[])if(a[key]===undefined||a[key]===null||a[key]==='')throw new store.ApiError(400,'缺少必填参数：'+key);
+    if(registry.projectTool(name))store.projectDir(a.projectId);
     let result;
     if(name==='list_projects')result=store.listProjects();
     else if(name==='external_requests')result=require('./external-agent').list();
@@ -50,6 +53,7 @@ async function dispatch(body,sessionId){
       const guard=()=>{const current=extensions.mcpConfig();if(!current.enabled||current.mode!=='create')throw new store.ApiError(403,'MCP 写入已停用');};
       result=await registry.execute(name,a,{project:a.projectId,mode:config.mode,readSet:s.reads[a.projectId],guard,commit:files=>changes.commit(a.projectId,files,{guard,task:'mcp:'+sessionId})});
     }
+    if(name==='capture_page')return {result:{content:[{type:'text',text:JSON.stringify(result.info)},{type:'image',mimeType:'image/png',data:result.data}],isError:false}};
     return {result:{content:[{type:'text',text:JSON.stringify(result)}],isError:false}};
   } catch(e){return {result:{content:[{type:'text',text:e.message}],isError:true}};}
 }
