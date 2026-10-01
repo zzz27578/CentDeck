@@ -1,16 +1,10 @@
-// 设计规范（手动版）：颜色、字号 / 间距 / 圆角阶梯、预设风格；"应用到全站"一次改所有页面
+// 总览选择风格；编辑模式维护独立的页面规范，只应用到当前页。
 import { el, esc, toast, promptDlg } from '../core/ui.js';
 import { injectTokens } from './token-source.js';
 import { icon } from '../core/icons.js';
 
-export const PRESETS = {
-  科技蓝: { colors: { brand: '#3d5af1', brandDeep: '#2b3fbf', accent: '#7c5cff', bg: '#f6f7fb', text: '#1b2233', muted: '#5b6478', card: '#ffffff', border: '#e6e9f2' }, fontSizes: ['12px', '14px', '16px', '20px', '28px', '44px'], spacing: ['8px', '16px', '24px', '40px', '64px'], radius: ['8px', '14px', '24px'] },
-  暖纸橘: { colors: { brand: '#e0703a', brandDeep: '#c4521f', accent: '#3a7d6b', bg: '#faf6f0', text: '#2e2620', muted: '#7d7268', card: '#fffdf9', border: '#ece2d4' }, fontSizes: ['12px', '14px', '17px', '22px', '30px', '46px'], spacing: ['10px', '18px', '28px', '44px', '72px'], radius: ['10px', '18px', '28px'] },
-  墨绿: { colors: { brand: '#1f6f50', brandDeep: '#14503a', accent: '#c9a227', bg: '#f4f7f4', text: '#1c2a24', muted: '#5f7168', card: '#ffffff', border: '#dde7e0' }, fontSizes: ['12px', '14px', '16px', '21px', '30px', '42px'], spacing: ['8px', '16px', '26px', '42px', '68px'], radius: ['6px', '12px', '20px'] },
-  暗夜紫: { colors: { brand: '#9d7bff', brandDeep: '#7a5ae0', accent: '#4cc9f0', bg: '#14121c', text: '#eceaf4', muted: '#9a94b0', card: '#1e1b2a', border: '#332e48' }, fontSizes: ['12px', '14px', '16px', '20px', '28px', '46px'], spacing: ['8px', '16px', '24px', '40px', '64px'], radius: ['10px', '16px', '26px'] },
-};
-PRESETS.极简黑白 = {colors:{brand:'#202020',accent:'#757575',bg:'#f7f7f7',text:'#151515',card:'#ffffff',border:'#dddddd'},fontSizes:['12px','14px','16px','24px','36px','56px'],spacing:['8px','16px','24px','48px','80px'],radius:['0px','4px','8px']};
-PRESETS.柔和沙岩 = {colors:{brand:'#7b6650',accent:'#788c82',bg:'#f5f1ea',text:'#302c27',card:'#fffdf9',border:'#ddd4c6'},fontSizes:['12px','14px','17px','24px','34px','52px'],spacing:['8px','16px','28px','44px','72px'],radius:['8px','16px','24px']};
+import { PRESETS } from './style-presets.js';
+export { PRESETS };
 const VAR = { brand: 'brand', brandDeep: 'brand-deep', accent: 'accent', bg: 'bg', text: 'text', muted: 'muted', card: 'card', border: 'border' };
 export function toCss(t) {
   t=structuredClone(t);
@@ -28,7 +22,11 @@ export function toCss(t) {
 
 export function setupTokens(app) {
   const { bus } = app;
-  const cur = () => { const p = app.project(); if (!p.tokens) p.tokens = { colors: {}, fontSizes: [], spacing: [], radius: [] }; return p.tokens; };
+  const cur = () => {
+    const p=app.project(),base=p.tokens||{colors:{},fontSizes:[],spacing:[],radius:[]};
+    if(app.view()==='edit'&&app.state.page){p.pageTokens||={};return p.pageTokens[app.state.page] ||= structuredClone(base);}
+    return p.tokens ||= base;
+  };
   const replaceAll = (t, next) => { Object.keys(t).forEach((k) => delete t[k]); Object.assign(t, JSON.parse(JSON.stringify(next))); };
 
   async function applyToSite(options={}) {
@@ -47,9 +45,9 @@ export function setupTokens(app) {
         if(edits.length)await app.api.commitFiles(proj.id,edits.map(c=>({path:c.file,content:c[direction],before:c[direction==='after'?'before':'after']})));
         if (app.project()?.id === proj.id) await app.reloadView();
       };
-      await app.bus.flushMeta();
-      await bus.do({label:'应用设计风格到全站',apply:()=>write('after'),revert:()=>write('before')});
-      toast(`已应用到 ${pages.length} 页${proj.pages.length > pages.length ? '，已跳过有锁定内容的页面' : ''}，可撤销`, 'ok');
+      if(await app.bus.flushMeta()===false)return;
+      await bus.do({label:options.files?.length===1?'应用设计规范到当前页':'应用设计规范',apply:()=>write('after'),revert:()=>write('before')});
+      toast(`已应用到 ${pages.length} 页${proj.pages.filter(p=>!options.files||options.files.includes(p.file)).length > pages.length ? '，已跳过有锁定内容的页面' : ''}，可撤销`, 'ok');
     } catch { /* API 已提示 */ }
   }
   let personal=[];
@@ -66,31 +64,35 @@ export function setupTokens(app) {
     id: 'tokens', title: '设计规范', icon: 'palette', views: ['edit','overview'],
     async render(host) {
       const generation=Symbol();this._generation=generation;
-      await loadPresets();if(!host.isConnected||this._generation!==generation)return;
+      if(app.view()==='overview')await loadPresets();
+      if(!host.isConnected||this._generation!==generation)return;
+      let presetsOpen=false;
       const paint = () => {
         const t = cur();
         host.innerHTML = '';
-        const pre = el('<div class="p-sec"><div class="p-sec-title">预设风格</div><div class="p-actions"></div></div>');
         const overview=app.view()==='overview';
-        pre.querySelector('.p-sec-title').textContent=overview?'选择风格 · 添加到画布':'预设风格';
-        const list=[...Object.entries(PRESETS).map(([name,tokens])=>({name,tokens})),...personal];
-        for(const preset of list){
-          const row=el(`<div class="preset-option"><button class="preset-pick"><span class="preset-swatches">${Object.values(preset.tokens.colors).slice(0,4).map(v=>`<i style="background:${v}"></i>`).join('')}</span><b>${esc(preset.name)}</b><small>${preset.id?'我的预设':'官方预设'}</small></button>${preset.id?`<button class="icon-btn sm" data-remove aria-label="删除个人预设">${icon('trash',14)}</button>`:''}</div>`);
-          row.querySelector('.preset-pick').onclick=async()=>{
-            if(overview){await app.designBoards?.add(preset.tokens,preset.name);toast('已添加到总览画布','ok');return;}
-            const old=structuredClone(t);await bus.doMeta({label:`套用预设「${preset.name}」`,apply:()=>replaceAll(t,preset.tokens),revert:()=>replaceAll(t,old)});paint();toast('已载入规范，应用后页面生效','ok');
-          };
-          row.querySelector('[data-remove]')?.addEventListener('click',async()=>{personal=await app.api.extension('design-presets',{id:preset.id,action:'remove'},'PUT');paint();});
-          pre.querySelector('.p-actions').append(row);
+        if(overview){
+          const pre=el(`<details class="preset-disclosure" ${presetsOpen?'open':''}><summary><span>${icon('palette',17)}预设风格</span><small>${Object.keys(PRESETS).length+personal.length} 套</small>${icon('chevDown',16)}</summary><div class="preset-library"></div></details>`);
+          pre.ontoggle=()=>{presetsOpen=pre.open;};
+          const body=pre.querySelector('.preset-library');
+          for(const [title,list] of [['官方预设',Object.entries(PRESETS).map(([name,tokens])=>({name,tokens}))],['我的预设',personal]]){
+            const group=el(`<section><div class="p-sec-title">${title}</div><div class="preset-list"></div></section>`);body.append(group);
+            if(!list.length)group.querySelector('.preset-list').append(el('<p class="hint">从方案卡的菜单保存你的风格，可跨项目使用。</p>'));
+            for(const preset of list){
+              const row=el(`<div class="preset-option"><button class="preset-pick"><span class="preset-swatches">${Object.values(preset.tokens.colors).slice(0,4).map(v=>`<i style="background:${v}"></i>`).join('')}</span><b>${esc(preset.name)}</b><small>添加到画布</small></button>${preset.id?`<button class="icon-btn sm" data-remove aria-label="删除个人预设">${icon('trash',14)}</button>`:''}</div>`);
+              row.querySelector('.preset-pick').onclick=async()=>{await app.designBoards?.add(preset.tokens,preset.name);toast('已添加到总览画布','ok');};
+              row.querySelector('[data-remove]')?.addEventListener('click',async()=>{personal=await app.api.extension('design-presets',{id:preset.id,action:'remove'},'PUT');paint();});
+              group.querySelector('.preset-list').append(row);
+            }
+          }
+          host.append(pre);
+          const ai=el(`<div class="p-sec"><p class="hint">展开预设选择风格，或让助手为项目设计。方案卡可以编辑、关联页面和保存为个人预设。</p><button class="btn block">${icon('sparkle',15)}让助手设计风格</button></div>`);
+          ai.querySelector('button').onclick=()=>app.agent.prefill('请为项目设计一套风格，发布可比较的设计规范卡。');host.append(ai);return;
         }
-        host.appendChild(pre);
-        const save=el(`<div class="p-sec"><button class="btn block">${icon('plus',15)}保存当前规范为我的预设</button></div>`);
-        save.querySelector('button').onclick=()=>savePreset(t);host.append(save);
-        if(overview){const ai=el('<div class="p-sec"><p class="hint">点击预设添加方案卡；从卡片可编辑规范、关联页面、选用或保存 AI 方案。</p><button class="btn block">让助手设计风格</button></div>');ai.querySelector('button').onclick=()=>app.agent.prefill('请为项目设计一套风格，发布可比较的设计规范卡。');host.append(ai);return;}
-
+        host.append(el('<div class="p-sec"><p class="hint">调整当前页的配色、字体和间距，应用时只影响当前页。</p></div>'));
         const shapes = el(`<div class="p-sec"><div class="p-sec-title">按钮形状</div><div class="seg" data-shape style="width:100%">
           <button data-v="4px" style="flex:1">方角</button><button data-v="10px" style="flex:1">圆角</button><button data-v="999px" style="flex:1">胶囊</button></div>
-          <button class="btn small block" data-ai style="margin-top:10px">${icon('sparkle', 14)}让助手出几套配色和按钮样式</button></div>`);
+          <button class="btn small block" data-ai style="margin-top:10px">${icon('sparkle', 14)}让助手优化当前页样式</button></div>`);
         shapes.querySelectorAll('[data-v]').forEach((b) => {
           b.classList.toggle('on', (t.radius || [])[0] === b.dataset.v);
           b.onclick = async () => {
@@ -98,10 +100,10 @@ export function setupTokens(app) {
             const next = [b.dataset.v, ...(old.length ? old.slice(1) : ['14px', '24px'])];
             await bus.doMeta({ label: '改按钮形状', apply: () => { t.radius = next; }, revert: () => { t.radius = old; } });
             paint();
-            toast('按钮形状已改，点"应用到全站"让页面生效', 'ok');
+            toast('按钮形状已改，点"应用到当前页"让页面生效', 'ok');
           };
         });
-        shapes.querySelector('[data-ai]').onclick = () => app.agent.prefill('请用「设计规范」技能给这个网站出 3 套配色和按钮样式（主色、强调色、背景、文字色、按钮圆角和阴影），每套说明适合什么感觉，做成可以直接应用的 tokens。', { skill: 'design-system' });
+        shapes.querySelector('[data-ai]').onclick = () => app.agent.prefill(`请优化当前页面 ${app.state.page} 的配色、字体和按钮样式，保留内容和交互，不修改其他页面。`, { skill: 'design-system' });
         host.appendChild(shapes);
         const colors = el('<div class="p-sec"><div class="p-sec-title">颜色</div></div>');
         Object.entries(t.colors || {}).forEach(([k, v]) => {
@@ -127,9 +129,9 @@ export function setupTokens(app) {
           };
           host.appendChild(g);
         });
-        const acts = el(`<div class="p-sec"><p class="hint" style="margin-bottom:10px">应用配色、字号和圆角规范。页面中单独写死的样式需手动调整，或交给助手统一。</p><button class="btn primary block" data-apply>${icon('check', 15)}应用到全站</button>
+        const acts = el(`<div class="p-sec"><p class="hint" style="margin-bottom:10px">应用配色、字号和圆角规范。页面中单独写死的样式需手动调整，或交给助手统一。</p><button class="btn primary block" data-apply>${icon('check', 15)}应用到当前页</button>
           <div class="p-actions" style="margin-top:8px"><button class="btn small" data-exp>导出 tokens.json</button><button class="btn small" data-imp>导入</button></div></div>`);
-        acts.querySelector('[data-apply]').onclick = applyToSite;
+        acts.querySelector('[data-apply]').onclick = () => applyToSite({tokens:t,files:[app.state.page]});
         acts.querySelector('[data-exp]').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(cur(), null, 2)], { type: 'application/json' })); a.download = 'tokens.json'; a.click(); };
         acts.querySelector('[data-imp]').onclick = () => {
           const i = document.createElement('input'); i.type = 'file'; i.accept = '.json';
@@ -139,7 +141,7 @@ export function setupTokens(app) {
         host.appendChild(acts);
       };
       paint();
-      this._off=bus.on('presets',async()=>{await loadPresets();if(host.isConnected)paint();});
+      if(app.view()==='overview')this._off=bus.on('presets',async()=>{await loadPresets();if(host.isConnected&&this._generation===generation)paint();});
     },
     onHide(){this._generation=null;this._off?.();},
   });

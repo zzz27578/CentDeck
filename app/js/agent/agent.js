@@ -20,6 +20,7 @@ export function createAgent(app) {
   const floats = new Map(); // session → 窗口元素
   const sessions = [];
   let closePicker=()=>{};
+  let pickerAnchor=null;
 
   const loadSkills = () => app.api.extension('skills').then(catalog=>{
     skills=userSkills(catalog,true);
@@ -161,20 +162,21 @@ export function createAgent(app) {
 
   // 拖标题栏：停靠的拽出来变悬浮；悬浮的拖到最右边停靠
   document.addEventListener("pointerdown", (e) => {
-    const head = e.target.closest && e.target.closest(".ag-head");
-    if (!head || e.button !== 0 || e.target.closest("button")) return;
-    const s = sessions.find((x) => x.root.contains(head));
+    const head=e.target.closest?.('.ag-head'), compact=e.target.closest?.('.agent-float.collapsed');
+    if(e.button!==0||(!head&&!compact)||e.target.closest('input,textarea,select,a,.af-resize')||e.target.closest('button:not(.ag-summary)'))return;
+    const s=sessions.find(x=>compact?floats.get(x)===compact:x.root.contains(head));
     if (!s) return;
-    e.preventDefault();
-    const sx = e.clientX,
-      sy = e.clientY;
+    mgr.setActive(s);
+    let sx = e.clientX, sy = e.clientY, moved=false;
     let w = floats.get(s),
       ox = w ? w.offsetLeft : 0,
       oy = w ? w.offsetTop : 0,
       hint = null;
     const mv = (ev) => {
+      if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<(w?5:24))return;
+      if(!moved){moved=true;closePicker();}
+      ev.preventDefault();
       if (!w) {
-        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 24) return;
         undock(s, {
           x: ev.clientX - 120,
           y: ev.clientY - 20,
@@ -184,14 +186,15 @@ export function createAgent(app) {
         w = floats.get(s);
         ox = w.offsetLeft;
         oy = w.offsetTop;
+        sx=ev.clientX;sy=ev.clientY;
       }
       w.style.left =
         Math.max(
           0,
-          Math.min(Math.max(0, innerWidth - 320), ox + ev.clientX - sx),
+          Math.min(Math.max(0, innerWidth - w.offsetWidth), ox + ev.clientX - sx),
         ) + "px";
       w.style.top =
-        Math.max(0, Math.min(innerHeight - 40, oy + ev.clientY - sy)) + "px";
+        Math.max(0, Math.min(Math.max(0,innerHeight-w.offsetHeight), oy + ev.clientY - sy)) + "px";
       const near = ev.clientX > innerWidth - 40 && !!app.state.project;
       if (near && !hint) {
         hint = el(
@@ -204,16 +207,23 @@ export function createAgent(app) {
         hint = null;
       }
     };
-    const up = () => {
+    const up = (ev) => {
       window.removeEventListener("pointermove", mv, true);
       window.removeEventListener("pointerup", up, true);
+      window.removeEventListener('pointercancel',up,true);
+      if(moved){
+        const suppress=event=>{event.preventDefault();event.stopImmediatePropagation();};
+        document.addEventListener('click',suppress,true);
+        setTimeout(()=>document.removeEventListener('click',suppress,true),0);
+      }
       if (hint) {
         hint.remove();
-        dock(s);
+        if(ev.type!=='pointercancel')dock(s);
       }
     };
     window.addEventListener("pointermove", mv, true);
     window.addEventListener("pointerup", up, true);
+    window.addEventListener('pointercancel',up,true);
   });
 
   // ---------- 给会话用的接口 ----------
@@ -265,6 +275,7 @@ export function createAgent(app) {
       return s;
     },
     close(s) {
+      closePicker();
       s.blur();
       if (s === docked) setOpen(false);
       else {
@@ -274,6 +285,7 @@ export function createAgent(app) {
       if (active === s) active = null;
     },
     fold(s) {
+      closePicker();
       if (s === docked) undock(s);
       const w = floats.get(s);
       if (!w) return;
@@ -282,7 +294,9 @@ export function createAgent(app) {
       if (!w.classList.contains("collapsed")) s.focus();
     },
     pickSession(anchor, floating=false) {
+      if(pickerAnchor===anchor){closePicker();return;}
       closePicker();
+      pickerAnchor=anchor;anchor.setAttribute('aria-expanded','true');anchor.setAttribute('aria-haspopup','dialog');
       const menu=el(`<div class="assistant-picker" role="dialog" aria-label="选择助手"><header>${floating?'在悬浮窗打开':'选择助手'}</header><div class="assistant-picker-list"></div><button class="btn block" data-manage>${icon('plus',15)}新建或管理助手</button></div>`);
       const choose=(s,float)=>{closePicker();if(float){if(s===docked)undock(s);show(s);}else{if(docked&&docked!==s){docked.root.remove();docked=null;}dock(s);}mgr.setActive(s);};
       for(const s of sessions){
@@ -293,7 +307,7 @@ export function createAgent(app) {
       const r=anchor.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(innerWidth-320,r.left))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,r.bottom+8))+'px';
       const outside=e=>{if(!menu.contains(e.target)&&!anchor.contains(e.target))closePicker();};
       const key=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closePicker();anchor.focus();}};
-      closePicker=()=>{menu.remove();document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',key,true);};
+      closePicker=()=>{menu.remove();anchor.setAttribute('aria-expanded','false');pickerAnchor=null;document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',key,true);};
       document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',key,true);menu.querySelector('button')?.focus();
     },
     manage: () => openAssistantManager(mgr, app),
@@ -439,6 +453,7 @@ export function createAgent(app) {
     taskList = [],
     commitKey = "";
   app.bus.on("project", () => {
+    closePicker();
     const id = app.project()?.id;
     if (id === sourceProject) return;
     source?.close();

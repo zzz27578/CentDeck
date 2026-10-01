@@ -6,6 +6,7 @@ import { getViewport, setDevice } from '../core/viewport.js';
 import { mark, toggleTheme, styleSwitch, bindStyleSwitch } from '../core/brand.js';
 import { pixelField, mountPixelField } from '../core/pixel-field.js';
 import { pickFiles, filesFromDrop, runImport } from './importer.js';
+import { mountHomeComposer } from './home-composer.js';
 
 const KIND = { template: ['模板', 'blue'], blank: ['空白', ''], import: ['导入', 'green'] };
 let sortBy = localStorage.getItem('cd.homeSort') || 'updated';
@@ -79,18 +80,21 @@ function projectMenu(app, p, x, y, anchor, refresh) {
   ], x, y, anchor ? { anchor, align: 'right' } : {});
 }
 
-async function startFromPrompt(app, text, target='web') {
+async function startFromPrompt(app, {text,target='web',model,refs=[]}) {
   const name = text.replace(/\s+/g, ' ').trim().slice(0, 18) || '新网站';
   try {
     const proj = await app.api.createBlank(name);
     proj.target=target;await app.api.saveProject(proj.id,proj);
     setDevice(target==='app'?'mobile':'desktop');
     await app.openProject(proj.id);
-    app.agent.prefill(text+'\n\n设计目标：'+(target==='app'?'手机网页 / H5，优先 393px 手机尺寸，兼容桌面浏览。':'Web 网页，优先桌面布局并适配手机。'));
-  } catch { /* 已提示 */ }
+    if(app.project()?.id!==proj.id)return false;
+    app.agent.prefill(text+'\n\n设计目标：'+(target==='app'?'手机网页 / H5，优先 393px 手机尺寸，兼容桌面浏览。':'Web 网页，优先桌面布局并适配手机。'),{model,refs});
+    return true;
+  } catch { return false; }
 }
 
 export async function renderHome(app) {
+  app.disposeHomeComposer?.();
   document.body.className = 'home';
   const root = document.getElementById('app');
   root.innerHTML = `
@@ -108,7 +112,9 @@ export async function renderHome(app) {
         <div class="home-orbit">${mark(76)}</div><span class="home-eyebrow">YOUR NEXT POSSIBILITY</span><h1>好设计，始于一个想法</h1>
         <div class="hero-prompt">
           <textarea rows="2" aria-label="网站需求" placeholder="描述你想创建的网站…"></textarea>
-          <div class="prompt-actions"><div class="target-switch" role="group" aria-label="构建目标"><button class="on" data-target="web" aria-pressed="true">${icon('monitor',17)}Web</button><button data-target="app" aria-pressed="false">${icon('phone',17)}App</button><i aria-hidden="true"></i></div><button class="btn primary" data-a="go">开始设计 <span>↗</span></button></div>
+          <div class="home-attachments" aria-label="参考附件" hidden></div>
+          <div class="prompt-actions"><div class="home-composer-tools"><button class="home-attach" data-a="attach" aria-label="添加图片或文件" title="添加图片、音频或文本文件">${icon('plus',19)}</button><div class="target-switch" role="group" aria-label="构建目标"><button class="on" data-target="web" aria-pressed="true">${icon('monitor',14)}Web</button><button data-target="app" aria-pressed="false">${icon('phone',14)}App</button><i aria-hidden="true"></i></div></div><button class="home-model" data-a="model" aria-label="选择本次设计使用的模型">${icon('brain',16)}<span>选择模型</span>${icon('chevDown',13)}</button><button class="btn primary" data-a="go">开始设计 ${icon('arrow',17)}</button></div>
+          <input type="file" data-attachments aria-label="上传参考附件" multiple hidden>
         </div>
         <div class="entry-row">
           <button class="entry" data-a="blank">${icon('plus', 18)}空白项目</button>
@@ -135,12 +141,7 @@ export async function renderHome(app) {
   app.disposeHomeAppearance=()=>removeEventListener('centdeck-appearance',appearanceChanged);
   mountPixelField(root);
   const $ = (s) => root.querySelector(s);
-  const ta = $('.hero-prompt textarea');
-  let target='web';
-  root.querySelectorAll('[data-target]').forEach(b=>b.onclick=()=>{target=b.dataset.target;root.querySelector('.target-switch').dataset.value=target;root.querySelectorAll('[data-target]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',String(x===b));});});
-  const go = () => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } startFromPrompt(app, t, target); };
-  $('[data-a=go]').onclick = go;
-  ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); go(); } });
+  app.disposeHomeComposer=mountHomeComposer(app,root,draft=>startFromPrompt(app,draft));
   $('[data-a=blank]').onclick = async () => {
     const name = await promptDlg({ title: '新建空白项目', label: '项目名字', value: '我的新网站', okLabel: '创建' });
     if (!name) return;
@@ -160,7 +161,7 @@ export async function renderHome(app) {
   let depth = 0;
   const veil = root.querySelector('.drop-veil');
   const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
-  root.ondragenter = (e) => { if (!hasFiles(e)) return; depth++; veil.classList.add('show'); };
+  root.ondragenter = (e) => { if (!hasFiles(e)||e.target.closest('.hero-prompt')) return; depth++; veil.classList.add('show'); };
   root.ondragleave = () => { depth = Math.max(0, depth - 1); if (!depth) veil.classList.remove('show'); };
   root.ondragover = (e) => { if (hasFiles(e)) e.preventDefault(); };
   root.ondrop = async (e) => { if (!hasFiles(e)) return; e.preventDefault(); depth = 0; veil.classList.remove('show'); const f = await filesFromDrop(e.dataTransfer); if (f.length) runImport(app, f); };

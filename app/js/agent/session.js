@@ -4,6 +4,7 @@ import { el, esc, uid, showMenu, toast } from "../core/ui.js";
 import { mark } from "../core/brand.js";
 import { avatar, taskStatus } from "./studio.js";
 import { refLabel, refKey, mentionItems, describeRefs } from "./refs.js";
+import { readAttachment, ATTACHMENT_ACCEPT, MAX_ATTACHMENTS } from './attachments.js';
 
 import { THINK, normalizeThink } from "../core/reasoning.js";
 export { THINK };
@@ -76,6 +77,7 @@ export function createSession(app, mgr, opts) {
   app.api.extension('preferences').then(p=>{if(!collaborationTouched&&!s.msgs.length&&!s.task)q('[data-collab]').value=p.collaboration;}).catch(()=>{});
   const ta = q("textarea"),
     fileIpt = q("input[type=file]");
+  fileIpt.accept=ATTACHMENT_ACCEPT;
 
   const grow = () => {
     ta.style.height = "auto";
@@ -406,30 +408,11 @@ export function createSession(app, mgr, opts) {
     }
   });
   async function addFile(f) {
-    if (s.refs.filter((r) => r.kind === "file").length >= 4) {
+    if (s.refs.filter((r) => r.kind === "file").length >= MAX_ATTACHMENTS) {
       toast("一次最多 4 个参考文件", "err");
       return;
     }
-    if (/^image\/(png|jpeg|webp)$/.test(f.type) || /^audio\/(mpeg|mp3|wav|x-wav)$/.test(f.type)) {
-      if (f.size > 4 * 1024 * 1024) {
-        toast("图片或音频请控制在 4 MB 以内", "err");
-        return;
-      }
-      const data = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = reject;
-        r.readAsDataURL(f);
-      });
-      addRef({ kind: "file", name: f.name, size: f.size, url: data, media:f.type.startsWith('audio/')?'audio':'image' });
-    } else if (/\.(txt|md|html?|css|js|json)$/i.test(f.name) && f.size < 128000)
-      addRef({
-        kind: "file",
-        name: f.name,
-        size: f.size,
-        text: await f.text(),
-      });
-    else toast("支持 PNG、JPG、WebP、MP3、WAV 或 128 KB 内的文本文件", "err");
+    try { addRef(await readAttachment(f)); } catch(error) { toast(error.message,'err'); }
   }
   fileIpt.onchange = async () => {
     for (const f of fileIpt.files) await addFile(f);
@@ -503,6 +486,7 @@ export function createSession(app, mgr, opts) {
         msgs: s.msgs.slice(-100),
         refs: s.refs.filter((r) => r.kind !== "file"),
         skill: s.skill,
+        model:s.model,
         draft: ta.value,
         mode: s.mode,
         collaboration: q("[data-collab]").value,
@@ -512,6 +496,7 @@ export function createSession(app, mgr, opts) {
       s.msgs = Array.isArray(data.msgs) ? data.msgs : [];
       s.refs = Array.isArray(data.refs) ? data.refs : [];
       s.skill = data.skill || null;
+      if(data.model)s.model=data.model;
       s.mode = data.mode === "create" ? "create" : "plan";
       q("[data-collab]").value = data.collaboration || "off";
       root
@@ -527,7 +512,10 @@ export function createSession(app, mgr, opts) {
     prefill(text, o = {}) {
       ta.value = text;
       grow();
+      if(o.model)s.model=o.model;
+      if(Array.isArray(o.refs))s.refs=o.refs.map(r=>({id:uid('rf'),...r}));
       if (o.skill) s.skill = o.skill;
+      paintPickers();
       paintChips();
       mgr.saveConversation(s);
       focus();

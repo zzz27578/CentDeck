@@ -41,7 +41,7 @@ CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页�
 
 模型格式可选 OpenAI Compatible（含 DeepSeek 与第三方中转站，`/v1` + `chat/completions`）或 Google Gemini 原生（`/v1beta` + `generateContent`）。图像、音频输入和工具调用按模型设置。创建任务需要工具调用；图片引用需要相应视觉能力。思考等级 `low / medium / high / xhigh / max / ultra` 在 OpenAI Compatible 中按原值作为 `reasoning_effort` 发送，上游必须支持所选参数；不支持时明确报错，不擅自降档。Gemini 原生格式按原生 thinking 参数处理；不支持的档位明确报错，不自动降档。费用由你的模型提供商计算。
 
-首页可选择 Web 或 App（手机网页 / H5）。总览与编辑共享设计规范入口，内置六种风格，个人预设可跨项目复用；总览卡片支持拖动、删除、撤销与保存 AI 方案。便签按颜色独立编号，删除后复用空号，确认仅保存并收起。每轮工具上限累计一次回复中的所有工具调用，达到上限暂停；模型输出截断也会保留结果并允许继续。
+首页可选择 Web 或 App（手机网页 / H5）、本次使用的模型，并添加图片、音频或文本参考附件。总览与编辑共享设计规范入口：总览预设库默认折叠，提供瑞士极简、现代 SaaS、编辑杂志、柔和自然、午夜科技和新粗野主义六种方向；编辑页只做单页精调。个人预设可跨项目复用；总览卡片支持拖动、删除、撤销与保存 AI 方案。便签按颜色独立编号，删除后复用空号，确认仅保存并收起。每轮工具上限累计一次回复中的所有工具调用，达到上限暂停；模型输出截断也会保留结果并允许继续。
 
 ### 插件、Skills、MCP 各管什么
 
@@ -86,6 +86,8 @@ node tests/token-source.test.mjs
 node tests/workspace-state.test.mjs
 node tests/note-numbers.test.mjs
 node tests/providers.test.mjs
+node tests/composer.test.mjs
+node --experimental-vm-modules tests/workbench-interactions.test.mjs
 node tests/external-agent.test.mjs
 node tests/external-runtime.test.mjs
 ```

@@ -1,6 +1,6 @@
 import { el, esc, uid, showMenu, openModal, toast } from "../core/ui.js";
 import { icon } from "../core/icons.js";
-import { PRESETS } from "../panels/tokens.js";
+import { PRESETS, DEFAULT_PRESET_NAME } from "../panels/style-presets.js";
 const W = 1120,
   H = 760;
 export function createStyleCard(app, c) {
@@ -329,7 +329,7 @@ export function createStyleCard(app, c) {
     const p=app.project(),old={designGroups:p.designGroups.slice(),selectedDesignGroup:p.selectedDesignGroup,selectedPages:p.selectedPages,designGroupsInitialized:p.designGroupsInitialized};
     await app.bus.doMeta({label:'删除设计规范卡片',apply:()=>{p.designGroups=p.designGroups.filter(x=>x.id!==g.id);p.designGroupsInitialized=true;if(p.selectedDesignGroup===g.id){p.selectedDesignGroup=null;p.selectedPages=[];}},revert:()=>Object.assign(p,old)});refresh();
   }
-  async function show(tokens=PRESETS.科技蓝,name='新风格方案') {
+  async function show(tokens=PRESETS[DEFAULT_PRESET_NAME],name='新风格方案') {
     const p = app.project(),
       point = c.toWorld(
         c.host.getBoundingClientRect().left + 80,

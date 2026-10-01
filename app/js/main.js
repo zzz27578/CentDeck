@@ -80,6 +80,7 @@ app.openProject = async (id) => {
   try { proj = await api.getProject(id); } catch { return; }
   if (app.state.project && await bus.flushMeta() === false) return;
   if (app.state.view && views[app.state.view]) views[app.state.view].leave();
+  app.disposeHomeComposer?.();
   app.state = { project: proj, view: null, page: proj.pages[0] ? proj.pages[0].file : null, presentFrom: null };
   if(proj.target)setDevice(proj.target==='app'?'mobile':'desktop');
   bus.clearStacks();
