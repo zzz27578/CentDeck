@@ -1,0 +1,13 @@
+title = "CentDeck secret scanning"
+
+[extend]
+useDefault = true
+
+# This exact value exercises settings redaction against a local test server.
+# Keep the exception scoped to this fixture; never exempt entire test folders.
+[[allowlists]]
+description = "Nonfunctional API redaction fixture"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^tests/api\.test\.mjs$''']
+regexes = ['''^sk-test-1234abcd$''']

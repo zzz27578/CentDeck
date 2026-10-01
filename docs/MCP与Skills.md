@@ -65,7 +65,7 @@ A receipt confirms an operation, not visual correctness. Inspect screenshots, in
 
 ## Skills
 
-用户管理接口只返回自定义/扩展技能；AI 使用 `list_skills`、`read_skill` 或 `centdeck://skills/<id>`，仍能读取全部基础技能。基础技能不能被用户停用、删除或覆盖。技能之间以 `read_skill` 的 ID 引用，不依赖宿主相对文件路径。规范核查见 [Skills 规范核查](Skills规范核查_2026-10-01.md)。
+用户管理接口只返回自定义/扩展技能；AI 使用 `list_skills`、`read_skill` 或 `centdeck://skills/<id>`，仍能读取全部基础技能。基础技能不能被用户停用、删除或覆盖。技能之间以 `read_skill` 的 ID 引用，不依赖宿主相对文件路径。
 
 基础技能始终启用并从用户管理和选择器中隐藏；平台指南自动加载，其他基础技能由助手通过 `read_skill` 按需读取。技能页只管理用户导入、自建与扩展技能；插件也可贡献技能。标准 Markdown frontmatter 示例：
 
@@ -96,7 +96,7 @@ With `mcp:external`, call `external_requests`, then `external_claim`, then `exte
 `maxSteps` now limits tool calls across the entire reply. `roundToolCalls` is the current round count, `toolCalls` the lifetime count, and `steps` model requests. Pending calls survive a limit pause; explicit continuation starts a new allowance. A text-only final response remains possible at the limit. Truncated model responses are preserved and paused.
 
 
-## 2026-10-01 实测问题修订
+## 工具约定 / Tool contracts
 
 - read_page/write_files/patch_text/project_context/rename_page/capture_page 和项目插件工具的 MCP Schema 明确要求 projectId。全局技能查询和 ui_state 不强制绑定项目。
 - write_files 支持项目内 Markdown，继续做版本、范围、锁定、事务和路径检查。title 可更新已有页面的显示名称；rename_page 在读后修改名称，不改路径/HTML 标题。标题也做并发校验，撤销不会覆盖后来的手工重命名。
@@ -108,7 +108,7 @@ With `mcp:external`, call `external_requests`, then `external_claim`, then `exte
 示例：
 
 ```json
-{"name":"capture_page","arguments":{"projectId":"yubai-mcp","path":"index.html","width":393,"height":852}}
+{"name":"capture_page","arguments":{"projectId":"your-project","path":"index.html","width":393,"height":852}}
 ```
 
 Expanded MCP schemas require project IDs for project tools. Markdown and page display names use guarded transactions. Reload-safe control identities and independent heartbeats protect UI operations. The editor now exposes preview controls and layout evidence. `capture_page` returns a real PNG from a fresh isolated local-project render; it does not capture the user's live browser state or load remote assets.

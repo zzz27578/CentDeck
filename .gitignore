@@ -1,21 +1,41 @@
-# CentDeck repository; project and credential data remain local.
-# 依赖与构建产物
+# Dependencies and generated output.
 node_modules/
 dist/
+/artifacts/
+/coverage/
 
-# 系统文件
+# Operating system and editor files.
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
 
-# 本地私密配置（如 API Key）
+# Local configuration, credentials and private project data.
 *.local
-
-# 用户项目内容不入库（仅保留 .gitkeep 占位）
-projects/*
-!projects/.gitkeep
-
-# 模型接口设置与密钥（只在本机）
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_ed25519
 config.local/
+.centdeck/
+/projects/*
+!/projects/.gitkeep
 
-# Local screenshot originals; reviewed release copies are in docs/assets/.
+# Local logs, exports, backups and temporary files.
+*.log
+*.tmp
+*.bak
+*.zip
+
+# Private reports and unreviewed screenshots stay local.
+/报告/
 /图片/
+/docs/screenshots/

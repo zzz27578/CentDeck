@@ -18,6 +18,10 @@ node tests/run-checks.mjs --browser
 
 Browser checks use an installed Edge or Chrome with an isolated profile and temporary projects. They do not require a paid model API.
 
+Generated browser screenshots stay in the ignored `artifacts/screenshots/` directory. Only reviewed product images belong in `docs/assets/`. Keep local reports, conversation exports, `.env` files and credentials out of commits. Use your GitHub noreply email if you do not want a personal address in commit metadata.
+
+CI checks tracked files and scans the full Git history with Gitleaks. To run the same secret check locally with Gitleaks 8.30.1, use `gitleaks git --redact=100 --log-opts="--all" .`. The only scanner exception is one exact, nonfunctional test key.
+
 ## Interface text
 
 Application-owned copy uses `text()` and the `template` tag from `app/js/core/i18n.js`. Add English translations to `app/js/core/locales/en.js`. Interpolated project names, message text and other user data must remain unchanged. Do not translate the DOM or project source wholesale.

@@ -40,7 +40,7 @@ const changes=require('../server/changes'),source=changes.read(project.id,'index
 const previousCommit=changes.commit(project.id,[{path:'index.html',content:source+'\n<!-- Previously saved -->',baseHash:changes.hash(source)}],{scope:'all'});
 fs.writeFileSync(path.join(dir,'.centdeck','tasks.json'),JSON.stringify([{id:'historical',project:project.id,assistantId:'cent',name:'Cent',goal:'已保存的旧修改',status:'completed',commits:[previousCommit],messages:[],events:[],answers:[],dependencies:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}]));
 let server,ui,port;
-const screenshots=path.resolve('docs/screenshots');
+const screenshots=path.resolve('artifacts/screenshots/conversations');
 try{
   server=spawn(process.execPath,['server/server.js'],{env:{...process.env,PORT:'8496',CENTDECK_NO_OPEN:'1'},windowsHide:true,stdio:['ignore','pipe','pipe']});server.stderr.on('data',x=>process.stderr.write(x));
   port=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('server timeout')),10000);server.stdout.on('data',x=>{const m=String(x).match(/localhost:(\d+)/);if(m){clearTimeout(timer);resolve(+m[1]);}});});

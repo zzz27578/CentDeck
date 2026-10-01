@@ -3,7 +3,7 @@
 'use strict';
 
 // server.js —— 端口监听、静态文件、API、自动打开浏览器、终端退出（零 npm 依赖）
-// 约定见 docs/第一步实现约定.md 第 1~3 节。
+// Local HTTP entry point for the build-free workbench.
 
 const http = require('node:http');
 const fs = require('node:fs');

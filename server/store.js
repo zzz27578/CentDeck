@@ -3,7 +3,7 @@
 'use strict';
 
 // store.js —— 模板/项目读写、快照、还原、版本历史（仅用 node: 内置模块）
-// 约定见 docs/第一步实现约定.md 第 3、4 节。
+// Project files and local settings are stored outside the tracked source tree.
 
 const fs = require('node:fs');
 const path = require('node:path');

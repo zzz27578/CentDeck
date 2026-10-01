@@ -5,7 +5,7 @@ import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 纯函数、零依赖、不碰 DOM，Node 下可测。
 // 移植自 demo/core.js（setInlineStyle / setCssRule / parseStyle / diffLines）与 demo/edit.js（三灯判定逻辑）。
 //
-// 灯色规则（对应《项目说明书》五.1 与 十一"结构判断/波及检测"）：
+// 灯色规则（结构判断与波及检测）：
 //   绿灯：能说成"这一个元素的这一项改成多少"，且找得到源码行 → 只改该元素所在行直接写回
 //   黄灯：照样写回，但带出 affected（被挤动/被盖住/共用 class 一起变），由用户决定保留或撤销
 //   红灯：不写回，返回 reason。触发条件（说明书十一）：
