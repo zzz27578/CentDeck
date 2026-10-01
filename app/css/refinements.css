@@ -142,7 +142,7 @@
 .note-confirm { display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 10px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-size:13px;white-space:nowrap; }
 .sk-card { background:var(--panel);color:var(--text);animation:note-reveal .14s ease-out;transform:scale(var(--inv)); }
 .sk-card .ipt { background:var(--panel-2);color:var(--text);font-size:14px; }
-.sk-pin.sel { visibility:hidden; }
+.sk-pin.editing { visibility:hidden; }
 .ov-note-pin { position:absolute;display:flex;align-items:center;gap:9px;pointer-events:auto;text-align:left;cursor:grab;white-space:nowrap;transform:translate(-14px,-14px); }
 .ov-note-pin b { display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:var(--note-color);color:white;font:600 12px ui-monospace,monospace;box-shadow:0 0 0 2px var(--panel),0 2px 7px #0002; }
 .ov-note-pin span { max-width:200px;overflow:hidden;text-overflow:ellipsis;padding:5px 10px;background:var(--panel);border-radius:6px;font-size:13px;color:var(--text);box-shadow:var(--shadow-1); }

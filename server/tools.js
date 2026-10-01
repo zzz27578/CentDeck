@@ -27,7 +27,11 @@ async function execute(name,a,c){
   if(name==='capture_page')return require('./capture').capture(c.project,a);
   if(name==='ui_action'){c.guard?.();return ui.send({...a,projectId:a.projectId||c.project});}
   if(name.startsWith('plugin_')) {const p=store.getProject(c.project);return {name:p.name,pages:p.pages.length,openMarks:(p.marks||[]).filter(x=>!x.done).length,locks:p.locks};}
-  if(name==='project_context')return {project:store.getProject(c.project),tasks:require('./tasks').list(c.project)};
+  if(name==='project_context'){
+    const {assistantChats,conversations,activeConversations,...project}=store.getProject(c.project);
+    const tasks=require('./tasks').list(c.project).slice(-30).map(({id,parent,assistantId,name,goal,status,commits})=>({id,parent,assistantId,name,goal,status,commits}));
+    return {project,tasks};
+  }
   if(name==='read_page'){const content=changes.read(c.project,a.path),baseHash=changes.hash(content),title=store.getProject(c.project).pages.find(p=>p.file===a.path)?.title;c.readSet[a.path]={content,hash:baseHash,title};return {path:a.path,content,baseHash,...(title!==undefined?{title}:{})};}
   if(name==='write_files') {
     for(const f of a.files||[])if(c.readSet[f.path]?.hash!==f.baseHash)throw new store.ApiError(409,'提交前必须读取文件版本');

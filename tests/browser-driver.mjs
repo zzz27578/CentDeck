@@ -1,0 +1,15 @@
+import {spawn} from 'node:child_process';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+export async function browser(profile){
+  const child=spawn(require('../server/capture').browserPath(),['--headless','--remote-debugging-pipe','--disable-gpu','--disable-extensions','--no-first-run','--no-default-browser-check','--user-data-dir='+profile],{windowsHide:true,stdio:['ignore','ignore','ignore','pipe','pipe']});
+  let seq=0,buffer=Buffer.alloc(0);const pending=new Map(),errors=[];
+  child.stdio[4].on('data',chunk=>{buffer=Buffer.concat([buffer,chunk]);let n;while((n=buffer.indexOf(0))>=0){const m=JSON.parse(buffer.subarray(0,n));buffer=buffer.subarray(n+1);const p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(m.error.message)):p.resolve(m.result);}if(m.method==='Runtime.exceptionThrown')errors.push(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text);}});
+  const send=(method,params={},sessionId)=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout: '+method));},15000);pending.set(id,{resolve,reject,timer});child.stdio[3].write(JSON.stringify({id,method,params,sessionId})+'\0');});
+  const {targetId}=await send('Target.createTarget',{url:'about:blank'}),{sessionId}=await send('Target.attachToTarget',{targetId,flatten:true});
+  const call=(method,params)=>send(method,params,sessionId);
+  await call('Runtime.enable');await call('Page.enable');await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;}
+  const until=async(expression)=>{for(let i=0;i<120;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,50));}throw Error('Browser condition timed out: '+expression+'\n'+errors.join('\n'));};
+  return {call,evaluate,until,errors,async close(){try{await send('Browser.close');}catch{}if(child.exitCode===null)child.kill();for(const p of pending.values())clearTimeout(p.timer);}};
+}

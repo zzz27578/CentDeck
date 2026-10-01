@@ -26,12 +26,12 @@ class Element extends Events {
 }
 const document=new Events(),window=new Events();document.body=new Element('body');document.getElementById=()=>null;
 const messages=[];
-const ui={esc:String,uid:()=>Math.random().toString(36),toast:(t)=>messages.push(t),showMenu:()=>{},el:html=>{const n=new Element(html);if(html.includes('class="agent-float"'))n.append(new Element('af-body'));return n;}};
+const ui={esc:String,uid:()=>Math.random().toString(36),confirmDlg:async()=>true,promptDlg:async()=>null,toast:(t)=>messages.push(t),showMenu:()=>{},el:html=>{const n=new Element(html);if(html.includes('class="agent-float"'))n.append(new Element('af-body'));return n;}};
 const context=vm.createContext({document,window,console,structuredClone,innerWidth:1280,innerHeight:900,localStorage:{getItem:()=>null,setItem(){}},setTimeout,clearTimeout,File,Uint8Array,btoa});
 async function moduleAt(file,imports){const m=new vm.SourceTextModule(fs.readFileSync(file,'utf8'),{context});await m.link(async id=>{const exports=imports[id];assert(exports,'unmocked import '+id);const dep=new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value]of Object.entries(exports))this.setExport(key,value);},{context});return dep;});await m.evaluate();return m.namespace;}
 const created=[];
 const session={createSession:(app,mgr,opts)=>{const s={...opts,id:opts.id||'s'+created.length,root:new Element('session'),paintPickers(){},paintChips(){},restore(){},syncTasks(){},focus(){},blur(){},conversation(){return{};}};created.push(s);return s;}};
-const {createAgent}=await moduleAt('app/js/agent/agent.js',{'../core/ui.js':ui,'../core/icons.js':{icon:()=>''},'./session.js':session,'./manager.js':{openAssistantManager(){}},'../core/skill-catalog.js':{userSkills:x=>x,selectedUserSkill:()=>null}});
+const {createAgent}=await moduleAt('app/js/agent/agent.js',{'../core/ui.js':ui,'../core/icons.js':{icon:()=>''},'./session.js':session,'./studio.js':{avatar:()=>''},'./conversations.js':await import('../app/js/agent/conversations.js'),'./manager.js':{openAssistantManager(){}},'../core/skill-catalog.js':{userSkills:x=>x,selectedUserSkill:()=>null}});
 const app={api:{extension:async()=>[],getSettings:async()=>({}),getAssistants:async()=>[{id:'one',name:'First'}],saveAssistants:async()=>{}},bus:{on(){},saveMeta(){}},project:()=>null,state:{project:null}};
 const agent=createAgent(app);await agent.ready;
 agent.manager.newWindow();const floating=document.body.children.find(n=>n.name.includes('class="agent-float"'));const s=created.at(-1);agent.manager.fold(s);assert(floating.classList.contains('collapsed'));

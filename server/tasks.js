@@ -110,6 +110,7 @@ function start(id, b, parent = null) {
     project: id,
     parent: parent?.id || null,
     assistantId: assistant.id,
+    conversationId: typeof b.conversationId === 'string' && /^[\w-]{1,100}$/.test(b.conversationId) ? b.conversationId : null,
     name: assistant.name,
     role: assistant.role,
     model: `${selectedProvider.provider.id}:${selectedProvider.model}`,
@@ -158,6 +159,7 @@ function start(id, b, parent = null) {
     if (!all.some((x) => x.id === dep))
       throw new ApiError(400, "依赖任务不存在");
   const project = store.getProject(id);
+  t.directReply = require('./chat-intent').directReply(b.text, refs);
   const skills = [
     ...new Set([...(assistant.skills || []), ...(b.skills || [])]),
   ];
@@ -190,6 +192,12 @@ function start(id, b, parent = null) {
           : ""),
     },
   ];
+  if(t.directReply){
+    t.skills=[];
+    t.messages=[{role:'system',content:`你是 ${assistant.name}。${assistant.prompt||''}\n直接回答用户最新这条消息，严格遵守指定回复内容。不调用工具、不检查项目、不延续旧任务。`},t.messages.at(-1)];
+  }else{
+    t.messages[0].content += '\n先判断本条消息的意图；不需要真实项目数据的聊天、确认或指定文字回复直接回答，不要为打招呼调用工具。不要把历史未完成事项当成当前指令。';
+  }
   const userText =
     b.text +
     (refs.length
@@ -227,6 +235,7 @@ const def = (name, description, properties, required = []) => ({
 const str = { type: "string" },
   arr = { type: "array", items: str };
 function toolsFor(t) {
+  if(t.directReply)return [];
   const ts = [
     def(
       "request_input",
@@ -433,6 +442,8 @@ async function run(t) {
             event(t, 'paused', t.error);return;
           }
           const c = t.pending[0];
+          t.phase = 'tool';
+          event(t, 'tool', c.function.name);
           t.toolCalls = (t.toolCalls || 0) + 1;
           t.roundToolCalls = (t.roundToolCalls || 0) + 1;
           let result;
@@ -470,7 +481,10 @@ async function run(t) {
       const reserve = estimate + Math.min(8192, available);
       t.spent += reserve;
       t.steps++;
+      t.phase = 'thinking';
+      t.context = {estimatedInputTokens:estimate, historyMessages:t.messages.filter(m=>['user','assistant'].includes(m.role)).length, model:t.model};
       save(t.project);
+      const requestStarted=Date.now();
       let response;
       if (t.model === 'mcp:external') event(t, 'info', '等待外部 MCP 助手接管；请求思考强度：' + t.think);
       try {
@@ -481,12 +495,20 @@ async function run(t) {
           t.think,
           controller.signal,
           Math.min(8192, available),
-          {projectId:t.project, taskId:t.id, mode:t.mode},
+          {projectId:t.project, taskId:t.id, mode:t.mode, onProgress(progress){
+            if(t.epoch!==epoch||controller.signal.aborted)return;
+            t.phase=progress.phase;
+            if(progress.content!==undefined)t.output=progress.content;
+            t.updatedAt=new Date().toISOString();
+            for(const fn of listeners)fn(t.project);
+          }},
         );
       } catch (e) {
         throw e;
       }
       if (t.epoch !== epoch || controller.signal.aborted) return;
+      t.timings ||= [];
+      t.timings.push({request:t.steps,durationMs:Date.now()-requestStarted});
       if (response.external) {
         t.external = response.external;
         event(t, 'info', '收到外部 MCP 回复；执行模型由客户端自行报告，思考强度未独立验证');
@@ -497,6 +519,7 @@ async function run(t) {
         t.usage = (t.usage || 0) + (Number(response.usage.total_tokens) || 0);
       }
       const msg = response.message;
+      if(t.directReply&&msg.tool_calls?.length)throw new ApiError(502,'这条消息只需要直接回复，但模型返回了工具调用；未执行工具，请重试或调整模型。');
       if(response.finishReason==='length'){
         t.output=String(msg.content||'');t.messages.push({role:'assistant',content:t.output||'输出已截断'});
         t.status='paused';t.truncated=true;t.error='模型输出达到长度上限，已保留结果。点击继续补全回复；未执行不完整的工具调用。';
@@ -508,11 +531,12 @@ async function run(t) {
         event(t, "message", t.output.slice(0, 300));
       }
       if (msg.tool_calls?.length) {
-        t.pending = msg.tool_calls;
+        t.pending = structuredClone(msg.tool_calls);
         save(t.project);
         continue;
       }
       t.status = "completed";
+      t.phase = 'completed';
       event(t, "completed", t.commits.length ? "变更已保存" : "回复已完成");
       return;
     }

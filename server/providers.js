@@ -142,7 +142,7 @@ function resolve(model) {
     throw new ApiError(400, "此提供商尚未配置 API Key");
   return { provider: {...p,...p.modelCapabilities?.[name]}, model: name };
 }
-async function call(p, endpoint, body, signal) {
+async function call(p, endpoint, body, signal, onProgress) {
   const controller = AbortSignal.timeout(180000);
   const signals = signal ? AbortSignal.any([controller, signal]) : controller;
   let res;
@@ -176,6 +176,7 @@ async function call(p, endpoint, body, signal) {
         : `模型接口返回 ${res.status}，请检查地址、密钥和模型权限`,
     );
   }
+  if(onProgress)return require('./chat-stream').readChatStream(res,onProgress);
   let text = "";
   const decoder = new TextDecoder();
   for await (const chunk of res.body) {
@@ -226,17 +227,18 @@ async function complete(
   context = {},
 ) {
   const { provider: p, model } = resolve(selected);
-  if (p.id === 'mcp') return require('./external-agent').enqueue({messages,tools:tools || [],think:require('./reasoning').normalizeThink(think),maxTokens,context}, signal);
+  if (p.id === 'mcp') {const {onProgress,...externalContext}=context;return require('./external-agent').enqueue({messages,tools:tools || [],think:require('./reasoning').normalizeThink(think),maxTokens,context:externalContext}, signal);}
   if(p.protocol==='gemini')return require('./gemini').complete({p,model,messages,tools,think,signal,maxTokens,call});
   const b = {
     model,
     messages,
-    stream: false,
+    stream: !!context.onProgress,
     max_tokens: Math.max(1, Math.min(16384, maxTokens)),
   };
   if (tools?.length && p.tools !== false) b.tools = tools;
+  if(context.onProgress)b.stream_options={include_usage:true};
   b.reasoning_effort = require("./reasoning").normalizeThink(think);
-  const j = await call(p, "chat/completions", b, signal);
+  const j = await call(p, "chat/completions", b, signal, context.onProgress);
   if (!j.choices?.[0]?.message)
     throw new ApiError(502, "模型响应缺少 choices.message");
   return { message: j.choices[0].message, usage: j.usage || null, finishReason:j.choices[0].finish_reason };

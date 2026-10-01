@@ -159,7 +159,9 @@ export function setupSketch(app) {
   }
 
   // ---------- 标记卡片：写要求 / 换颜色 / 完成 / 删除 ----------
-  function closeCard() { if (cardEl) { cardEl.remove(); cardEl = null; } }
+  function closeCard() {
+    if (cardEl) { nodes.get(cardEl.dataset.id)?.pin.classList.remove('editing'); cardEl.remove(); cardEl = null; }
+  }
   function openCard(ed, m, focus) {
     closeCard();
     if (!htmlLayer) return;
@@ -174,6 +176,7 @@ export function setupSketch(app) {
         <button class="icon-btn sm" data-a="del" data-tip="删除" data-kbd="Del">${icon('trash', 15)}</button>
       </div></div>`);
     htmlLayer.appendChild(cardEl);
+    nodes.get(m.id)?.pin.classList.add('editing');
     const ta = cardEl.querySelector('textarea');
     let saving=false;
     const confirm = async () => { if(saving)return;saving=true;const text=ta.value.trim();selId=null;closeCard();if(text!==m.text||m.done)await update(m, {text, done:false}, '保存便签', ed);select(ed, null); };
@@ -432,14 +435,17 @@ export function setupSketch(app) {
       n.pin.style.translate = `${base[0] + d[0]}px ${base[1] + d[1]}px`;
       closeCard();
     };
-    const up = () => {
+    const up = (ev) => {
       window.removeEventListener('pointermove', mv, true);
       window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', up, true);
+      if (ev.type === 'pointercancel') { render(ed); return; }
       if (!d) return;
       update(m, { pts: m.pts.map((q) => [q[0] + d[0], q[1] + d[1]]) }, m.type === 'image' ? '挪动参考图' : '挪动草图标记', ed);
     };
     window.addEventListener('pointermove', mv, true);
     window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
     return true;
   }
   function hitContext(e, ed) {
