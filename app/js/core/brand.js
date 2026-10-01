@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 import { styleEnabled, chooseStyle } from './extensions.js';
 import { icon } from './icons.js';
 
@@ -19,7 +22,7 @@ export function toggleTheme() {
 export function styleSwitch() {
 
   const active = document.documentElement.dataset.style === 'noir';
-  return `<button type="button" class="btn ghost style-switch" ${styleEnabled()?'':'hidden'} data-style aria-label="切换风格，当前：${active ? '黑白蓝' : '原版绿色'}" aria-pressed="${active}">${icon('palette', 18)}<span>切换风格</span></button>`;
+  return i18nTpl`<button type="button" class="btn ghost style-switch" ${styleEnabled()?'':'hidden'} data-style aria-label="切换风格，当前：${active ? i18nText('黑白蓝') : i18nText('原版绿色')}" aria-pressed="${active}">${icon('palette', 18)}<span>切换风格</span></button>`;
 }
 export function bindStyleSwitch(root) {
   root.querySelectorAll('button[data-style]').forEach(button => { button.onclick = chooseStyle; });

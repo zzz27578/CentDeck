@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 import { esc, el, toast, openModal } from './ui.js';
 let appearance={plugins:[],styleEnabled:true};
 const applied=new Set();
@@ -8,22 +11,22 @@ export async function refreshAppearance(){
   dispatchEvent(new CustomEvent('centdeck-appearance'));
   return appearance;
 }
-export function styles(){return [{id:'noir',name:'黑白蓝'},...(appearance.styleEnabled?[{id:'original',name:'原版绿色'},...appearance.plugins.flatMap(p=>(p.manifest.themes||[]).filter(t=>!['noir','original'].includes(t.id)).map(t=>({...t,plugin:p})))]:[])];}
+export function styles(){return [{id:'noir',name:i18nText('黑白蓝')},...(appearance.styleEnabled?[{id:'original',name:i18nText('原版绿色')},...appearance.plugins.flatMap(p=>(p.manifest.themes||[]).filter(t=>!['noir','original'].includes(t.id)).map(t=>({...t,plugin:p})))]:[])];}
 export function styleEnabled(){return appearance.styleEnabled;}
 export function applyStyle(id){
   const selected=styles().find(t=>t.id===id)||styles()[0];
   const root=document.documentElement;
   for(const key of applied)root.style.removeProperty(key);applied.clear();
   for(const [key,value]of Object.entries(selected.tokens||{})){root.style.setProperty(key,value);applied.add(key);}
-  root.dataset.style=selected.id;document.querySelectorAll('button[data-style]').forEach(b=>{b.setAttribute('aria-label','切换风格，当前：'+selected.name);b.setAttribute('aria-pressed',String(selected.id!=='original'));});localStorage.setItem('cd.style',selected.id);
+  root.dataset.style=selected.id;document.querySelectorAll('button[data-style]').forEach(b=>{b.setAttribute('aria-label',i18nText('切换风格，当前：')+selected.name);b.setAttribute('aria-pressed',String(selected.id!=='original'));});localStorage.setItem('cd.style',selected.id);
   return selected;
 }
 export function chooseStyle(){
   if(!styleEnabled())return;
   const body=el('<div class="extension-style-list"></div>');
-  const close=openModal({title:'选择主页风格',body,width:520});
+  const close=openModal({title:i18nText('选择主页风格'),body,width:520});
   for(const t of styles()){
-    const button=el(`<button class="extension-style-option ${document.documentElement.dataset.style===t.id?'on':''}"><span class="style-swatch" style="background:${esc(t.tokens?.['--accent']||(t.id==='noir'?'#2458ff':'#65784e'))}"></span><span><b>${esc(t.name)}</b><small>${esc(t.plugin?.manifest.id||'内置默认')}</small></span><span>↗</span></button>`);
+    const button=el(`<button class="extension-style-option ${document.documentElement.dataset.style===t.id?'on':''}"><span class="style-swatch" style="background:${esc(t.tokens?.['--accent']||(t.id==='noir'?'#2458ff':'#65784e'))}"></span><span><b>${esc(t.name)}</b><small>${esc(t.plugin?.manifest.id||i18nText('内置默认'))}</small></span><span>↗</span></button>`);
     button.onclick=()=>{applyStyle(t.id);close();dispatchEvent(new CustomEvent('centdeck-appearance'));};body.append(button);
   }
 }
@@ -39,10 +42,10 @@ export function mountPluginFrame(host,plugin,file,app){
   const onMessage=async e=>{
     if(e.source!==frame.contentWindow||e.data?.type!=='centdeck-plugin'||!frame.isConnected)return;
     let result;
-    if(e.data.action==='project_summary'&&plugin.manifest.permissions?.includes('tools')){const p=app.project();result=p?{name:p.name,pages:p.pages.length,openMarks:(p.marks||[]).filter(m=>!m.done).length,locks:p.locks}:{message:'请先打开项目'};}
+    if(e.data.action==='project_summary'&&plugin.manifest.permissions?.includes('tools')){const p=app.project();result=p?{name:p.name,pages:p.pages.length,openMarks:(p.marks||[]).filter(m=>!m.done).length,locks:p.locks}:{message:i18nText('请先打开项目')};}
     else if(e.data.action==='get_settings')result=plugin.settings||{};
     else if(e.data.action==='open_settings') {await app.openSettings('plugins');result={opened:true};}
-    else result={error:'该消息不在插件权限范围内'};
+    else result={error:i18nText('该消息不在插件权限范围内')};
     if(e.data.action==='project_summary'&&plugin.settings?.showLocks===false&&result)delete result.locks;
     frame.contentWindow?.postMessage({type:'centdeck-result',requestId:e.data.requestId,result},'*');
   };

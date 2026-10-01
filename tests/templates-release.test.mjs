@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import vm from 'node:vm';import {spawn} from 'node:child_process';import {createRequire} from 'node:module';
 import {parse} from '../app/js/vendor/parse5.js';import {browser} from './browser-driver.mjs';
 const ids=['qichuan','gewu','northline'],root=process.cwd(),temp=fs.mkdtempSync(path.join(os.tmpdir(),'centdeck-release-'));

@@ -1,3 +1,7 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
+import { errorText } from '../core/i18n.js';
 // 一个助手窗口：标题栏（可拖动、停靠 / 弹出）、对话区、输入框（+ 上传与引用、@、技能、模型、思考强度）
 import { icon } from "../core/icons.js";
 import { el, esc, uid, showMenu, toast } from "../core/ui.js";
@@ -9,19 +13,19 @@ import { historyFor, tasksForConversation, isBusy, tokenEstimate, tokenLabel } f
 import { THINK, normalizeThink } from "../core/reasoning.js";
 export { THINK };
 export const ROLES = [
-  "通用",
-  "总览设计",
-  "设计师",
-  "前端工程师",
-  "审查员",
-  "移动适配",
+  i18nText("通用"),
+  i18nText("总览设计"),
+  i18nText("设计师"),
+  i18nText("前端工程师"),
+  i18nText("审查员"),
+  i18nText("移动适配"),
 ];
 
 export function createSession(app, mgr, opts) {
   const s = {
     id: opts.id || uid("ag"),
-    name: opts.name || "助手",
-    role: opts.role || "通用",
+    name: opts.name || i18nText("助手"),
+    role: opts.role || i18nText("通用"),
     model: opts.model || "auto",
     think: normalizeThink(opts.think),
     avatar: opts.avatar || "centdeck",
@@ -37,7 +41,7 @@ export function createSession(app, mgr, opts) {
     task: null,
     collaboration: "off",
   };
-  const root = el(`<div class="ag">
+  const root = el(i18nTpl`<div class="ag">
     <div class="ag-head" data-drag>
       <span class="ag-avatar"></span><button class="ag-switch" data-a="switch" aria-label="切换助手"><b class="ag-name"></b>${icon("chevDown",13)}</button>
       <button class="ag-role" data-a="role" data-tip="这个助手负责什么（多助手协作用）"></button>
@@ -104,7 +108,7 @@ export function createSession(app, mgr, opts) {
   function mention(anchor) {
     const cursor=ta.selectionStart;
     showMenu(
-      [{title:'交给指定助手回复'},...mgr.sessions().map(a=>({label:a.name,hint:a.role,icon:'centdeck',checked:s.recipient===a.id,onClick:()=>{
+      [{title:i18nText('交给指定助手回复')},...mgr.sessions().map(a=>({label:a.name,hint:a.role,icon:'centdeck',checked:s.recipient===a.id,onClick:()=>{
         s.recipient=a.id;s.model=a.model;s.think=a.think;
         if(anchor===ta&&ta.value[cursor-1]==='@')ta.value=ta.value.slice(0,cursor-1)+ta.value.slice(cursor);
         paintChips();paintPickers();mgr.saveConversation(s);focus();
@@ -129,7 +133,7 @@ export function createSession(app, mgr, opts) {
     host.innerHTML = "";
     if(s.recipient){
       const a=mgr.sessions().find(a=>a.id===s.recipient);
-      if(a){const chip=el(`<span class="comp-chip ctx recipient-chip">${icon('at',13)}<span>${esc(a.name)} 回复</span><button aria-label="取消指定助手">${icon('close',11)}</button></span>`);chip.querySelector('button').onclick=()=>{s.recipient=null;paintChips();mgr.saveConversation(s);};host.append(chip);}
+      if(a){const chip=el(i18nTpl`<span class="comp-chip ctx recipient-chip">${icon('at',13)}<span>${esc(a.name)} 回复</span><button aria-label="取消指定助手">${icon('close',11)}</button></span>`);chip.querySelector('button').onclick=()=>{s.recipient=null;paintChips();mgr.saveConversation(s);};host.append(chip);}
     }
     const all = [
       ...(mgr.skill(s.skill) ? [{ kind: "skill", id: "skill" }] : []),
@@ -138,9 +142,9 @@ export function createSession(app, mgr, opts) {
     host.hidden = !all.length&&!s.recipient;
     all.forEach((r) => {
       const sk = r.kind === "skill" ? mgr.skill(s.skill) : null;
-      const lb = sk ? { icon: sk.icon, text: "技能：" + sk.name } : refLabel(r);
+      const lb = sk ? { icon: sk.icon, text: i18nText("技能：") + sk.name } : refLabel(r);
       const chip = el(
-        `<span class="comp-chip ${sk ? "skill" : "ctx"}" title="${esc(lb.text)}">${r.url && r.media!=='audio' ? `<img src="${r.url}" alt="">` : icon(lb.icon, 13)}<span>${esc(lb.text)}</span>${lb.color ? `<i class="cc-dot" style="background:${lb.color}"></i>` : ""}<button data-tip="移除">${icon("close", 11)}</button></span>`,
+        i18nTpl`<span class="comp-chip ${sk ? "skill" : "ctx"}" title="${esc(lb.text)}">${r.url && r.media!=='audio' ? `<img src="${r.url}" alt="">` : icon(lb.icon, 13)}<span>${esc(lb.text)}</span>${lb.color ? `<i class="cc-dot" style="background:${lb.color}"></i>` : ""}<button data-tip="移除">${icon("close", 11)}</button></span>`,
       );
       chip.querySelector("button").onclick = () => {
         if (sk) s.skill = null;
@@ -158,13 +162,13 @@ export function createSession(app, mgr, opts) {
       THINK.find((t) => t.id === s.think) || THINK[1]
     ).label;
     q(".ag-name").textContent = s.name;
-    q('[data-a=conversations] span').textContent=mgr.conversationList().find(c=>c.id===s.conversationId)?.title||'新对话';
+    q('[data-a=conversations] span').textContent=mgr.conversationList().find(c=>c.id===s.conversationId)?.title||i18nText('新对话');
     q(".ag-avatar").innerHTML = avatar(s, 25);
     q(".ag-avatar").style.color = s.color;
     root.style.setProperty("--assistant-color", s.color);
     const status=s.task?.status||'idle';root.dataset.status=status;
-    const label=status==='completed'&&s.task.commits?.length?'待验收':s.task?taskStatus(s.task):'空闲';
-    q('.ag-summary span').textContent=label+' · '+(s.task?.output||s.task?.goal||'随时准备开始').slice(0,100);
+    const label=status==='completed'&&s.task.commits?.length?i18nText('待验收'):s.task?taskStatus(s.task):i18nText('空闲');
+    q('.ag-summary span').textContent=label+' · '+(s.task?.output||s.task?.goal||i18nText('随时准备开始')).slice(0,100);
     q('.ag-summary i').setAttribute('aria-label',label);
     q('[data-a=skill]').hidden=!mgr.skills().length;
     q("[data-a=role]").textContent = s.role;
@@ -172,7 +176,7 @@ export function createSession(app, mgr, opts) {
     dk.innerHTML = icon(mgr.isDocked(s) ? "undock" : "dock", 15);
     dk.setAttribute(
       "data-tip",
-      mgr.isDocked(s) ? "弹出成悬浮窗（也可以直接拖标题栏）" : "停靠到右侧",
+      mgr.isDocked(s) ? i18nText("弹出成悬浮窗（也可以直接拖标题栏）") : i18nText("停靠到右侧"),
     );
     paintContext();
   }
@@ -181,24 +185,24 @@ export function createSession(app, mgr, opts) {
     const estimate=tokenEstimate(historyFor(s.msgs,s.compaction))+tokenEstimate(ta.value||'')+(c?.overheadTokens||0);
     const actual=!compact&&!ta.value&&c?.inputTokens!=null&&c?.outputTokens!=null;
     const used=!s.msgs.length&&!ta.value?0:actual?c.inputTokens+c.outputTokens:!compact&&!ta.value&&c?(c.inputTokens??c.estimatedInputTokens)+(c.outputTokens??tokenEstimate(s.task.output||'')):estimate;
-    q('[data-usage]').textContent=`${actual?'':'约 '}${tokenLabel(used)}${capacity?' / '+tokenLabel(capacity):''} tokens`;
-    q('[data-context-detail]').textContent=`${capacity?Math.min(100,Math.round(used/capacity*100))+'% 已使用':'模型容量未配置'} · ${actual?'上次请求实际用量':'估算用量'}${compact?' · 已压缩':''}\n压缩保留聊天原文，用摘要替代后续请求中的较早消息。`;
+    q('[data-usage]').textContent=`${actual?'':i18nText('约 ')}${tokenLabel(used)}${capacity?' / '+tokenLabel(capacity):''} tokens`;
+    q('[data-context-detail]').textContent=i18nTpl`${capacity?Math.min(100,Math.round(used/capacity*100))+i18nText('% 已使用'):i18nText('模型容量未配置')} · ${actual?i18nText('上次请求实际用量'):i18nText('估算用量')}${compact?i18nText(' · 已压缩'):''}\n压缩保留聊天原文，用摘要替代后续请求中的较早消息。`;
     q('.context-used').style.strokeDasharray=`${capacity?Math.min(100,used/capacity*100):0} 100`;
     q('.context-ring').dataset.unknown=String(!capacity);
-    q('.context-ring').setAttribute('aria-label','上下文用量：'+q('[data-usage]').textContent);
+    q('.context-ring').setAttribute('aria-label',i18nText('上下文用量：')+q('[data-usage]').textContent);
     q('[data-a=compact]').disabled=isBusy(s.task)||!!s.compacting||s.msgs.length<2;
   }
   async function compactContext(){
     if(s.compacting||isBusy(s.task)||s.msgs.length<2)return;
     const conversationId=s.conversationId,projectId=app.project().id;
     const prefix=s.msgs.length>2?s.msgs.slice(0,-2):s.msgs.slice(),through=prefix.at(-1).id;
-    s.compacting=true;paintContext();q('.context-meter').classList.add('open');q('.context-result').classList.remove('error-text');q('.context-result').textContent='正在压缩…';
+    s.compacting=true;paintContext();q('.context-meter').classList.add('open');q('.context-result').classList.remove('error-text');q('.context-result').textContent=i18nText('正在压缩…');
     try{
       const result=await app.api.compactChat({model:s.model,think:s.think,history:historyFor(prefix,s.compaction)});
       if(s.conversationId!==conversationId||app.project()?.id!==projectId||!prefix.every((m,i)=>s.msgs[i]?.id===m.id&&s.msgs[i]?.text===m.text))return;
-      if(!result.reduced){q('.context-result').textContent='当前上下文已足够精简，无需压缩。';return;}
+      if(!result.reduced){q('.context-result').textContent=i18nText('当前上下文已足够精简，无需压缩。');return;}
       s.compaction={summary:result.summary,throughMessageId:through,at:new Date().toISOString()};
-      mgr.saveConversation(s);q('.context-result').textContent=`已压缩：${tokenLabel(result.beforeTokens)} → ${tokenLabel(result.afterTokens)} tokens`;
+      mgr.saveConversation(s);q('.context-result').textContent=i18nTpl`已压缩：${tokenLabel(result.beforeTokens)} → ${tokenLabel(result.afterTokens)} tokens`;
     }catch(e){if(s.conversationId===conversationId){q('.context-result').classList.add('error-text');q('.context-result').textContent=e.message;}}finally{s.compacting=false;paintContext();}
   }
   function paintMsgs() {
@@ -208,7 +212,7 @@ export function createSession(app, mgr, opts) {
     host.querySelector('.agent-empty')?.remove();
     if (!s.msgs.length) {
       const empty = el(
-        `<div class="agent-empty"><div class="ae-mark">${avatar(s,48)}</div><h3>和 ${esc(s.name)} 开始新对话</h3><p>描述你的想法，或 @ 指定助手与页面。</p></div>`,
+        i18nTpl`<div class="agent-empty"><div class="ae-mark">${avatar(s,48)}</div><h3>和 ${esc(s.name)} 开始新对话</h3><p>描述你的想法，或 @ 指定助手与页面。</p></div>`,
       );
       host.appendChild(empty);
     }
@@ -217,11 +221,11 @@ export function createSession(app, mgr, opts) {
       const a=mgr.sessions().find(a=>a.id===m.assistantId)||s;
       let b=existing.get(m.id);existing.delete(m.id);
       if(!b){
-        b=el(`<article class="msg ${m.role==='user'?'user':'sys'}" data-msg-id="${esc(m.id)}">${m.role==='user'?'':`<div class="msg-author"><span>${avatar(a,24)}</span><b>${esc(a.name)}</b></div>`}<div class="msg-body"></div><div class="msg-actions"><button data-copy aria-label="复制消息">${icon('copy',14)}复制</button>${m.role==='user'?`<button data-edit>${icon('edit',14)}编辑</button>`:`<button data-retry>${icon('refresh',14)}重新生成</button>`}</div></article>`);
-        b.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(m.text||'');toast('已复制','ok');}catch{toast('复制失败，请选择文字复制','err');}};
+        b=el(i18nTpl`<article class="msg ${m.role==='user'?'user':'sys'}" data-msg-id="${esc(m.id)}">${m.role==='user'?'':`<div class="msg-author"><span>${avatar(a,24)}</span><b>${esc(a.name)}</b></div>`}<div class="msg-body"></div><div class="msg-actions"><button data-copy aria-label="复制消息">${icon('copy',14)}复制</button>${m.role==='user'?i18nTpl`<button data-edit>${icon('edit',14)}编辑</button>`:i18nTpl`<button data-retry>${icon('refresh',14)}重新生成</button>`}</div></article>`);
+        b.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(m.text||'');toast(i18nText('已复制'),'ok');}catch{toast(i18nText('复制失败，请选择文字复制'),'err');}};
         b.querySelector('[data-edit]')?.addEventListener('click',()=>{
           if(isBusy(s.task)||b.querySelector('.msg-edit'))return;
-          const edit=el('<form class="msg-edit"><textarea aria-label="编辑消息" rows="4"></textarea><small>在当前对话中重新发送，并替换这条消息之后的回复。已保存的网页修改会保留。</small><div><button type="button" data-cancel>取消</button><button type="submit" class="btn primary small">保存并发送</button></div></form>');
+          const edit=el(i18nText('<form class="msg-edit"><textarea aria-label="编辑消息" rows="4"></textarea><small>在当前对话中重新发送，并替换这条消息之后的回复。已保存的网页修改会保留。</small><div><button type="button" data-cancel>取消</button><button type="submit" class="btn primary small">保存并发送</button></div></form>'));
           edit.querySelector('textarea').value=m.request?.text||m.text;
           edit.querySelector('[data-cancel]').onclick=()=>{edit.remove();b.classList.remove('is-editing');};
           edit.onsubmit=e=>{e.preventDefault();const text=edit.querySelector('textarea').value.trim();if(text)replay(s.msgs.indexOf(m),text);};
@@ -255,26 +259,26 @@ export function createSession(app, mgr, opts) {
     const t=s.task,host=q('.ag-msgs'),busy=isBusy(t)||sending;
     const key=JSON.stringify([t?.id,t?.status,t?.phase,t?.error,t?.question,t?.events?.at(-1),sending,s.sendError]);
     const sendButton=q('[data-a=send]');
-    sendButton.innerHTML=icon(busy?'rect':'send',17);sendButton.setAttribute('aria-label',busy?'停止回复':'发送');sendButton.setAttribute('data-tip',busy?'停止回复':'发送');
+    sendButton.innerHTML=icon(busy?'rect':'send',17);sendButton.setAttribute('aria-label',busy?i18nText('停止回复'):i18nText('发送'));sendButton.setAttribute('data-tip',busy?i18nText('停止回复'):i18nText('发送'));
     if(key===responseKey){const row=host.querySelector('.ag-response');if(row&&host.lastElementChild!==row)host.append(row);return;}responseKey=key;
     host.querySelector('.ag-response')?.remove();
-    if(s.sendError){const box=el(`<section class="ag-response"><p class="response-error">${esc(s.sendError)}</p><button class="icon-btn" data-retry-send aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button></section>`);box.querySelector('button').onclick=send;host.append(box);return;}
+    if(s.sendError){const box=el(i18nTpl`<section class="ag-response"><p class="response-error">${esc(s.sendError)}</p><button class="icon-btn" data-retry-send aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button></section>`);box.querySelector('button').onclick=send;host.append(box);return;}
     if(!t&&!sending||t?.status==='completed')return;
-    const label=sending?'正在发送':t.status==='queued'?'等待回复':t.status==='running'?(t.model==='mcp:external'&&t.phase==='thinking'?'等待外部助手接管':{thinking:'正在思考',output:'正在输出',tool:'正在使用工具'}[t.phase]||'正在思考'):taskStatus(t);
+    const label=sending?i18nText('正在发送'):t.status==='queued'?i18nText('等待回复'):t.status==='running'?(t.model==='mcp:external'&&t.phase==='thinking'?i18nText('等待外部助手接管'):{thinking:i18nText('正在思考'),output:i18nText('正在输出'),tool:i18nText('正在使用工具')}[t.phase]||i18nText('正在思考')):taskStatus(t);
     const replying=mgr.sessions().find(a=>a.id===(t?.assistantId||s.recipient))||s;
-    const row=el(`<section class="ag-response"><div class="msg-author"><span class="${busy?'responding':''}">${avatar(replying,24)}</span><b>${esc(replying.name)}</b><span class="response-phase" role="status">${esc(label)}</span></div>${t?.error?`<p class="response-error">${esc(t.error)}</p>`:''}<div class="response-actions"></div><div class="response-question"></div></section>`);
+    const row=el(`<section class="ag-response"><div class="msg-author"><span class="${busy?'responding':''}">${avatar(replying,24)}</span><b>${esc(replying.name)}</b><span class="response-phase" role="status">${esc(label)}</span></div>${t?.error?`<p class="response-error">${esc(errorText(t.error))}</p>`:''}<div class="response-actions"></div><div class="response-question"></div></section>`);
     const actions=row.querySelector('.response-actions');
     const button=(label,fn)=>{const b=el(`<button class="btn small">${label}</button>`);b.onclick=fn;actions.append(b);};
-    if(t&&!['completed','cancelled','failed','conflict','paused'].includes(t.status))button('停止回复',()=>taskAction('cancel'));
+    if(t&&!['completed','cancelled','failed','conflict','paused'].includes(t.status))button(i18nText('停止回复'),()=>taskAction('cancel'));
     if(t&&['paused','failed','conflict','cancelled'].includes(t.status)&&!t.question){
-      if(['paused','cancelled'].includes(t.status)&&!t.error)button('继续回复',()=>taskAction('resume'));
-      const retry=el(`<button class="icon-btn" aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button>`);
+      if(['paused','cancelled'].includes(t.status)&&!t.error)button(i18nText('继续回复'),()=>taskAction('resume'));
+      const retry=el(i18nTpl`<button class="icon-btn" aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button>`);
       retry.onclick=()=>{if(t.status==='paused'&&(t.truncated||t.limitReached)){taskAction('resume');return;}const i=s.msgs.findLastIndex(m=>m.role==='user'&&m.taskId===t.id);if(i>=0)replay(i);};actions.append(retry);
     }
     if(t?.question){
       const box=row.querySelector('.response-question');
-      box.innerHTML=`<p>${esc(t.question.question)}</p><div></div><form><input required aria-label="补充回答" placeholder="输入你的回答"><button class="btn small" type="submit">回答</button></form>`;
-      for(const option of t.question.options||[]){const b=el(`<button class="btn small">${esc(option)}</button>`);b.onclick=()=>taskAction('answer',{answer:option});box.querySelector('div').append(b);}
+      box.innerHTML=i18nTpl`<p>${esc(t.question.delegate?errorText(t.question.question):t.question.question)}</p><div></div><form><input required aria-label="补充回答" placeholder="输入你的回答"><button class="btn small" type="submit">回答</button></form>`;
+      for(const option of t.question.options||[]){const b=el(`<button class="btn small">${esc(t.question.delegate?errorText(option):option)}</button>`);b.onclick=()=>taskAction('answer',{answer:option});box.querySelector('div').append(b);}
       box.querySelector('form').onsubmit=e=>{e.preventDefault();taskAction('answer',{answer:box.querySelector('input').value});};
     }
     host.append(row);
@@ -331,7 +335,7 @@ export function createSession(app, mgr, opts) {
         requestId: uid("req"),
         assistantId: request.assistantId,
         conversationId,
-        text: text || "请分析这些引用",
+        text: text || i18nText("请分析这些引用"),
         skills: skillIds,
         model: request.model,
         think: request.think,
@@ -344,7 +348,7 @@ export function createSession(app, mgr, opts) {
       const message={
         id:uid('msg'),
         role: "user",
-        text: text + (refs.length ? "\n引用：" + refs.join("；") : ""),
+        text: text + (refs.length ? i18nText("\n引用：") + refs.join("；") : ""),
         request,
         taskId: task.id,
       };
@@ -436,7 +440,7 @@ export function createSession(app, mgr, opts) {
     if (a === "think")
       showMenu(
         [
-          { title: "思考强度" },
+          { title: i18nText("思考强度") },
           ...THINK.map((t) => ({
             label: t.label,
             hint: t.hint,
@@ -466,7 +470,7 @@ export function createSession(app, mgr, opts) {
     if (a === "skill")
       showMenu(
         [
-          { title: "技能" },
+          { title: i18nText("技能") },
           ...mgr.skills().map((k) => ({
             label: k.name,
             hint: k.desc,
@@ -489,13 +493,13 @@ export function createSession(app, mgr, opts) {
       showMenu(
         [
           {
-            label: "上传文件或图片",
+            label: i18nText("上传文件或图片"),
             icon: "upload",
-            hint: "参考图、截图、文档都可以",
+            hint: i18nText("参考图、截图、文档都可以"),
             onClick: () => fileIpt.click(),
           },
           {
-            label: "引用当前页面",
+            label: i18nText("引用当前页面"),
             icon: "file",
             disabled: !app.state.page,
             onClick: () =>
@@ -512,8 +516,8 @@ export function createSession(app, mgr, opts) {
           },
           {
             label: info
-              ? `引用选中元素 ${app.editor.describe(info)}`
-              : "引用选中元素（先在编辑里选一个）",
+              ? i18nTpl`引用选中元素 ${app.editor.describe(info)}`
+              : i18nText("引用选中元素（先在编辑里选一个）"),
             icon: "target",
             disabled: !info,
             onClick: () =>
@@ -526,7 +530,7 @@ export function createSession(app, mgr, opts) {
               }),
           },
           {
-            label: "@ 更多（页面、标记编号、颜色）…",
+            label: i18nText("@ 更多（页面、标记编号、颜色）…"),
             icon: "at",
             onClick: () => mention(b),
           },
@@ -539,7 +543,7 @@ export function createSession(app, mgr, opts) {
   });
   async function addFile(f) {
     if (s.refs.filter((r) => r.kind === "file").length >= MAX_ATTACHMENTS) {
-      toast("一次最多 4 个参考文件", "err");
+      toast(i18nText("一次最多 4 个参考文件"), "err");
       return;
     }
     try { addRef(await readAttachment(f)); } catch(error) { toast(error.message,'err'); }

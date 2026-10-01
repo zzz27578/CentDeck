@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 "use strict";
 const fs = require("node:fs"),
   path = require("node:path"),
@@ -207,6 +209,7 @@ function start(id, b, parent = null) {
       ]
     : userText;
   all.push(t);
+  if(b.language==='en')t.messages[0].content+='\nRespond in English unless the user explicitly requests another language. Preserve user-authored text and source content unless asked to edit it.';
   event(t, "queued", "任务已进入队列");
   pump();
   return publicTask(t);
@@ -604,7 +607,7 @@ function action(id, tid, b) {
         answer: b.answer,
         at: new Date().toISOString(),
       });
-      if (t.question.delegate && b.answer === "允许本次分工") {
+      if (t.question.delegate && ["允许本次分工", "Allow delegation"].includes(b.answer)) {
         t.delegateApproved = true;
       } else {
         const c = t.pending?.shift();

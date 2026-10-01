@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // 智能参考线（PPT 式）：边/中线对齐 + 等间距；纯计算，坐标一律用页面坐标
 const R = (b) => b.x + b.w, B = (b) => b.y + b.h;
 

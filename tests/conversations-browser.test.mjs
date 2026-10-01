@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // Real Chromium + disposable app server + local streaming model. No user credentials or paid API.
 import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import http from 'node:http';import {spawn} from 'node:child_process';import {createRequire} from 'node:module';
 import {browser} from './browser-driver.mjs';

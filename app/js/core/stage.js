@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // 舞台：把固定尺寸的"设备屏幕"（vw × vh）等比放进可用区域；
 // 支持 适应 / 任意百分比、Ctrl+滚轮以光标为中心缩放、空格或中键拖动平移。
 import { fitScale } from './viewport.js';

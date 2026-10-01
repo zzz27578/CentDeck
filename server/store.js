@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 
 // store.js —— 模板/项目读写、快照、还原、版本历史（仅用 node: 内置模块）

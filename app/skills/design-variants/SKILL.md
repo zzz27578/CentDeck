@@ -18,3 +18,5 @@ description: 用户要新建网页或比较独立设计方案时，生成可在�
 `pages` 只接受 HTML 文件，file 使用相对文件名如 index.html、about.html，不含 variants 前缀。同套页面用相对链接互通。样式/脚本可内联；需要独立 CSS/JS 时，在获知实际目录后先 `read_page` 新路径，再用 `write_files` 写入，更新引用。不要在 HTML 中引用不存在的资源。
 
 多套方案在结构、视觉方向上形成实质区别，保留已选方案；只改已有网页时改用 page-edit。target=app 按手机 H5 排版并兼容桌面。返回实际保存的路径、关联卡片和检查结果，不把示例、草案或成功提交描述为已视觉验收。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

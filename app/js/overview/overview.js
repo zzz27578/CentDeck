@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 总览：所有页面按真实桌面视口摊在无限画布上。连线从"具体的按钮/链接"连到目标页；
 // 弹窗等子页面画成挂在主页面下方的小卡片（虚线连到打开它的按钮）；长页面可展开成一格格的屏幕分镜。
 import { icon } from '../core/icons.js';
@@ -139,11 +142,11 @@ export function createOverview(app) {
     return f;
   }
   function buildCard(p) {
-    const card = el(`<div class="ov-card" data-file="${esc(p.file)}">
+    const card = el(i18nTpl`<div class="ov-card" data-file="${esc(p.file)}">
       <div class="ov-title"><b>${esc(p.title)}</b><span class="ov-file">${esc(p.file)}</span>
-        ${p.scan.popups.length ? `<span class="chip blue">${icon('popup', 11)}${p.scan.popups.length} 个弹窗</span>` : ''}
+        ${p.scan.popups.length ? i18nTpl`<span class="chip blue">${icon('popup', 11)}${p.scan.popups.length} 个弹窗</span>` : ''}
         <span class="chip">${p.scan.sections.length} 个版块</span>
-        <button data-a="expand" class="ov-tbtn" data-tip="${p.expanded ? '收起到首屏' : '展开全长（一格一屏）'}">${icon(p.expanded ? 'collapse' : 'expand', 13)}${p.expanded ? '收起' : '展开全长'}</button>
+        <button data-a="expand" class="ov-tbtn" data-tip="${p.expanded ? i18nText('收起到首屏') : i18nText('展开全长（一格一屏）')}">${icon(p.expanded ? 'collapse' : 'expand', 13)}${p.expanded ? i18nText('收起') : i18nText('展开全长')}</button>
         <button data-a="choose" class="ov-tbtn" data-tip="加入或移出选定页面">${icon('check',13)}选用</button><button data-a="edit" class="ov-tbtn" data-tip="进入编辑（双击卡片也行）">${icon('edit', 13)}编辑</button></div>
       <div class="ov-body"></div><div class="ov-mask"></div><div class="ov-marks"></div></div>`);
     const body = card.querySelector('.ov-body');
@@ -154,7 +157,7 @@ export function createOverview(app) {
     world.insertBefore(card, svg);
     card.querySelector('[data-a=expand]').onclick = (e) => { e.stopPropagation(); toggleExpand(p); };
     card.querySelector('[data-a=edit]').onclick = (e) => { e.stopPropagation(); openEdit(p); };
-    card.querySelector('[data-a=choose]').onclick = async e=>{e.stopPropagation();const proj=app.project(),old=proj.selectedPages||[],next=old.includes(p.file)?old.filter(f=>f!==p.file):[...old,p.file];await bus.doMeta({label:'挑选方案页面',apply:()=>proj.selectedPages=next,revert:()=>proj.selectedPages=old});styleCard.refresh();};
+    card.querySelector('[data-a=choose]').onclick = async e=>{e.stopPropagation();const proj=app.project(),old=proj.selectedPages||[],next=old.includes(p.file)?old.filter(f=>f!==p.file):[...old,p.file];await bus.doMeta({label:i18nText('挑选方案页面'),apply:()=>proj.selectedPages=next,revert:()=>proj.selectedPages=old});styleCard.refresh();};
     const title = card.querySelector('.ov-title');
     title.addEventListener('pointerdown', (e) => dragCard(e, p));
     card.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ov-title')) dragCard(e,p); });
@@ -177,7 +180,7 @@ export function createOverview(app) {
     p.subCards = [];
     if (!showSubs) return;
     p.scan.popups.forEach((pop) => {
-      const s = el(`<div class="ov-sub" style="width:${VW * SUB}px;height:${VH * SUB}px">
+      const s = el(i18nTpl`<div class="ov-sub" style="width:${VW * SUB}px;height:${VH * SUB}px">
         <div class="ov-title sub">${icon('popup', 12)}<b>${esc(pop.title)}</b><span class="ov-file">弹窗 · ${esc(p.title)}</span></div>
         <div class="ov-body"></div><div class="ov-mask"></div></div>`);
       const t = makeTile(p, 0, pop.loc);
@@ -186,7 +189,7 @@ export function createOverview(app) {
       s.querySelector('.ov-body').appendChild(t);
       s.addEventListener('pointerdown', (e) => dragSub(e, p, pop, s));
       s.addEventListener('dblclick', () => openEdit(p));
-      s.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); select(p.file); showMenu([{ title: pop.title }, { label: '@ 引用这个弹窗到助手', icon: 'at', onClick: () => refPage(p, pop.title) }, { label: '进入编辑', icon: 'edit', onClick: () => openEdit(p) }], e.clientX, e.clientY); });
+      s.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); select(p.file); showMenu([{ title: pop.title }, { label: i18nText('@ 引用这个弹窗到助手'), icon: 'at', onClick: () => refPage(p, pop.title) }, { label: i18nText('进入编辑'), icon: 'edit', onClick: () => openEdit(p) }], e.clientX, e.clientY); });
       world.insertBefore(s, svg);
       p.subCards.push(s);
     });
@@ -254,7 +257,7 @@ export function createOverview(app) {
     bus.saveMeta();
     buildTiles(p);
     const b = p.card.querySelector('[data-a=expand]');
-    b.innerHTML = icon(p.expanded ? 'collapse' : 'expand', 13) + (p.expanded ? '收起' : '展开全长');
+    b.innerHTML = icon(p.expanded ? 'collapse' : 'expand', 13) + (p.expanded ? i18nText('收起') : i18nText('展开全长'));
     placeCard(p);
     drawLinks();
   }
@@ -272,15 +275,15 @@ export function createOverview(app) {
   function cardMenu(p, x, y) {
     showMenu([
       { title: p.title },
-      { label: '@ 引用到助手', icon: 'at', hint: '让 AI 知道你说的是这一页', onClick: () => refPage(p) },
-      { label: '进入编辑', icon: 'edit', kbd: 'Enter', onClick: () => openEdit(p) },
-      { label: '从这页开始放映', icon: 'play', onClick: () => app.present(p.file) },
+      { label: i18nText('@ 引用到助手'), icon: 'at', hint: i18nText('让 AI 知道你说的是这一页'), onClick: () => refPage(p) },
+      { label: i18nText('进入编辑'), icon: 'edit', kbd: 'Enter', onClick: () => openEdit(p) },
+      { label: i18nText('从这页开始放映'), icon: 'play', onClick: () => app.present(p.file) },
       '-',
-      { label: p.expanded ? '收起到首屏' : '展开全长', icon: p.expanded ? 'collapse' : 'expand', onClick: () => toggleExpand(p) },
-      { label: '镜头对准这页', icon: 'target', kbd: 'Shift+2', onClick: () => flyTo(fitRect(blockRect(p))) },
+      { label: p.expanded ? i18nText('收起到首屏') : i18nText('展开全长'), icon: p.expanded ? 'collapse' : 'expand', onClick: () => toggleExpand(p) },
+      { label: i18nText('镜头对准这页'), icon: 'target', kbd: 'Shift+2', onClick: () => flyTo(fitRect(blockRect(p))) },
       '-',
-      { label: app.pageLocked(p.file) ? '解锁这页' : '锁定这页', icon: app.pageLocked(p.file) ? 'unlock' : 'lock', onClick: () => app.setPageLock(p.file, !app.pageLocked(p.file)) },
-      { label: '删除这页…', icon: 'trash', danger: true, onClick: () => removePage(p) },
+      { label: app.pageLocked(p.file) ? i18nText('解锁这页') : i18nText('锁定这页'), icon: app.pageLocked(p.file) ? 'unlock' : 'lock', onClick: () => app.setPageLock(p.file, !app.pageLocked(p.file)) },
+      { label: i18nText('删除这页…'), icon: 'trash', danger: true, onClick: () => removePage(p) },
     ], x, y);
   }
   function dragCard(e, p) {
@@ -304,7 +307,7 @@ export function createOverview(app) {
       window.removeEventListener('pointerup', up, true);
       if (!moved) return;
       const L = layout(), old = L[p.file] ? { ...L[p.file] } : null, now = { ...(L[p.file] || {}), x: p.x, y: p.y };
-      bus.doMeta({ label: `摆放页面「${p.title}」`, apply: () => { L[p.file] = now; }, revert: () => { if (old) L[p.file] = old; else delete L[p.file]; const q = byFile(p.file); if (q) { autoLayout(false); if (old) { q.x = old.x; q.y = old.y; } placeCard(q); drawLinks(); } } });
+      bus.doMeta({ label: i18nTpl`摆放页面「${p.title}」`, apply: () => { L[p.file] = now; }, revert: () => { if (old) L[p.file] = old; else delete L[p.file]; const q = byFile(p.file); if (q) { autoLayout(false); if (old) { q.x = old.x; q.y = old.y; } placeCard(q); drawLinks(); } } });
     };
     window.addEventListener('pointermove', mv, true);
     window.addEventListener('pointerup', up, true);
@@ -372,7 +375,7 @@ export function createOverview(app) {
           const b = fwd ? { x: T.x - 6, y: T.y + 60 } : { x: T.x + VW + 6, y: T.y + 60 };
           const dir = fwd ? 1 : -1;
           const cls = `${hot ? 'hot' : ''} ${dim ? 'dim' : ''} ${l.nav && !body.length ? 'nav' : ''}`;
-          addPath(curve(a, b, dir), cls, hot ? `「${esc(l.text || '链接')}」→ ${esc(T.title)}` : null, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+          addPath(curve(a, b, dir), cls, hot ? `「${esc(l.text || i18nText('链接'))}」→ ${esc(T.title)}` : null, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
           arrow(b, dir, cls);
           dot(a, cls);
         });
@@ -383,7 +386,7 @@ export function createOverview(app) {
         const a = { x: p.x + VW / 2, y: p.y + cardH(p) + 10 }, b = { x: T.x - 6, y: T.y + 110 };
         const hot = selected && (selected === p.file || selected === r.to);
         const cls = `redirect ${hot ? 'hot' : ''} ${selected && !hot ? 'dim' : ''}`;
-        addPath(`M${a.x} ${a.y} C${a.x} ${a.y + 300}, ${b.x - 400} ${b.y}, ${b.x} ${b.y}`, cls, `${icon('clock', 12)} ${r.kind === 'timer' ? `${Math.round(r.delay / 1000)} 秒后自动跳转` : r.kind === 'submit' ? '提交后跳转' : '脚本跳转'}`, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 120 });
+        addPath(`M${a.x} ${a.y} C${a.x} ${a.y + 300}, ${b.x - 400} ${b.y}, ${b.x} ${b.y}`, cls, `${icon('clock', 12)} ${r.kind === 'timer' ? i18nTpl`${Math.round(r.delay / 1000)} 秒后自动跳转` : r.kind === 'submit' ? i18nText('提交后跳转') : i18nText('脚本跳转')}`, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + 120 });
         arrow(b, 1, cls);
       });
       // 弹窗：按钮 → 子页面卡片
@@ -396,10 +399,10 @@ export function createOverview(app) {
         pop.triggers.forEach((tr, k) => {
           const t = trig(p, tr.loc);
           if (!t) return;
-          if (cam.z >= 0.35) world.appendChild(el(`<div class="ov-trig" style="left:${t.x + t.w}px;top:${t.y}px" data-tip="打开弹窗：${esc(pop.title)}">${icon('popup', 11)}</div>`));
+          if (cam.z >= 0.35) world.appendChild(el(i18nTpl`<div class="ov-trig" style="left:${t.x + t.w}px;top:${t.y}px" data-tip="打开弹窗：${esc(pop.title)}">${icon('popup', 11)}</div>`));
           if (k >= maxLines) return;
           const a = { x: t.x + t.w / 2, y: t.y + t.h };
-          const label = selected === p.file && k < 3 ? `点「${esc(tr.text || '按钮')}」打开` : null;
+          const label = selected === p.file && k < 3 ? i18nTpl`点「${esc(tr.text || i18nText('按钮'))}」打开` : null;
           addPath(`M${a.x} ${a.y} C${a.x} ${a.y + 260}, ${sx} ${sy - 260}, ${sx} ${sy - 4}`, cls, label, { x: (a.x + sx) / 2, y: (a.y + sy) / 2 });
           dot(a, cls);
         });
@@ -411,7 +414,7 @@ export function createOverview(app) {
         if (!t || !r) return;
         const h = cardH(p), clipped = r.y > h - 20;
         const a = { x: p.x + VW - 30, y: t.y + t.h / 2 }, b = { x: p.x + VW - 30, y: p.y + (clipped ? h - 12 : r.y + 20) };
-        addPath(`M${t.x + t.w} ${a.y} C${p.x + VW + 220} ${a.y}, ${p.x + VW + 220} ${b.y}, ${b.x} ${b.y}`, 'anchor hot', `${icon('anchor', 11)} ${clipped ? '往下跳到' : '跳到'}「${esc((p.scan.sections.find((s) => s.loc === an.to) || {}).title || an.target)}」`, { x: p.x + VW + 120, y: (a.y + b.y) / 2 });
+        addPath(`M${t.x + t.w} ${a.y} C${p.x + VW + 220} ${a.y}, ${p.x + VW + 220} ${b.y}, ${b.x} ${b.y}`, 'anchor hot', `${icon('anchor', 11)} ${clipped ? i18nText('往下跳到') : i18nText('跳到')}「${esc((p.scan.sections.find((s) => s.loc === an.to) || {}).title || an.target)}」`, { x: p.x + VW + 120, y: (a.y + b.y) / 2 });
         arrow(b, -1, 'anchor hot');
       });
     });
@@ -451,12 +454,12 @@ export function createOverview(app) {
       if (tools.context(e)) return;
       e.preventDefault();
       showMenu([
-        { label: '新建页面…', icon: 'plus', onClick: addPage },
-        { label: '看全部页面', icon: 'fit', kbd: 'Shift+1', onClick: fitAll },
-        { label: '自动重新排版', icon: 'grid', onClick: relayout },
+        { label: i18nText('新建页面…'), icon: 'plus', onClick: addPage },
+        { label: i18nText('看全部页面'), icon: 'fit', kbd: 'Shift+1', onClick: fitAll },
+        { label: i18nText('自动重新排版'), icon: 'grid', onClick: relayout },
         '-',
-        { label: showSubs ? '隐藏弹窗子页面' : '显示弹窗子页面', icon: 'popup', onClick: toggleSubs },
-        { label: '清除画布批注', icon: 'eraser', onClick: () => tools.clearInk() },
+        { label: showSubs ? i18nText('隐藏弹窗子页面') : i18nText('显示弹窗子页面'), icon: 'popup', onClick: toggleSubs },
+        { label: i18nText('清除画布批注'), icon: 'eraser', onClick: () => tools.clearInk() },
       ], e.clientX, e.clientY);
     });
   }
@@ -466,7 +469,7 @@ export function createOverview(app) {
     app.toggleAgent(true);
   }
   async function addPage() {
-    const title = await promptDlg({ title: '新建页面', label: '页面名字', value: '新页面', okLabel: '创建' });
+    const title = await promptDlg({ title: i18nText('新建页面'), label: i18nText('页面名字'), value: i18nText('新页面'), okLabel: i18nText('创建') });
     if (!title) return;
     try {
       const proj = await app.api.addPage(app.project().id, { title });
@@ -475,7 +478,7 @@ export function createOverview(app) {
     } catch { /* 已提示 */ }
   }
   async function removePage(p) {
-    const ok = await confirmDlg({ title: '删除页面', danger: true, okLabel: '删除', body: `删除「<b>${esc(p.title)}</b>」（${esc(p.file)}）？文件会先备份进版本历史。` });
+    const ok = await confirmDlg({ title: i18nText('删除页面'), danger: true, okLabel: i18nText('删除'), body: i18nTpl`删除「<b>${esc(p.title)}</b>」（${esc(p.file)}）？文件会先备份进版本历史。` });
     if (!ok) return;
     try {
       const proj = await app.api.removePage(app.project().id, p.file);
@@ -508,7 +511,7 @@ export function createOverview(app) {
       window.removeEventListener('pointerup', up, true);
       if (!moved) return;
       entry.subs[key] = o0;
-      app.bus.doMeta({ label: `摆放弹窗「${pop.title}」`, apply: () => { entry.subs[key] = now; }, revert: () => { entry.subs[key] = o0; const q = byFile(p.file); if (q) { placeCard(q); drawLinks(); } } });
+      app.bus.doMeta({ label: i18nTpl`摆放弹窗「${pop.title}」`, apply: () => { entry.subs[key] = now; }, revert: () => { entry.subs[key] = o0; const q = byFile(p.file); if (q) { placeCard(q); drawLinks(); } } });
     };
     window.addEventListener('pointermove', mv, true);
     window.addEventListener('pointerup', up, true);
@@ -518,7 +521,7 @@ export function createOverview(app) {
   const fitAll = () => pages.length && flyTo(fitRect(bounds()));
   function relayout() {
     const L = layout(), old = JSON.parse(JSON.stringify(L));
-    bus.doMeta({ label: '自动重新排版', apply: () => { Object.keys(L).forEach((k) => { if (L[k]) { delete L[k].x; delete L[k].y; } }); }, revert: () => { Object.keys(L).forEach((k) => delete L[k]); Object.assign(L, old); rebuild(); } });
+    bus.doMeta({ label: i18nText('自动重新排版'), apply: () => { Object.keys(L).forEach((k) => { if (L[k]) { delete L[k].x; delete L[k].y; } }); }, revert: () => { Object.keys(L).forEach((k) => delete L[k]); Object.assign(L, old); rebuild(); } });
     autoLayout(true);
     pages.forEach(placeCard);
     drawLinks();
@@ -551,7 +554,7 @@ export function createOverview(app) {
     world.appendChild(svg);
     host.appendChild(world);
     wrap.appendChild(host);
-    toolbar = el(`<div class="ov-toolbar">
+    toolbar = el(i18nTpl`<div class="ov-toolbar">
       <button class="dock-toggle" data-a="fit" data-tip="看全部页面" data-kbd="Shift+1">${icon('fit', 15)}全部</button>
       <span class="dock-sep"></span>
       <div class="seg"><button data-lm="main" data-tip="每两页之间只画一条主线">主要连线</button><button data-lm="all" data-tip="每个按钮 / 链接都画出来">全部连线</button></div>
@@ -561,7 +564,7 @@ export function createOverview(app) {
       <button class="dock-toggle" data-a="add" data-tip="新建一个空白页面">${icon('plus', 15)}新页面</button>
       </div>`);
     wrap.appendChild(toolbar);
-    const zoom = el(`<div class="zoom-dock"><button class="icon-btn" data-z="out">${icon('minus', 16)}</button><button class="zoom-val" data-z="fit" data-tip="看全部">20%</button><button class="icon-btn" data-z="in">${icon('plus', 16)}</button></div>`);
+    const zoom = el(i18nTpl`<div class="zoom-dock"><button class="icon-btn" data-z="out">${icon('minus', 16)}</button><button class="zoom-val" data-z="fit" data-tip="看全部">20%</button><button class="icon-btn" data-z="in">${icon('plus', 16)}</button></div>`);
     wrap.appendChild(zoom);
     zoom.onclick = (e) => {
       const k = e.target.closest('[data-z]') && e.target.closest('[data-z]').dataset.z;
@@ -581,8 +584,8 @@ export function createOverview(app) {
     toolbar.querySelectorAll('[data-lm]').forEach((b) => { b.onclick = () => { linkMode = b.dataset.lm; localStorage.setItem('cd.ovLinks', linkMode); syncToolbar(); drawLinks(); }; });
     syncToolbar();
     bindCanvas();
-    app.setHint('滚轮缩放 · 空格平移 · 拖动页面 · 双击编辑');
-    app.setStatusRight(`${vp.device === 'mobile' ? '手机' : '电脑'} ${VW}×${VH}`);
+    app.setHint(i18nText('滚轮缩放 · 空格平移 · 拖动页面 · 双击编辑'));
+    app.setStatusRight(`${vp.device === 'mobile' ? i18nText('手机') : i18nText('电脑')} ${VW}×${VH}`);
     if (!app.project().pages.length) { cam = {x: 100, y: 120, z: 1}; applyCam(); app.toggleAgent(true); return; }
     const proj = app.project();
     const set = new Set(proj.pages.map((p) => p.file));
@@ -590,7 +593,7 @@ export function createOverview(app) {
     pages = [];
     for (const pg of proj.pages) {
       let src = '';
-      try { src = await app.api.readFile(proj.id, pg.file); } catch { src = '<title>读取失败</title>'; }
+      try { src = await app.api.readFile(proj.id, pg.file); } catch { src = i18nText('<title>读取失败</title>'); }
       if (!host || currentGeneration !== generation) return;
       pages.push({ file: pg.file, title: pg.title, src, parsed: parse(src), scan: scanPage(pg.file, src, set), expanded: !!(L[pg.file] && L[pg.file].expanded) });
     }
@@ -615,21 +618,21 @@ export function createOverview(app) {
 
   // ---------- 左侧"结构"面板 ----------
   bus.registerPanel({
-    id: 'structure', title: '网页结构', icon: 'overview', views: ['overview', 'edit'],
+    id: 'structure', title: i18nText('网页结构'), icon: 'overview', views: ['overview', 'edit'],
     render(box) {
       if (app.view() === 'edit') { this._layerOff = renderPageStructure(app, box); return; }
       const paint = () => {
         box.innerHTML = '';
-        if (!pages.length) { box.appendChild(el('<div class="empty">还没有页面</div>')); return; }
+        if (!pages.length) { box.appendChild(el(i18nText('<div class="empty">还没有页面</div>'))); return; }
         pages.forEach((p) => {
           const outs = [...new Set(p.scan.links.filter((l) => !l.self).map((l) => l.to))];
-          const row = el(`<div class="tree-page ${selected === p.file ? 'on' : ''}">
+          const row = el(i18nTpl`<div class="tree-page ${selected === p.file ? 'on' : ''}">
             <div class="tree-head">${icon('file', 15)}<b>${esc(p.title)}</b><span class="grow"></span>
               <button class="icon-btn sm" data-a="edit" data-tip="进入编辑">${icon('edit', 14)}</button></div>
-            ${p.scan.popups.map((x) => `<div class="tree-item" data-pop="${x.loc}">${icon('popup', 13)}弹窗：${esc(x.title)}${x.triggers.length ? `<small>由「${esc(x.triggers[0].text || '按钮')}」打开</small>` : ''}</div>`).join('')}
+            ${p.scan.popups.map((x) => i18nTpl`<div class="tree-item" data-pop="${x.loc}">${icon('popup', 13)}弹窗：${esc(x.title)}${x.triggers.length ? i18nTpl`<small>由「${esc(x.triggers[0].text || i18nText('按钮'))}」打开</small>` : ''}</div>`).join('')}
             ${p.scan.sections.slice(0, 12).map((s) => `<div class="tree-item" data-sec="${s.loc}">${icon('anchor', 13)}${esc(s.title)}</div>`).join('')}
-            ${outs.map((t) => `<div class="tree-item link" data-to="${esc(t)}">${icon('link', 13)}跳到 ${esc((byFile(t) || {}).title || t)}</div>`).join('')}
-            ${p.scan.redirects.map((r) => `<div class="tree-item link" data-to="${esc(r.to)}">${icon('clock', 13)}${r.kind === 'submit' ? '提交后' : '自动'}跳到 ${esc((byFile(r.to) || {}).title || r.to)}</div>`).join('')}</div>`);
+            ${outs.map((t) => i18nTpl`<div class="tree-item link" data-to="${esc(t)}">${icon('link', 13)}跳到 ${esc((byFile(t) || {}).title || t)}</div>`).join('')}
+            ${p.scan.redirects.map((r) => i18nTpl`<div class="tree-item link" data-to="${esc(r.to)}">${icon('clock', 13)}${r.kind === 'submit' ? i18nText('提交后') : i18nText('自动')}跳到 ${esc((byFile(r.to) || {}).title || r.to)}</div>`).join('')}</div>`);
           row.querySelector('.tree-head').onclick = (e) => { if (e.target.closest('[data-a=edit]')) { openEdit(p); return; } select(p.file); flyTo(fitRect(blockRect(p))); };
           row.querySelectorAll('[data-sec]').forEach((n) => { n.onclick = () => { const r = p.rects && p.rects[n.dataset.sec]; select(p.file); if (r && r.y > VH && !p.expanded) toggleExpand(p); flyTo(fitRect({ x: p.x, y: p.y + (r ? r.y : 0), w: VW, h: VH }, 60, 2)); }; });
           row.querySelectorAll('[data-pop]').forEach((n, i) => { n.onclick = () => { select(p.file); if (!showSubs) toggleSubs(); const s = p.subCards[i]; if (s) flyTo(fitRect({ x: parseFloat(s.style.left), y: parseFloat(s.style.top), w: VW * SUB, h: VH * SUB }, 60, 2)); }; });
@@ -646,9 +649,9 @@ export function createOverview(app) {
   });
 
   const inOv = () => app.state.view === 'overview' && !!host;
-  bindKey('Shift+1', { id: 'ov.fit', label: '看全部页面', group: '总览', when: inOv, run: fitAll });
-  bindKey('Shift+2', { id: 'ov.focus', label: '镜头对准选中页', group: '总览', when: () => inOv() && !!selected, run: () => flyTo(fitRect(blockRect(byFile(selected)))) });
-  bindKey('Enter', { label: '进入编辑选中页', group: '总览', when: () => inOv() && !!selected, run: () => openEdit(byFile(selected)) });
+  bindKey('Shift+1', { id: 'ov.fit', label: i18nText('看全部页面'), group: i18nText('总览'), when: inOv, run: fitAll });
+  bindKey('Shift+2', { id: 'ov.focus', label: i18nText('镜头对准选中页'), group: i18nText('总览'), when: () => inOv() && !!selected, run: () => flyTo(fitRect(blockRect(byFile(selected)))) });
+  bindKey('Enter', { label: i18nText('进入编辑选中页'), group: i18nText('总览'), when: () => inOv() && !!selected, run: () => openEdit(byFile(selected)) });
   bindKey('Esc', { hidden: true, when: () => inOv() && !!selected, run: () => select(null) });
   bus.on('source', () => { /* 编辑写回后回到总览会重新读取 */ });
   bus.on('stack', () => { if (inOv()) { rebuild(); tools.repaint(); styleCard.refresh(); } });

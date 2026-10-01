@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // Disposable browser QA workspace; never reads the user's configuration or projects.
 import fs from "node:fs";
 import path from "node:path";

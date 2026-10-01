@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Copyright (c) 2026 zzz27578 and CentDeck contributors. | SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -6,6 +7,9 @@
 <title>CentDeck 百映 · 网页工作台</title>
 <link rel="icon" href="/app/assets/centdeck.svg" type="image/svg+xml">
 <script>
+  const uiLanguage = localStorage.getItem('cd.language') === 'en' ? 'en' : 'zh-CN';
+  document.documentElement.lang = uiLanguage;
+  if (uiLanguage === 'en') document.title = 'CentDeck · AI Frontend Workbench';
   const savedStyle = localStorage.getItem('cd.style');
   const activeStyle = savedStyle || 'noir';
   document.documentElement.dataset.style = activeStyle;
@@ -26,6 +30,7 @@
 <link rel="stylesheet" href="/app/css/refinements.css">
 <link rel="stylesheet" href="/app/css/conversations.css">
 <link rel="stylesheet" href="/app/css/provider-settings.css">
+<link rel="stylesheet" href="/app/css/language.css">
 </head>
 <body class="home">
 <div id="app"></div>

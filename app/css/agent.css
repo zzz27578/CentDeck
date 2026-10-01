@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 /* agent.css —— 助手对话框 */
 .agent { width: 0; flex: none; overflow: hidden; background: #fff; border-left: 1px solid var(--line); transition: width var(--mid) var(--ease); position: relative; z-index: 16; }
 .agent.open { width: var(--agent-w, 400px); }

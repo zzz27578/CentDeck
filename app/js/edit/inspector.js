@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 右侧属性栏：没选中时显示本页信息和操作提示；选中后按"文字 / 字体 / 位置大小 / 操作"分组
 import { icon } from '../core/icons.js';
 import { el, esc, toast } from '../core/ui.js';
@@ -6,11 +9,11 @@ import { comboFor } from '../core/keys.js';
 import { getDevice } from '../core/viewport.js';
 
 const FONTS = [
-  ['跟随页面', ''], ['微软雅黑', '"Microsoft YaHei", sans-serif'], ['苹方', '"PingFang SC", sans-serif'],
-  ['思源黑体', '"Source Han Sans SC", "Noto Sans SC", sans-serif'], ['宋体', 'SimSun, serif'], ['黑体', 'SimHei, sans-serif'],
-  ['楷体', 'KaiTi, serif'], ['Arial', 'Arial, sans-serif'], ['Georgia', 'Georgia, serif'], ['等宽', 'ui-monospace, Consolas, monospace'],
+  [i18nText('跟随页面'), ''], [i18nText('微软雅黑'), '"Microsoft YaHei", sans-serif'], [i18nText('苹方'), '"PingFang SC", sans-serif'],
+  [i18nText('思源黑体'), '"Source Han Sans SC", "Noto Sans SC", sans-serif'], [i18nText('宋体'), 'SimSun, serif'], [i18nText('黑体'), 'SimHei, sans-serif'],
+  [i18nText('楷体'), 'KaiTi, serif'], ['Arial', 'Arial, sans-serif'], ['Georgia', 'Georgia, serif'], [i18nText('等宽'), 'ui-monospace, Consolas, monospace'],
 ];
-const KIND = { h1: '大标题', h2: '标题', h3: '小标题', h4: '小标题', p: '段落', a: '链接', button: '按钮', img: '图片', svg: '图形', span: '文字', li: '列表项', ul: '列表', section: '版块', header: '页眉', footer: '页脚', nav: '导航', div: '区块', input: '输入框', label: '标签', em: '强调文字', strong: '加粗文字', b: '加粗文字', article: '文章块', form: '表单', table: '表格' };
+const KIND = { h1: i18nText('大标题'), h2: i18nText('标题'), h3: i18nText('小标题'), h4: i18nText('小标题'), p: i18nText('段落'), a: i18nText('链接'), button: i18nText('按钮'), img: i18nText('图片'), svg: i18nText('图形'), span: i18nText('文字'), li: i18nText('列表项'), ul: i18nText('列表'), section: i18nText('版块'), header: i18nText('页眉'), footer: i18nText('页脚'), nav: i18nText('导航'), div: i18nText('区块'), input: i18nText('输入框'), label: i18nText('标签'), em: i18nText('强调文字'), strong: i18nText('加粗文字'), b: i18nText('加粗文字'), article: i18nText('文章块'), form: i18nText('表单'), table: i18nText('表格') };
 const hex = (c) => { const m = String(c).match(/\d+(\.\d+)?/g); return m && m.length >= 3 ? '#' + m.slice(0, 3).map((v) => ('0' + Math.round(+v).toString(16)).slice(-2)).join('') : '#000000'; };
 
 // 元素的"文字段"（与写回引擎的段落编号一致：空白段也占号）
@@ -32,18 +35,18 @@ export function renderInspector(ed, info, clear) {
   const e = info.element, win = ed.frame.win, cs = win.getComputedStyle(e);
   const locked = app.isLocked(info);
   const elLocked = !info.generated && app.elementLocked(ed.page, info.selector);
-  const kind = KIND[info.tag] || '元素';
-  box.innerHTML = `
+  const kind = KIND[info.tag] || i18nText('元素');
+  box.innerHTML = i18nTpl`
     <div class="insp-head">
       <div class="insp-title"><span class="grow">${esc(kind)} <span style="color:var(--dim);font-weight:400">&lt;${esc(info.tag)}&gt;</span></span>
-        ${info.generated ? '' : `<button class="icon-btn sm ${elLocked ? 'on' : ''}" data-a="lock" data-tip="${elLocked ? '解锁' : '锁定：手和 AI 都改不了'}" data-kbd="Ctrl+Shift+L">${icon(elLocked ? 'lock' : 'unlock', 15)}</button>`}
+        ${info.generated ? '' : `<button class="icon-btn sm ${elLocked ? 'on' : ''}" data-a="lock" data-tip="${elLocked ? i18nText('解锁') : i18nText('锁定：手和 AI 都改不了')}" data-kbd="Ctrl+Shift+L">${icon(elLocked ? 'lock' : 'unlock', 15)}</button>`}
         <button class="icon-btn sm" data-a="parent" data-tip="选择外面一层" data-kbd="Shift+Enter">${icon('parent', 15)}</button>
         <button class="icon-btn sm" data-a="close" data-tip="收起属性栏" data-kbd="Alt+P">${icon('close', 14)}</button></div>
-      <div class="insp-sub">${info.generated ? '程序运行时生成（代码里没有它自己的一行）' : `代码第 ${info.line}${info.endLine > info.line ? '–' + info.endLine : ''} 行 · ${Math.round(e.getBoundingClientRect().width)} × ${Math.round(e.getBoundingClientRect().height)}`}</div>
-      ${info.generated ? '<div class="insp-warn red">它是脚本临时生成的，没法直接改代码；想改就右键"记成草图标记"交给 AI。</div>' : ''}
-      ${locked ? `<div class="insp-warn">已锁定${app.pageLocked(ed.page) ? '（整页锁定）' : ''}，修改入口都关掉了。</div>` : ''}
-      ${getDevice() === 'mobile' && !info.generated ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">手机模式：这里改的位置、大小、字号、颜色只对手机屏幕生效；文字内容两边共用。</div>' : ''}
-      ${!info.generated && info.transformAnim ? '<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">带动画：挪位和缩放走独立通道，不会和动画打架。</div>' : ''}
+      <div class="insp-sub">${info.generated ? i18nText('程序运行时生成（代码里没有它自己的一行）') : i18nTpl`代码第 ${info.line}${info.endLine > info.line ? '–' + info.endLine : ''} 行 · ${Math.round(e.getBoundingClientRect().width)} × ${Math.round(e.getBoundingClientRect().height)}`}</div>
+      ${info.generated ? i18nText('<div class="insp-warn red">它是脚本临时生成的，没法直接改代码；想改就右键"记成草图标记"交给 AI。</div>') : ''}
+      ${locked ? i18nTpl`<div class="insp-warn">已锁定${app.pageLocked(ed.page) ? i18nText('（整页锁定）') : ''}，修改入口都关掉了。</div>` : ''}
+      ${getDevice() === 'mobile' && !info.generated ? i18nText('<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">手机模式：这里改的位置、大小、字号、颜色只对手机屏幕生效；文字内容两边共用。</div>') : ''}
+      ${!info.generated && info.transformAnim ? i18nText('<div class="insp-warn" style="background:var(--accent-soft);color:var(--accent-2)">带动画：挪位和缩放走独立通道，不会和动画打架。</div>') : ''}
     </div>
     <div class="insp-tabs seg"><button data-tab="text">文字</button><button data-tab="layout">布局</button></div>
     <div class="insp-body ${locked || info.generated ? 'disabled' : ''}">
@@ -88,14 +91,14 @@ export function renderInspector(ed, info, clear) {
     q('[data-sec=text]').hidden = false;
     const host = q('[data-host=text]');
     gaps.forEach((g, i) => {
-      if (gaps.length > 1) host.appendChild(el(`<div class="insp-seg-label">第 ${i + 1} 段</div>`));
+      if (gaps.length > 1) host.appendChild(el(i18nTpl`<div class="insp-seg-label">第 ${i + 1} 段</div>`));
       const ta = el('<textarea class="ipt insp-text" rows="2"></textarea>');
       const lead = /^\s*/.exec(g.text)[0], trail = /\s*$/.exec(g.text)[0];
       ta.value = g.text.trim();
       const apply = () => {
         const nv = ta.value.replace(/\n+/g, ' ');
         if (nv === g.text.trim()) return;
-        if (!nv.trim() && gaps.length === 1 && info.textOnly) { toast('文字不能全部删空', 'err'); ta.value = g.text.trim(); return; }
+        if (!nv.trim() && gaps.length === 1 && info.textOnly) { toast(i18nText('文字不能全部删空'), 'err'); ta.value = g.text.trim(); return; }
         ed.commitText([{ loc: info.loc, index: g.index, oldText: g.text, newText: lead + nv + trail }]);
       };
       ta.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ta.blur(); } });
@@ -106,12 +109,12 @@ export function renderInspector(ed, info, clear) {
 
   // 字体
   q('[data-k=weight]').value = parseInt(cs.fontWeight) || 400;
-  q('[data-k=weight]').onchange = e => ed.applyStyle({'font-weight':e.target.value}, '改字重');
+  q('[data-k=weight]').onchange = e => ed.applyStyle({'font-weight':e.target.value}, i18nText('改字重'));
   const lh = q('[data-k=lh]'), ls = q('[data-k=ls]');
   lh.value = cs.lineHeight === 'normal' ? '' : parseFloat(cs.lineHeight);
   ls.value = parseFloat(cs.letterSpacing) || 0;
-  lh.onchange = () => { if (!lh.value || +lh.value > 0) ed.applyStyle({'line-height':lh.value ? lh.value+'px' : null}, '改行高'); };
-  ls.onchange = () => { if (Number.isFinite(+ls.value)) ed.applyStyle({'letter-spacing':ls.value+'px'}, '改字间距'); };
+  lh.onchange = () => { if (!lh.value || +lh.value > 0) ed.applyStyle({'line-height':lh.value ? lh.value+'px' : null}, i18nText('改行高')); };
+  ls.onchange = () => { if (Number.isFinite(+ls.value)) ed.applyStyle({'letter-spacing':ls.value+'px'}, i18nText('改字间距')); };
   [lh, ls].forEach(input => input.addEventListener('keydown', ev => {
     if (ev.key === 'Enter') { ev.preventDefault(); input.onchange(); }
   }));
@@ -119,31 +122,31 @@ export function renderInspector(ed, info, clear) {
   const fsI = q('[data-k=fs]'), fsR = q('[data-k=fsr]');
   fsI.value = fs; fsR.value = Math.min(96, Math.max(8, fs));
   fsR.oninput = () => { fsI.value = fsR.value; e.style.setProperty('font-size', fsR.value + 'px', 'important'); };
-  fsR.onchange = () => ed.applyStyle({ 'font-size': fsR.value + 'px' }, `字号改为 ${fsR.value}px`);
-  fsI.onchange = () => { const v = Math.round(+fsI.value); if (v > 0) ed.applyStyle({ 'font-size': v + 'px' }, `字号改为 ${v}px`); };
+  fsR.onchange = () => ed.applyStyle({ 'font-size': fsR.value + 'px' }, i18nTpl`字号改为 ${fsR.value}px`);
+  fsI.onchange = () => { const v = Math.round(+fsI.value); if (v > 0) ed.applyStyle({ 'font-size': v + 'px' }, i18nTpl`字号改为 ${v}px`); };
   const ff = q('[data-k=ff]');
   [...FONTS, ...(window.__cdFonts || []).map((f) => [f.name, `"${f.name}"`])].forEach(([l, v]) => { const o = document.createElement('option'); o.textContent = l; o.value = v; ff.appendChild(o); });
   ff.value = getStyleProp(info, 'font-family') || '';
-  ff.onchange = () => ed.applyStyle({ 'font-family': ff.value || null }, '改字体');
+  ff.onchange = () => ed.applyStyle({ 'font-family': ff.value || null }, i18nText('改字体'));
   const cur = hex(cs.color);
   const sw = q('[data-host=sw]');
   const colors = app.project().tokens && app.project().tokens.colors ? Object.entries(app.project().tokens.colors) : [];
   colors.slice(0, 10).forEach(([k, c]) => {
-    const b = el(`<button class="swatch ${String(c).toLowerCase() === cur ? 'on' : ''}" style="background:${esc(c)}" data-tip="规范色 ${esc(k)} ${esc(c)}"></button>`);
-    b.onclick = () => ed.applyStyle({ color: c }, `颜色改为 ${k}`);
+    const b = el(i18nTpl`<button class="swatch ${String(c).toLowerCase() === cur ? 'on' : ''}" style="background:${esc(c)}" data-tip="规范色 ${esc(k)} ${esc(c)}"></button>`);
+    b.onclick = () => ed.applyStyle({ color: c }, i18nTpl`颜色改为 ${k}`);
     sw.appendChild(b);
   });
   const ci = q('[data-k=color]');
   ci.value = cur;
   ci.oninput = () => { e.style.setProperty('color', ci.value, 'important'); };
-  ci.onchange = () => ed.applyStyle({ color: ci.value }, `颜色改为 ${ci.value}`);
+  ci.onchange = () => ed.applyStyle({ color: ci.value }, i18nTpl`颜色改为 ${ci.value}`);
   const bold = parseInt(cs.fontWeight, 10) >= 600;
   const bB = q('[data-k=bold]');
   bB.classList.toggle('on', bold);
-  bB.onclick = () => ed.applyStyle({ 'font-weight': bold ? '400' : '700' }, bold ? '取消加粗' : '加粗');
+  bB.onclick = () => ed.applyStyle({ 'font-weight': bold ? '400' : '700' }, bold ? i18nText('取消加粗') : i18nText('加粗'));
   q('[data-k=align]').querySelectorAll('button').forEach((b) => {
     b.classList.toggle('on', b.dataset.v === cs.textAlign || (b.dataset.v === 'left' && cs.textAlign === 'start'));
-    b.onclick = () => ed.applyStyle({ 'text-align': b.dataset.v }, '文字对齐：' + b.textContent);
+    b.onclick = () => ed.applyStyle({ 'text-align': b.dataset.v }, i18nText('文字对齐：') + b.textContent);
   });
 
   // 位置与大小
@@ -163,25 +166,25 @@ export function renderInspector(ed, info, clear) {
   [xI, yI, wI, hI, scI0].forEach((n) => { n.disabled = inline; });
   if (inline) {
     const sec = xI.closest('.p-sec');
-    sec.querySelector('.p-sec-title span:last-child').textContent = '行内文字：挪动或缩放它所在的整块';
-    sec.insertAdjacentHTML('beforeend', '<div class="hint" style="margin-top:6px">浏览器规定行内文字（比如一句话里的加粗、链接）不能单独挪动或缩放。按 <kbd>Shift</kbd>+<kbd>Enter</kbd> 选外面一层，或者直接拖它——会自动拖整块。</div>');
+    sec.querySelector('.p-sec-title span:last-child').textContent = i18nText('行内文字：挪动或缩放它所在的整块');
+    sec.insertAdjacentHTML('beforeend', i18nText('<div class="hint" style="margin-top:6px">浏览器规定行内文字（比如一句话里的加粗、链接）不能单独挪动或缩放。按 <kbd>Shift</kbd>+<kbd>Enter</kbd> 选外面一层，或者直接拖它——会自动拖整块。</div>'));
   }
-  wI.onchange = () => { const v = Math.round(+wI.value); if (v > 0) ed.applyStyle({ width: v + 'px' }, `宽度改为 ${v}px`); };
-  hI.onchange = () => { const v = Math.round(+hI.value); if (v > 0) ed.applyStyle({ height: v + 'px' }, `高度改为 ${v}px`); };
+  wI.onchange = () => { const v = Math.round(+wI.value); if (v > 0) ed.applyStyle({ width: v + 'px' }, i18nTpl`宽度改为 ${v}px`); };
+  hI.onchange = () => { const v = Math.round(+hI.value); if (v > 0) ed.applyStyle({ height: v + 'px' }, i18nTpl`高度改为 ${v}px`); };
   const scI = q('[data-k=sc]'), scV = q('[data-k=scv]');
   const sc0 = Math.round((parseFloat(cs.scale) || 1) * 100);
   scI.value = sc0; scV.textContent = sc0 + '%';
   scI.oninput = () => { scV.textContent = scI.value + '%'; e.style.setProperty('scale', String(scI.value / 100), 'important'); };
-  scI.onchange = () => { const v = +scI.value; ed.applyStyle({ scale: v === 100 ? null : String(v / 100) }, `缩放到 ${v}%`); };
+  scI.onchange = () => { const v = +scI.value; ed.applyStyle({ scale: v === 100 ? null : String(v / 100) }, i18nTpl`缩放到 ${v}%`); };
 }
 
 function renderPage(ed, box) {
   const app = ed.app;
   const pg = app.project().pages.find((p) => p.file === ed.page) || {};
   const locked = app.pageLocked(ed.page);
-  box.innerHTML = `
+  box.innerHTML = i18nTpl`
     <div class="insp-head"><div class="insp-title"><span class="grow">${esc(pg.title || '')}</span>
-      <button class="icon-btn sm ${locked ? 'on' : ''}" data-a="plock" data-tip="${locked ? '解锁本页' : '锁定本页：整页只读'}">${icon(locked ? 'lock' : 'unlock', 15)}</button>
+      <button class="icon-btn sm ${locked ? 'on' : ''}" data-a="plock" data-tip="${locked ? i18nText('解锁本页') : i18nText('锁定本页：整页只读')}">${icon(locked ? 'lock' : 'unlock', 15)}</button>
       <button class="icon-btn sm" data-a="close" data-tip="收起属性栏" data-kbd="Alt+P">${icon('close', 14)}</button></div>
       <div class="insp-sub">${esc(ed.page || '')}</div></div>
     <div class="insp-tips">

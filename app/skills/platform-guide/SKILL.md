@@ -48,3 +48,5 @@ description: 百映助手的默认操作规范。用于识别内置任务与外�
 最终回复列出实际保存的页面/规范、做过的检查和仍待验证之处。工具返回“格式与版本校验通过”只证明文件提交成功；`ui_state` 或 `ui_action` 回执不等于视觉验收。外部 MCP 可用 capture_page({"projectId":"实际ID","path":"index.html","width":393,"height":852}) 得到 PNG 和实际视口尺寸；这是独立的初始项目渲染，仅加载本地/内嵌资源，不包含在线表单或点击状态。截图与控件测试分别报告。没有实际截图/交互证据时明确写“尚未浏览器验收”。不要为让统计好看而删除便签、解除锁定或改任务状态。
 
 外部接管模式 `mcp:external`：客户端 `external_requests` → `external_claim` → 读取 messages/tools → 同会话以最新 lease 调用 `external_respond`。百映执行工具并生成下一轮请求；客户端返回最终纯文本才结束。租约三分钟，可重新 claim 续期；请求最长十分钟。取消、超时或撤权后不回传迟到结果。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

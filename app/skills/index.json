@@ -1,58 +1,58 @@
 [
-  {
-    "id": "platform-guide",
-    "name": "百映平台操作指南",
-    "icon": "book",
-    "desc": "百映助手的默认操作规范。用于识别内置任务与外部 MCP 的能力边界、加载相关技能、按当前版本修改项目，以及准确汇报执行和验收状态。",
-    "file": "platform-guide/SKILL.md",
-    "tier": "expert"
-  },
-  {
-    "id": "design-variants",
-    "name": "出几版方案",
-    "icon": "overview",
-    "desc": "用户要新建网页或比较独立设计方案时，生成可在总览比较的真实页面和关联规范卡；不用于替换已选定方案的局部编辑。",
-    "file": "design-variants/SKILL.md",
-    "tier": "expert"
-  },
-  {
-    "id": "design-system",
-    "name": "配色与按钮样式",
-    "icon": "palette",
-    "desc": "用户要确定或修改项目配色、字体、字号、间距、圆角或按钮规范时使用；区分规范建议、保存 tokens 和实际应用到页面。",
-    "file": "design-system/SKILL.md",
-    "tier": "expert"
-  },
-  {
-    "id": "tidy-import",
-    "name": "整理导入的网页",
-    "icon": "code",
-    "desc": "用户要求整理导入网页、修复源码映射或让指定元素可编辑时使用；保留原有框架和交互，不默认静态化或承诺任意框架都能回写。",
-    "file": "tidy-import/SKILL.md",
-    "tier": "economy"
-  },
-  {
-    "id": "apply-marks",
-    "name": "按草图标记修改",
-    "icon": "marks",
-    "desc": "用户引用草图、彩色便签、编号或框选区域时，按稳定标记身份定位要求并修改相关页面；不用于无标记关联的整站重设计。",
-    "file": "apply-marks/SKILL.md",
-    "tier": "economy"
-  },
-  {
-    "id": "page-edit",
-    "name": "改这一页",
-    "icon": "edit",
-    "desc": "修改现有页面的文案、结构、样式、交互或手机适配，保持局部范围与真实源码；用户要新建独立方案时使用 design-variants。",
-    "file": "page-edit/SKILL.md",
-    "tier": "economy"
-  },
-  {
-    "id": "centdeck-orchestrate",
-    "name": "任务统筹",
-    "icon": "layers",
-    "desc": "用户要求多个助手协作，或已授权协作且任务有独立可分工作时，按真实能力、范围和依赖分派；简单任务默认独立完成。",
-    "file": "centdeck-orchestrate/SKILL.md",
-    "tier": "expert"
-  }
+    {
+        "id": "platform-guide",
+        "name": "百映平台操作指南",
+        "icon": "book",
+        "desc": "百映助手的默认操作规范。用于识别内置任务与外部 MCP 的能力边界、加载相关技能、按当前版本修改项目，以及准确汇报执行和验收状态。",
+        "file": "platform-guide/SKILL.md",
+        "tier": "expert"
+    },
+    {
+        "id": "design-variants",
+        "name": "出几版方案",
+        "icon": "overview",
+        "desc": "用户要新建网页或比较独立设计方案时，生成可在总览比较的真实页面和关联规范卡；不用于替换已选定方案的局部编辑。",
+        "file": "design-variants/SKILL.md",
+        "tier": "expert"
+    },
+    {
+        "id": "design-system",
+        "name": "配色与按钮样式",
+        "icon": "palette",
+        "desc": "用户要确定或修改项目配色、字体、字号、间距、圆角或按钮规范时使用；区分规范建议、保存 tokens 和实际应用到页面。",
+        "file": "design-system/SKILL.md",
+        "tier": "expert"
+    },
+    {
+        "id": "tidy-import",
+        "name": "整理导入的网页",
+        "icon": "code",
+        "desc": "用户要求整理导入网页、修复源码映射或让指定元素可编辑时使用；保留原有框架和交互，不默认静态化或承诺任意框架都能回写。",
+        "file": "tidy-import/SKILL.md",
+        "tier": "economy"
+    },
+    {
+        "id": "apply-marks",
+        "name": "按草图标记修改",
+        "icon": "marks",
+        "desc": "用户引用草图、彩色便签、编号或框选区域时，按稳定标记身份定位要求并修改相关页面；不用于无标记关联的整站重设计。",
+        "file": "apply-marks/SKILL.md",
+        "tier": "economy"
+    },
+    {
+        "id": "page-edit",
+        "name": "改这一页",
+        "icon": "edit",
+        "desc": "修改现有页面的文案、结构、样式、交互或手机适配，保持局部范围与真实源码；用户要新建独立方案时使用 design-variants。",
+        "file": "page-edit/SKILL.md",
+        "tier": "economy"
+    },
+    {
+        "id": "centdeck-orchestrate",
+        "name": "任务统筹",
+        "icon": "layers",
+        "desc": "用户要求多个助手协作，或已授权协作且任务有独立可分工作时，按真实能力、范围和依赖分派；简单任务默认独立完成。",
+        "file": "centdeck-orchestrate/SKILL.md",
+        "tier": "expert"
+    }
 ]

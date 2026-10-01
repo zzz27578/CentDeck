@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 import {spawn} from 'node:child_process';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);

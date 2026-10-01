@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // Older running servers omit internal/official. Recognize the built-in identity
 // as well, so a backend restart is never required merely to hide base skills.
 const BUILTIN_IDS = new Set([

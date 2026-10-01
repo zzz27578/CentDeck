@@ -1,0 +1,4 @@
+# Normalize repository text while keeping the Windows launcher native.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary

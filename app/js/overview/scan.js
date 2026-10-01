@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 页面结构扫描（纯静态、不跑脚本）：跳转链接及触发按钮、页内锚点、版块、弹窗及打开它的按钮、自动跳转
 import { parse, attr } from '../engine/parse.js';
 
@@ -33,7 +36,7 @@ export function scanPage(file, src, pageSet) {
   const top = cands.filter((e) => !cands.some((o) => o !== e && isAncestor(els, o.loc, e.loc)));
   top.forEach((e) => {
     const head = els.find((h) => /^h[1-4]$/.test(h.tag) && isAncestor(els, e.loc, h.loc));
-    out.popups.push({ loc: e.loc, id: e.id, title: (head && textOf(head)) || attr(e.attrs, 'aria-label') || e.id || '弹窗', triggers: [] });
+    out.popups.push({ loc: e.loc, id: e.id, title: (head && textOf(head)) || attr(e.attrs, 'aria-label') || e.id || i18nText('弹窗'), triggers: [] });
   });
   const popById = new Map(out.popups.filter((x) => x.id).map((x) => [x.id, x]));
 
@@ -68,7 +71,7 @@ export function scanPage(file, src, pageSet) {
     if (out.popups.some((x) => isAncestor(els, x.loc, e.loc) || x.loc === e.loc)) return;
     if (e.tag === 'main' && els.some((c) => c.parent === e.loc && c.tag === 'section')) return;
     const head = els.find((h) => /^h[1-3]$/.test(h.tag) && isAncestor(els, e.loc, h.loc));
-    const name = { header: '页眉', footer: '页脚', main: '主体' }[e.tag];
+    const name = { header: i18nText('页眉'), footer: i18nText('页脚'), main: i18nText('主体') }[e.tag];
     out.sections.push({ loc: e.loc, id: e.id, tag: e.tag, title: (head && textOf(head)) || name || e.id || e.tag });
   });
 

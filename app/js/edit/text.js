@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 就地改字：点哪里光标就在哪里（像 Word）；回车确认、Esc 取消、点别处自动确认。
 // 提交时逐个元素对比"文字段"，只把变了的字符写回源码；如果删掉了里面的换行、加粗等结构，整次取消。
 import { toast } from '../core/ui.js';
@@ -56,7 +59,7 @@ export function startTextEdit(ed, target, pt) {
   if (!range || !target.contains(range.startContainer)) { range = doc.createRange(); range.selectNodeContents(target); }
   sel.removeAllRanges();
   sel.addRange(range);
-  ed.setHint('改字中 · <b>回车</b> 确认 · <b>Esc</b> 取消 · 点页面别处也会确认');
+  ed.setHint(i18nText('改字中 · <b>回车</b> 确认 · <b>Esc</b> 取消 · 点页面别处也会确认'));
 
   let done = false;
   const finish = (cancel) => {
@@ -81,12 +84,12 @@ export function startTextEdit(ed, target, pt) {
     if (cancel) { if (res.changes && res.changes.length) ed.rerender(); return; }
     if (res.structural) {
       ed.rerender();
-      ed.showVerdict({ light: 'red', reason: '改字时把里面的换行、加粗或图标之类的结构删掉或挪动了。这属于改结构，已恢复原样；只改文字就能直接写回。' }, { label: '改字' });
+      ed.showVerdict({ light: 'red', reason: i18nText('改字时把里面的换行、加粗或图标之类的结构删掉或挪动了。这属于改结构，已恢复原样；只改文字就能直接写回。') }, { label: i18nText('改字') });
       return;
     }
     if (res.unsupported) {
       ed.rerender();
-      ed.showVerdict({ light: 'red', reason: '在原来没有文字的位置新增了文字，代码里找不到可以对应的一段，已恢复原样。可以把这句话写进草图标记交给 AI。' }, { label: '改字' });
+      ed.showVerdict({ light: 'red', reason: i18nText('在原来没有文字的位置新增了文字，代码里找不到可以对应的一段，已恢复原样。可以把这句话写进草图标记交给 AI。') }, { label: i18nText('改字') });
       return;
     }
     if (!res.changes.length) return;
@@ -103,5 +106,5 @@ export function startTextEdit(ed, target, pt) {
   win.addEventListener('blur', onBlur);
   ed.cancelText = () => finish(true);
   ed.commitTextEdit = () => finish(false);
-  if (ed.isLocked({ generated: false, selector: ed.selectorOf(target) })) { finish(true); toast('这个元素已锁定', 'err'); }
+  if (ed.isLocked({ generated: false, selector: ed.selectorOf(target) })) { finish(true); toast(i18nText('这个元素已锁定'), 'err'); }
 }

@@ -1,3 +1,4 @@
+/* Third-party component. Original license retained; see THIRD_PARTY_NOTICES.md. */
 /*! parse5 8.0.1 — MIT License — https://github.com/inikulin/parse5
 Copyright (c) 2013-2019 Ivan Nikulin (ifaaan@gmail.com, https://github.com/inikulin)
 

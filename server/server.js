@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 
 // server.js —— 端口监听、静态文件、API、自动打开浏览器、终端退出（零 npm 依赖）

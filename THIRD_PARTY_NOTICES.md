@@ -22,6 +22,12 @@ dependencies.
 
 ## Standards and design references
 
+Repository screenshots may show user-provided website content or avatars.
+Rights in those depicted assets remain with their respective owners; the
+CentDeck Source License does not relicense them.
+
 MCP, Agent Skills and other referenced projects are interoperability or
 design references. Mentioning them does not imply endorsement, bundling
 their implementation, or that an external client has been tested.
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

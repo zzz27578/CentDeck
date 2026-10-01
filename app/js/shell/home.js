@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { mountCustomHome } from '../core/extensions.js';
 // 首页：描述想做的网站 → 空白项目 / 模板 / 导入；我的项目（搜索、排序、重命名、删除需输入名称确认）
 import { icon } from '../core/icons.js';
@@ -8,24 +11,24 @@ import { pixelField, mountPixelField } from '../core/pixel-field.js';
 import { pickFiles, filesFromDrop, runImport } from './importer.js';
 import { mountHomeComposer } from './home-composer.js';
 
-const KIND = { template: ['模板', 'blue'], blank: ['空白', ''], import: ['导入', 'green'] };
+const KIND = { template: [i18nText('模板'), 'blue'], blank: [i18nText('空白'), ''], import: [i18nText('导入'), 'green'] };
 let sortBy = localStorage.getItem('cd.homeSort') || 'updated';
 
 export function ago(iso) {
   const t = new Date(iso).getTime();
   if (!t) return '';
   const s = (Date.now() - t) / 1000;
-  if (s < 60) return '刚刚';
-  if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
-  if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
-  if (s < 172800) return '昨天';
+  if (s < 60) return i18nText('刚刚');
+  if (s < 3600) return Math.floor(s / 60) + i18nText(' 分钟前');
+  if (s < 86400) return Math.floor(s / 3600) + i18nText(' 小时前');
+  if (s < 172800) return i18nText('昨天');
   const d = new Date(t);
-  return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+  return i18nTpl`${d.getMonth() + 1} 月 ${d.getDate()} 日`;
 }
 
 function thumb(url) {
   const { w, h } = getViewport();
-  const box = el(`<div class="pc-thumb"><iframe loading="lazy" tabindex="-1" title="预览"></iframe></div>`);
+  const box = el(i18nTpl`<div class="pc-thumb"><iframe loading="lazy" tabindex="-1" title="预览"></iframe></div>`);
   const f = box.querySelector('iframe');
   Object.assign(f.style, { width: w + 'px', height: h + 'px' });
   f.src = url;
@@ -34,18 +37,18 @@ function thumb(url) {
 }
 
 function confirmDelete(app, p, after) {
-  const body = el(`<div class="del-confirm">
+  const body = el(i18nTpl`<div class="del-confirm">
     <p>将永久删除「<b>${esc(p.name)}</b>」的全部页面、历史版本、草图标记和便签，<b>无法恢复</b>。</p>
     <label>请输入项目名称 <b>${esc(p.name)}</b> 确认删除</label>
     <input class="ipt" placeholder="${esc(p.name)}"></div>`);
   const ipt = body.querySelector('input');
   const close = openModal({
-    title: '删除项目', width: 460, body,
+    title: i18nText('删除项目'), width: 460, body,
     actions: [
-      { label: '取消' },
-      { label: '永久删除', kind: 'danger', onClick: async (c) => {
+      { label: i18nText('取消') },
+      { label: i18nText('永久删除'), kind: 'danger', onClick: async (c) => {
         if (ipt.value.trim() !== p.name) { ipt.classList.add('shake'); setTimeout(() => ipt.classList.remove('shake'), 400); ipt.focus(); return; }
-        try { await app.api.deleteProject(p.id); c(); toast(`「${p.name}」已删除`, 'ok'); after(); } catch { /* 已提示 */ }
+        try { await app.api.deleteProject(p.id); c(); toast(i18nTpl`「${p.name}」已删除`, 'ok'); after(); } catch { /* 已提示 */ }
       } },
     ],
   });
@@ -59,13 +62,13 @@ function confirmDelete(app, p, after) {
 }
 
 async function rename(app, p, after) {
-  const name = await promptDlg({ title: '重命名项目', label: '新名字', value: p.name, okLabel: '保存' });
+  const name = await promptDlg({ title: i18nText('重命名项目'), label: i18nText('新名字'), value: p.name, okLabel: i18nText('保存') });
   if (!name || name === p.name) return;
   try {
     const full = await app.api.getProject(p.id);
     delete full.tokens;
     await app.api.saveProject(p.id, { ...full, name });
-    toast('已重命名', 'ok');
+    toast(i18nText('已重命名'), 'ok');
     after();
   } catch { /* 已提示 */ }
 }
@@ -73,22 +76,22 @@ async function rename(app, p, after) {
 function projectMenu(app, p, x, y, anchor, refresh) {
   showMenu([
     { title: p.name },
-    { label: '打开', icon: 'chevRight', onClick: () => app.openProject(p.id) },
-    { label: '重命名…', icon: 'edit', onClick: () => rename(app, p, refresh) },
+    { label: i18nText('打开'), icon: 'chevRight', onClick: () => app.openProject(p.id) },
+    { label: i18nText('重命名…'), icon: 'edit', onClick: () => rename(app, p, refresh) },
     '-',
-    { label: '删除项目…', icon: 'trash', danger: true, onClick: () => confirmDelete(app, p, refresh) },
+    { label: i18nText('删除项目…'), icon: 'trash', danger: true, onClick: () => confirmDelete(app, p, refresh) },
   ], x, y, anchor ? { anchor, align: 'right' } : {});
 }
 
 async function startFromPrompt(app, {text,target='web',model,refs=[]}) {
-  const name = text.replace(/\s+/g, ' ').trim().slice(0, 18) || '新网站';
+  const name = text.replace(/\s+/g, ' ').trim().slice(0, 18) || i18nText('新网站');
   try {
     const proj = await app.api.createBlank(name);
     proj.target=target;await app.api.saveProject(proj.id,proj);
     setDevice(target==='app'?'mobile':'desktop');
     await app.openProject(proj.id);
     if(app.project()?.id!==proj.id)return false;
-    app.agent.prefill(text+'\n\n设计目标：'+(target==='app'?'手机网页 / H5，优先 393px 手机尺寸，兼容桌面浏览。':'Web 网页，优先桌面布局并适配手机。'),{model,refs});
+    app.agent.prefill(text+i18nText('\n\n设计目标：')+(target==='app'?i18nText('手机网页 / H5，优先 393px 手机尺寸，兼容桌面浏览。'):i18nText('Web 网页，优先桌面布局并适配手机。')),{model,refs});
     return true;
   } catch { return false; }
 }
@@ -97,7 +100,7 @@ export async function renderHome(app) {
   app.disposeHomeComposer?.();
   document.body.className = 'home';
   const root = document.getElementById('app');
-  root.innerHTML = `
+  root.innerHTML = i18nTpl`
     <div class="home-page">
       <header class="home-bar">
         <div class="wordmark">${mark(38)}<b>CentDeck</b><small>百映</small></div>
@@ -143,14 +146,14 @@ export async function renderHome(app) {
   const $ = (s) => root.querySelector(s);
   app.disposeHomeComposer=mountHomeComposer(app,root,draft=>startFromPrompt(app,draft));
   $('[data-a=blank]').onclick = async () => {
-    const name = await promptDlg({ title: '新建空白项目', label: '项目名字', value: '我的新网站', okLabel: '创建' });
+    const name = await promptDlg({ title: i18nText('新建空白项目'), label: i18nText('项目名字'), value: i18nText('我的新网站'), okLabel: i18nText('创建') });
     if (!name) return;
     try { const p = await app.api.createBlank(name); app.openProject(p.id); } catch { /* 已提示 */ }
   };
   $('[data-a=tpl]').onclick = () => $('[data-templates-sec]').scrollIntoView({ behavior: 'smooth', block: 'start' });
   $('[data-a=import]').onclick = (e) => showMenu([
-    { label: '选择网页文件…', icon: 'file', hint: '一个或多个 .html，连同它用到的图片、样式', onClick: async () => { const f = await pickFiles(false); if (f.length) runImport(app, f); } },
-    { label: '选择整个文件夹…', icon: 'layers', hint: '推荐：图片、样式都能带上', onClick: async () => { const f = await pickFiles(true); if (f.length) runImport(app, f); } },
+    { label: i18nText('选择网页文件…'), icon: 'file', hint: i18nText('一个或多个 .html，连同它用到的图片、样式'), onClick: async () => { const f = await pickFiles(false); if (f.length) runImport(app, f); } },
+    { label: i18nText('选择整个文件夹…'), icon: 'layers', hint: i18nText('推荐：图片、样式都能带上'), onClick: async () => { const f = await pickFiles(true); if (f.length) runImport(app, f); } },
   ], 0, 0, { anchor: e.currentTarget, minWidth: 280 });
   $('[data-a=settings]').onclick = () => app.openSettings();
   $('[data-a=theme]').onclick = toggleTheme;
@@ -173,17 +176,17 @@ export async function renderHome(app) {
   const paint = () => {
     let list = [...projects];
     list = list.sort((a, b) => (sortBy === 'name' ? a.name.localeCompare(b.name, 'zh') : sortBy === 'created' ? String(b.createdAt).localeCompare(String(a.createdAt)) : String(b.updatedAt).localeCompare(String(a.updatedAt))));
-    $('[data-count]').textContent = projects.length ? projects.length + ' 个' : '';
+    $('[data-count]').textContent = projects.length ? projects.length + i18nText(' 个') : '';
     root.querySelectorAll('[data-sort] button').forEach((b) => b.classList.toggle('on', b.dataset.v === sortBy));
     grid.innerHTML = '';
-    if (!projects.length) { grid.appendChild(el('<div class="empty wide">你的第一个项目，从这里开始。</div>')); return; }
+    if (!projects.length) { grid.appendChild(el(i18nText('<div class="empty wide">你的第一个项目，从这里开始。</div>'))); return; }
     list.forEach((p) => {
       const [kind, kcls] = KIND[p.kind] || KIND.blank;
-      const card = el(`<div class="pc">
+      const card = el(i18nTpl`<div class="pc">
         <div class="pc-acts"><button class="icon-btn sm" data-a="del" data-tip="删除">${icon('trash', 15)}</button><button class="icon-btn sm" data-a="more" data-tip="更多">${icon('more', 16)}</button></div>
         <div class="pc-body"><div class="pc-name">${esc(p.name)}</div>
-          <div class="pc-meta"><span class="chip ${kcls}">${kind}</span><span>${p.pages.length} 页</span><span>${esc(ago(p.updatedAt || p.createdAt))}修改</span>${p.marks ? `<span class="chip red">${p.marks} 条待办标记</span>` : ''}</div></div></div>`);
-      card.insertBefore(p.pages[0] ? thumb(`/preview/${encodeURIComponent(p.id)}/${p.pages[0].file}`) : el(`<div class="pc-thumb blank">${icon('sparkle', 28)}<span>还没有页面</span></div>`), card.firstChild.nextSibling);
+          <div class="pc-meta"><span class="chip ${kcls}">${kind}</span><span>${p.pages.length} 页</span><span>${esc(ago(p.updatedAt || p.createdAt))}修改</span>${p.marks ? i18nTpl`<span class="chip red">${p.marks} 条待办标记</span>` : ''}</div></div></div>`);
+      card.insertBefore(p.pages[0] ? thumb(`/preview/${encodeURIComponent(p.id)}/${p.pages[0].file}`) : el(i18nTpl`<div class="pc-thumb blank">${icon('sparkle', 28)}<span>还没有页面</span></div>`), card.firstChild.nextSibling);
       card.onclick = (e) => { if (!e.target.closest('.pc-acts')) app.openProject(p.id); };
       card.oncontextmenu = (e) => { e.preventDefault(); projectMenu(app, p, e.clientX, e.clientY, null, refresh); };
       card.querySelector('[data-a=del]').onclick = () => confirmDelete(app, p, refresh);
@@ -197,11 +200,11 @@ export async function renderHome(app) {
 
   const tbox = $('[data-templates]');
   templates.forEach((t) => {
-    const card = el(`<div class="pc"><div class="pc-body"><div class="pc-name">${esc(t.name)}</div><div class="pc-desc">${esc(t.description || '')}</div>
+    const card = el(i18nTpl`<div class="pc"><div class="pc-body"><div class="pc-name">${esc(t.name)}</div><div class="pc-desc">${esc(t.description || '')}</div>
       <div class="pc-meta"><span>${t.pages.length} 页</span><span class="pc-use">${icon('plus', 13)}用这个模板新建</span></div></div></div>`);
     if (t.pages[0]) card.insertBefore(thumb(`/tpl/${encodeURIComponent(t.id)}/${t.pages[0].file}`), card.firstChild);
     card.onclick = async () => {
-      const name = await promptDlg({ title: `用「${t.name}」新建`, label: '项目名字', value: t.name, okLabel: '创建' });
+      const name = await promptDlg({ title: i18nTpl`用「${t.name}」新建`, label: i18nText('项目名字'), value: t.name, okLabel: i18nText('创建') });
       if (!name) return;
       try { const proj = await app.api.createProject(t.id, name); app.openProject(proj.id); } catch { /* 已提示 */ }
     };

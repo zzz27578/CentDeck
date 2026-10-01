@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 草图：画笔 / 箭头 / 方框 / 圆圈 / 便签钉 / 参考图 / 橡皮。画在页面上方的透明层里（页面坐标，随页面滚动），
 // 贴着下面的元素走；每一笔都能写一句要求，全部可撤销；攒一批导出任务单交给 AI。
 import { el, esc, uid, toast, showMenu } from '../core/ui.js';
@@ -10,15 +13,15 @@ import { nextColorNumber, migrateColorNumbers } from '../core/note-numbers.js';
 const SVGNS = 'http://www.w3.org/2000/svg';
 import {COLORS,notePalette} from '../core/note-colors.js';
 export {COLORS};
-export const TYPE_NAME = { pen: '画笔', arrow: '箭头', rect: '方框', ellipse: '圆圈', note: '便签钉', image: '参考图', verdict: '修改受阻' };
+export const TYPE_NAME = { pen: i18nText('画笔'), arrow: i18nText('箭头'), rect: i18nText('方框'), ellipse: i18nText('圆圈'), note: i18nText('便签钉'), image: i18nText('参考图'), verdict: i18nText('修改受阻') };
 const TOOLS = [
-  { id: 'pen', label: '画笔', tip: '画笔：随手圈画', icon: 'pen', kbd: 'D' },
-  { id: 'arrow', label: '箭头', tip: '箭头：从这里指到那里（按住 Shift 走整角度）', icon: 'arrow', kbd: 'A' },
-  { id: 'rect', label: '方框', tip: '方框：框出一块区域（Shift 画正方形）', icon: 'rect', kbd: 'F' },
-  { id: 'ellipse', label: '圆圈', tip: '圆圈：圈出重点（Shift 画正圆）', icon: 'ellipse', kbd: 'G' },
-  { id: 'note', label: '便签钉', tip: '便签钉：点一下，写一句要求', icon: 'note', kbd: 'S' },
-  { id: 'image', label: '插图', tip: '插图：放一张参考图，像 Word 一样随意拖动、缩放（也可以直接粘贴或把图片拖进来）', icon: 'image', kbd: 'I' },
-  { id: 'eraser', label: '橡皮', tip: '橡皮：点或划过标记就擦掉', icon: 'eraser', kbd: 'X' },
+  { id: 'pen', label: i18nText('画笔'), tip: i18nText('画笔：随手圈画'), icon: 'pen', kbd: 'D' },
+  { id: 'arrow', label: i18nText('箭头'), tip: i18nText('箭头：从这里指到那里（按住 Shift 走整角度）'), icon: 'arrow', kbd: 'A' },
+  { id: 'rect', label: i18nText('方框'), tip: i18nText('方框：框出一块区域（Shift 画正方形）'), icon: 'rect', kbd: 'F' },
+  { id: 'ellipse', label: i18nText('圆圈'), tip: i18nText('圆圈：圈出重点（Shift 画正圆）'), icon: 'ellipse', kbd: 'G' },
+  { id: 'note', label: i18nText('便签钉'), tip: i18nText('便签钉：点一下，写一句要求'), icon: 'note', kbd: 'S' },
+  { id: 'image', label: i18nText('插图'), tip: i18nText('插图：放一张参考图，像 Word 一样随意拖动、缩放（也可以直接粘贴或把图片拖进来）'), icon: 'image', kbd: 'I' },
+  { id: 'eraser', label: i18nText('橡皮'), tip: i18nText('橡皮：点或划过标记就擦掉'), icon: 'eraser', kbd: 'X' },
 ];
 
 export function setupSketch(app) {
@@ -166,8 +169,8 @@ export function setupSketch(app) {
     closeCard();
     if (!htmlLayer) return;
     const [px, py] = pinPos(m);
-    cardEl = el(`<div class="sk-card" data-id="${m.id}" style="left:${px}px;top:${py}px">
-      <div class="skc-head"><i style="background:${m.color}"></i><span>${esc(TYPE_NAME[m.type] || '标记')}</span>${m.meta ? `<small>${esc(m.meta)}</small>` : ''}</div>
+    cardEl = el(i18nTpl`<div class="sk-card" data-id="${m.id}" style="left:${px}px;top:${py}px">
+      <div class="skc-head"><i style="background:${m.color}"></i><span>${esc(TYPE_NAME[m.type] || i18nText('标记'))}</span>${m.meta ? `<small>${esc(m.meta)}</small>` : ''}</div>
       <textarea class="ipt" rows="3" aria-label="便签内容" placeholder="添加批注…">${esc(m.text || '')}</textarea>
       <div class="skc-acts">
         ${notePalette(m.color)}
@@ -179,11 +182,11 @@ export function setupSketch(app) {
     nodes.get(m.id)?.pin.classList.add('editing');
     const ta = cardEl.querySelector('textarea');
     let saving=false;
-    const confirm = async () => { if(saving)return;saving=true;const text=ta.value.trim();selId=null;closeCard();if(text!==m.text||m.done)await update(m, {text, done:false}, '保存便签', ed);select(ed, null); };
+    const confirm = async () => { if(saving)return;saving=true;const text=ta.value.trim();selId=null;closeCard();if(text!==m.text||m.done)await update(m, {text, done:false}, i18nText('保存便签'), ed);select(ed, null); };
     ta.addEventListener('blur', confirm);
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); confirm(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); confirm(); } });
     cardEl.querySelectorAll('button').forEach(b=>b.onpointerdown=e=>e.preventDefault());
-    cardEl.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => update(m, { color: b.dataset.c, text:ta.value }, '换标记颜色', ed); });
+    cardEl.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => update(m, { color: b.dataset.c, text:ta.value }, i18nText('换标记颜色'), ed); });
     cardEl.querySelector('[data-a=done]').onclick = confirm;
     cardEl.querySelector('[data-a=del]').onclick = () => remove([m], ed);
     const n = nodes.get(m.id);
@@ -205,7 +208,7 @@ export function setupSketch(app) {
     m.page = m.page || ed.page;
     m.createdAt = new Date().toISOString();
     m.vp = { w: getViewport().w, h: getViewport().h };
-    await bus.doMeta({ label: '新增草图标记：' + (TYPE_NAME[m.type] || ''), apply: () => list.push(m), revert: () => { const i = list.indexOf(m); if (i >= 0) list.splice(i, 1); } });
+    await bus.doMeta({ label: i18nText('新增草图标记：') + (TYPE_NAME[m.type] || ''), apply: () => list.push(m), revert: () => { const i = list.indexOf(m); if (i >= 0) list.splice(i, 1); } });
     if (ed && ed.ov) { render(ed); select(ed, m.id, focus); }
     bus.emit('marks');
     return m;
@@ -223,7 +226,7 @@ export function setupSketch(app) {
     const list = marks();
     const idx = ms.map((m) => list.indexOf(m));
     await bus.doMeta({
-      label: ms.length > 1 ? `擦掉 ${ms.length} 个标记` : '删除草图标记',
+      label: ms.length > 1 ? i18nTpl`擦掉 ${ms.length} 个标记` : i18nText('删除草图标记'),
       apply: () => ms.forEach((m) => { const i = list.indexOf(m); if (i >= 0) list.splice(i, 1); }),
       revert: () => ms.map((m, k) => [m, idx[k]]).sort((a, b) => a[1] - b[1]).forEach(([m, i]) => list.splice(Math.min(i, list.length), 0, m)),
     });
@@ -257,7 +260,7 @@ export function setupSketch(app) {
         const z = ed.stage.zoom;
         if (type === 'note') {
           const a = anchorFor(ed, p0.x, p0.y);
-          add({ type: 'note', color, pts: [[p0.x, p0.y]], anchor: a, text: '', done: false, meta: a ? `贴在 <${a.tag}> 第 ${a.line} 行` : '' }, ed, true);
+          add({ type: 'note', color, pts: [[p0.x, p0.y]], anchor: a, text: '', done: false, meta: a ? i18nTpl`贴在 <${a.tag}> 第 ${a.line} 行` : '' }, ed, true);
           return;
         }
         if (type === 'eraser') { erase(ed, e); return; }
@@ -300,7 +303,7 @@ export function setupSketch(app) {
           if (Math.max(w, h) * z < 6) return;
           if (type === 'pen') last.pts = simplify(last.pts, 0.7 / z).map((p) => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]);
           const a = anchorFor(ed, (Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
-          add({ ...last, anchor: a, text: '', done: false, meta: a ? `在 <${a.tag}> 第 ${a.line} 行附近` : '' }, ed, false);
+          add({ ...last, anchor: a, text: '', done: false, meta: a ? i18nTpl`在 <${a.tag}> 第 ${a.line} 行附近` : '' }, ed, false);
         };
         window.addEventListener('pointermove', mv, true);
         window.addEventListener('pointerup', up, true);
@@ -337,14 +340,14 @@ export function setupSketch(app) {
       type: 'arrow', intent: 'move', color: '#8b5cf6', width: Math.round((3 / ed.stage.zoom) * 10) / 10,
       pts: [c, [c[0] + Math.round(dx), c[1] + Math.round(dy)]],
       anchor: info.generated ? null : { selector: info.selector, x0: r.x, y0: r.y, tag: info.tag, line: info.line }, text: '', done: false,
-      meta: `想把 ${ed.describe(info)} 挪到箭头指的位置（向${dx >= 0 ? '右' : '左'} ${Math.abs(Math.round(dx))}、向${dy >= 0 ? '下' : '上'} ${Math.abs(Math.round(dy))} 像素）`,
+      meta: i18nTpl`想把 ${ed.describe(info)} 挪到箭头指的位置（向${dx >= 0 ? i18nText('右') : i18nText('左')} ${Math.abs(Math.round(dx))}、向${dy >= 0 ? i18nText('下') : i18nText('上')} ${Math.abs(Math.round(dy))} 像素）`,
     }, ed, true);
   }
 
   // ---------- 参考图：像 Word 里的浮动图片，放在所有内容上方，可拖可缩放，不写进代码 ----------
   async function uploadImage(file) {
     const name = (file.name || 'paste.png').replace(/[^\w.一-龥-]+/g, '_');
-    const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error('读取图片失败')); r.readAsDataURL(file); });
+    const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = () => rej(new Error(i18nText('读取图片失败'))); r.readAsDataURL(file); });
     const saved = await app.api.saveAsset(app.project().id, `ref-${Date.now().toString(36)}-${name}`, b64);
     return { asset: saved.filename, src: saved.url };
   }
@@ -359,7 +362,7 @@ export function setupSketch(app) {
     const c = at || { x: ed.frame.win.scrollX + w0 / 2, y: ed.frame.win.scrollY + ed.frame.win.innerHeight / 2 };
     const pts = [[Math.round(c.x - w / 2), Math.round(c.y - h / 2)], [Math.round(c.x + w / 2), Math.round(c.y + h / 2)]];
     const a = anchorFor(ed, c.x, c.y);
-    await add({ type: 'image', color: '#3b82f6', src: img.src, asset: img.asset, pts, ratio: nw / nh, anchor: a, text: '', done: false, meta: `参考图 assets/${img.asset}` }, ed, false);
+    await add({ type: 'image', color: '#3b82f6', src: img.src, asset: img.asset, pts, ratio: nw / nh, anchor: a, text: '', done: false, meta: i18nTpl`参考图 assets/${img.asset}` }, ed, false);
     ed.setTool('select');
   }
   async function imageFromFiles(ed, files, at) {
@@ -368,7 +371,7 @@ export function setupSketch(app) {
     for (const f of pics) {
       try { await addImage(ed, await uploadImage(f), at); } catch { /* 已提示 */ }
     }
-    toast('参考图已放上页面：拖动挪位置，拖角缩放；它只是草图，不会写进代码', 'ok', 3600);
+    toast(i18nText('参考图已放上页面：拖动挪位置，拖角缩放；它只是草图，不会写进代码'), 'ok', 3600);
     return true;
   }
   function pickImage(ed) {
@@ -408,7 +411,7 @@ export function setupSketch(app) {
         const up = () => {
           window.removeEventListener('pointermove', mv, true);
           window.removeEventListener('pointerup', up, true);
-          if (pts !== m.pts) update(m, { pts }, '缩放参考图', ed);
+          if (pts !== m.pts) update(m, { pts }, i18nText('缩放参考图'), ed);
         };
         window.addEventListener('pointermove', mv, true);
         window.addEventListener('pointerup', up, true);
@@ -441,7 +444,7 @@ export function setupSketch(app) {
       window.removeEventListener('pointercancel', up, true);
       if (ev.type === 'pointercancel') { render(ed); return; }
       if (!d) return;
-      update(m, { pts: m.pts.map((q) => [q[0] + d[0], q[1] + d[1]]) }, m.type === 'image' ? '挪动参考图' : '挪动草图标记', ed);
+      update(m, { pts: m.pts.map((q) => [q[0] + d[0], q[1] + d[1]]) }, m.type === 'image' ? i18nText('挪动参考图') : i18nText('挪动草图标记'), ed);
     };
     window.addEventListener('pointermove', mv, true);
     window.addEventListener('pointerup', up, true);
@@ -453,11 +456,11 @@ export function setupSketch(app) {
     if (!m) return false;
     select(ed, m.id);
     showMenu([
-      { title: TYPE_NAME[m.type] || '标记' },
-      { label: '写要求', icon: 'edit', onClick: () => select(ed, m.id, true) },
-      { label: `@ 引用 #${m.no} 到助手`, icon: 'at', onClick: () => app.agent.addRef({ kind: 'mark', id:m.id, color:m.color, no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'}` }) },
+      { title: TYPE_NAME[m.type] || i18nText('标记') },
+      { label: i18nText('写要求'), icon: 'edit', onClick: () => select(ed, m.id, true) },
+      { label: i18nTpl`@ 引用 #${m.no} 到助手`, icon: 'at', onClick: () => app.agent.addRef({ kind: 'mark', id:m.id, color:m.color, no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || i18nText('标记')}` }) },
       '-',
-      { label: '删除', icon: 'trash', kbd: 'Del', danger: true, onClick: () => remove([m], ed) },
+      { label: i18nText('删除'), icon: 'trash', kbd: 'Del', danger: true, onClick: () => remove([m], ed) },
     ], e.clientX, e.clientY);
     return true;
   }
@@ -476,7 +479,7 @@ export function setupSketch(app) {
       const r = info ? ed.pageRect(info.element) : { x: ed.frame.win.scrollX + 40, y: ed.frame.win.scrollY + 40 };
       add({ type: 'verdict', color: '#e5484d', pts: [[r.x, r.y]], auto: true, text: '', done: false,
         anchor: info && !info.generated ? { selector: info.selector, x0: r.x, y0: r.y, tag: info.tag, line: info.line } : null,
-        meta: `${extra.label || '修改'}受阻：${String(res.reason || '').slice(0, 60)}` }, ed, true);
+        meta: i18nTpl`${extra.label || i18nText('修改')}受阻：${String(res.reason || '').slice(0, 60)}` }, ed, true);
     },
     markElement: (info) => {
       const ed = app.editor;
@@ -488,8 +491,8 @@ export function setupSketch(app) {
     addRaw: (m) => add(m, null, false),
     focusMark: (m) => { const ed = app.editor; if (!ed.frame) return; const [x, y] = pinPos(m); ed.frame.win.scrollTo({ top: Math.max(0, y - 200), behavior: 'smooth' }); select(ed, m.id); },
     dockTail(ed) {
-      const box = el(`<div style="display:flex;align-items:center;gap:2px">
-        <div class="dock-colors" data-colors>${COLORS.map((c) => `<button data-c="${c}" style="background:${c};color:${c}" data-tip="笔的颜色"></button>`).join('')}</div>
+      const box = el(i18nTpl`<div style="display:flex;align-items:center;gap:2px">
+        <div class="dock-colors" data-colors>${COLORS.map((c) => i18nTpl`<button data-c="${c}" style="background:${c};color:${c}" data-tip="笔的颜色"></button>`).join('')}</div>
         <button class="icon-btn" data-vis data-tip="显示 / 隐藏标记" data-tip-place="top">${icon('eye', 18)}</button>
         <button class="dock-toggle" data-sheet data-tip="把所有标记整理成任务单，复制给任何 AI" data-tip-place="top">${icon('copy', 15)}任务单</button></div>`);
       box.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => { color = b.dataset.c; localStorage.setItem('cd.skColor', color); app.sketch.syncDock(ed, box.parentElement); }; });
@@ -509,7 +512,7 @@ export function setupSketch(app) {
 
   TOOLS.forEach((t) => {
     app.editor.registerTool(drawTool(t.id));
-    bindKey(t.kbd, { id: 'tool.' + t.id, label: t.label, group: '草图', when: () => app.state.view === 'edit' && !app.editor.textEditing, run: () => app.editor.setTool(t.id) });
+    bindKey(t.kbd, { id: 'tool.' + t.id, label: t.label, group: i18nText('草图'), when: () => app.state.view === 'edit' && !app.editor.textEditing, run: () => app.editor.setTool(t.id) });
   });
   bindKey(['Delete', 'Backspace'], { hidden: true, priority: 5, when: () => app.state.view === 'edit' && !!selId, run: () => { const m = findMark(selId); if (m) remove([m], app.editor); } });
   bindKey('Esc', { hidden: true, priority: 5, when: () => app.state.view === 'edit' && !!selId, run: () => select(app.editor, null) });
@@ -536,26 +539,26 @@ export function setupSketch(app) {
 
   // ---------- 左侧面板：全部标记 ----------
   bus.registerPanel({
-    id: 'marks', title: '草图标记', icon: 'marks', views: ['edit', 'overview'],
+    id: 'marks', title: i18nText('草图标记'), icon: 'marks', views: ['edit', 'overview'],
     badge: () => marks().filter((m) => !m.done).length,
     render(host) {
       const paint = () => {
         const list = marks();
         const proj = app.project();
         host.innerHTML = '';
-        const bar = el(`<div class="p-sec"><div class="p-actions">
+        const bar = el(i18nTpl`<div class="p-sec"><div class="p-actions">
           <button class="btn small primary" data-sheet>${icon('copy', 14)}导出任务单（${list.filter((m) => !m.done).length}）</button></div>
           <div class="hint" style="margin-top:8px">用底部工具坞里的画笔、箭头、方框、便签钉在页面上画；每个标记都可以写一句要求。修改遇到红灯也会自动记到这里。</div></div>`);
         bar.querySelector('[data-sheet]').onclick = () => exportTaskSheet(app);
         host.appendChild(bar);
-        if (!list.length) { host.appendChild(el('<div class="empty">还没有标记</div>')); return; }
+        if (!list.length) { host.appendChild(el(i18nText('<div class="empty">还没有标记</div>'))); return; }
         proj.pages.forEach((pg) => {
           const ms = list.filter((m) => m.page === pg.file);
           if (!ms.length) return;
           host.appendChild(el(`<div class="p-sec-title" style="padding:12px 14px 4px;margin:0">${esc(pg.title)}</div>`));
           ms.forEach((m) => {
-            const row = el(`<div class="list-row ${m.done ? 'done' : ''}"><span class="sk-dot" style="background:${m.color || '#e5484d'}">${m.no}</span>
-              <div class="grow"><div class="t1">${esc(m.text || '（还没写要求）')}</div><div class="t2">${esc(TYPE_NAME[m.type] || m.type)}${m.meta ? ' · ' + esc(m.meta) : ''}</div></div>
+            const row = el(i18nTpl`<div class="list-row ${m.done ? 'done' : ''}"><span class="sk-dot" style="background:${m.color || '#e5484d'}">${m.no}</span>
+              <div class="grow"><div class="t1">${esc(m.text || i18nText('（还没写要求）'))}</div><div class="t2">${esc(TYPE_NAME[m.type] || m.type)}${m.meta ? ' · ' + esc(m.meta) : ''}</div></div>
               <button class="icon-btn sm" aria-label="删除标记" data-tip="删除">${icon('trash',14)}</button></div>`);
             row.querySelector('button').onclick = (e) => { e.stopPropagation(); remove([m], app.view() === 'edit' ? app.editor : null); };
             row.onclick = async () => {

@@ -1,0 +1,17 @@
+# CentDeck project automation.
+name: Feature request
+description: Suggest an improvement to your frontend workflow.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What are you trying to do?
+      description: Describe the workflow or problem this would improve.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed experience
+      description: Explain how you would like the feature to work.

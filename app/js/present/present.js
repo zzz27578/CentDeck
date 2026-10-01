@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { toast } from '../core/ui.js';
 import { getDevice } from '../core/viewport.js';
 export function createPresent(app) {
@@ -6,7 +9,7 @@ export function createPresent(app) {
   return {
     async enter(){
       const p=app.project();
-      if(!p.pages.length){toast('还没有页面可以放映');queueMicrotask(()=>app.setView(back));return;}
+      if(!p.pages.length){toast(i18nText('还没有页面可以放映'));queueMicrotask(()=>app.setView(back));return;}
       if(await app.bus.flushMeta()===false){app.setView(back);return;}
       const candidate=app.state.presentFrom||app.state.page;
       const file=p.pages.some(pg=>pg.file===candidate)?candidate:p.pages[0].file;

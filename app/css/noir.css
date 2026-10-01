@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 /* Black, paper white, electric blue. Geometry and text sizes come from the
    shared interface; switching styles never resizes a composer or dialog. */
 :root[data-style="noir"] {
@@ -46,7 +48,7 @@
 [data-style="noir"] .seg > button.on { color:var(--accent); }
 
 /* Dark landing surface and the interactive particle artwork. */
-[data-style="noir"] .landing-cover { background:#090b10;color:#f4f5f9;isolation:isolate; }
+[data-style="noir"] .landing-cover { background:#090b10;color:#f4f5f9;isolation:isolate;overflow:clip; }
 [data-style="noir"] .landing-cover::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 78% 54%,#2348f31a,transparent 43%);pointer-events:none; }
 [data-style="noir"] .landing-cover header { border-bottom:1px solid #ffffff12; }
 [data-style="noir"] .landing-cover .wordmark .cd-mark { color:#f4f5f9; }
@@ -58,12 +60,12 @@
 [data-style="noir"] .landing-cover nav > [data-theme] { color:#b5bfd0; }
 [data-style="noir"] .landing-cover nav .style-switch:hover { background:#ffffff0c; }
 [data-style="noir"] .landing-cover :focus-visible { outline-color:#91adff; }
-[data-style="noir"] .landing-overline { color:#aebad0; }
+[data-style="noir"] .landing-overline { color:#aebad0;font-size:10px;letter-spacing:2px;margin-bottom:30px; }
 [data-style="noir"] .landing-overline::before { content:'';display:inline-block;width:6px;height:6px;background:#6288ff;margin-right:12px;box-shadow:0 0 20px #315bff;vertical-align:2px; }
-[data-style="noir"] .landing-copy h1 { font-weight:600; }
-[data-style="noir"] .landing-copy h1 span { color:#8faaff; }
-[data-style="noir"] .landing-copy p { color:#aab6ca; }
-[data-style="noir"] .landing-copy { z-index:2;animation:noir-arrive .65s cubic-bezier(.2,.8,.2,1) both; }
+[data-style="noir"] .landing-copy h1 { font-size:clamp(48px,5.15vw,86px);font-weight:500;line-height:1.32;letter-spacing:-2.5px; }
+[data-style="noir"] .landing-copy h1 span { display:inline-block;margin-left:clamp(18px,2vw,32px);color:#91aaff; }
+[data-style="noir"] .landing-copy p { color:#aab6ca;font-size:15px;letter-spacing:1px;line-height:1.8;margin-top:26px; }
+[data-style="noir"] .landing-copy { left:8%;top:50%;transform:translateY(-46%);width:38%;z-index:2;animation:noir-arrive .65s cubic-bezier(.2,.8,.2,1) both; }
 [data-style="noir"] .landing-cover footer { color:#94a1b9;z-index:1;border-top:1px solid #ffffff1c;padding-top:20px; }
 [data-style="noir"] .brand-sculpture { display:none; }
 [data-style="noir"] .login-art { color:#f4f5f9; }
@@ -146,24 +148,34 @@
   transform:translate(3px,-3px);background:#315bff;border-color:#7594ff;color:#fff;
 }
 @media(max-width:1000px) and (min-width:651px) {
+  [data-style="noir"] .landing-copy { left:6%;width:43%; }
+  [data-style="noir"] .landing-copy h1 { font-size:clamp(44px,5.6vw,56px); }
   [data-style="noir"] .noir-particles { right:-3%;width:60%;top:16%;height:78%; }
 }
 @media(max-width:650px) {
   [data-style="noir"] body.entry-page { overflow-y:auto; }
   [data-style="noir"] .welcome { height:max(100dvh,920px); }
-  [data-style="noir"] .landing-copy { top:120px; }
+  [data-style="noir"] .landing-copy { top:124px;left:7%;width:86%;transform:none; }
+  [data-style="noir"] .landing-copy h1 { font-size:clamp(43px,12.5vw,64px);letter-spacing:-1.5px;line-height:1.25; }
+  [data-style="noir"] .landing-overline { font-size:8px;letter-spacing:1.2px;margin-bottom:22px; }
+  [data-style="noir"] .landing-copy p { font-size:14px;margin-top:20px; }
   [data-style="noir"] .landing-cta { min-width:226px;font-size:17px;margin-top:32px; }
   [data-style="noir"] .noir-particles { right:-5%;top:425px;width:110%;height:420px; }
   [data-style="noir"] .login-open .login-under { align-items:start;padding-top:110px; }
 }
 @media(max-height:600px) and (min-width:651px) {
+  [data-style="noir"] .landing-copy { transform:none; }
   [data-style="noir"] .landing-cta { min-width:206px;margin-top:20px;padding-bottom:10px;font-size:16px; }
   [data-style="noir"] .landing-cta > span { width:42px;height:42px;font-size:24px; }
   [data-style="noir"] .noir-particles { top:72px;right:-2%;width:58%;height:calc(100% - 112px); }
 }
 @media(max-height:420px) and (max-width:650px) {
   [data-style="noir"] .welcome { height:max(100dvh,430px); }
-  [data-style="noir"] .landing-copy { top:76px; }
+  [data-style="noir"] .landing-copy { top:76px;left:5%;width:42%;transform:none; }
+  [data-style="noir"] .landing-copy h1 { font-size:30px;line-height:1.12; }
+  [data-style="noir"] .landing-copy h1 span { margin-left:10px; }
+  [data-style="noir"] .landing-overline { font-size:7px;letter-spacing:.5px;margin-bottom:12px; }
+  [data-style="noir"] .landing-copy p { font-size:12px;margin-top:12px; }
   [data-style="noir"] .landing-cta { min-width:192px;margin-top:18px;padding-bottom:10px;font-size:16px; }
   [data-style="noir"] .landing-cta > span { width:42px;height:42px;font-size:24px; }
   [data-style="noir"] .noir-particles { top:76px;right:-3%;width:59%;height:295px; }

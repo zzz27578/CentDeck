@@ -1,13 +1,21 @@
 {
-  "manifest": {
-    "apiVersion": 1,
-    "id": "official-styles",
-    "name": "百映 · 风格画廊",
-    "version": "1.0.0",
-    "author": "CentDeck",
-    "description": "在默认黑白蓝、原版绿色及扩展风格之间切换。关闭后使用默认黑白蓝。",
-    "permissions": ["themes"],
-    "themes": [{"id":"noir","name":"黑白蓝 · NOIR","tokens":{}}]
-  },
-  "files": {}
+    "manifest": {
+        "apiVersion": 1,
+        "id": "official-styles",
+        "name": "百映 · 风格画廊",
+        "version": "1.0.0",
+        "author": "CentDeck",
+        "description": "在默认黑白蓝、原版绿色及扩展风格之间切换。关闭后使用默认黑白蓝。",
+        "permissions": [
+            "themes"
+        ],
+        "themes": [
+            {
+                "id": "noir",
+                "name": "黑白蓝 · NOIR",
+                "tokens": {}
+            }
+        ]
+    },
+    "files": {}
 }

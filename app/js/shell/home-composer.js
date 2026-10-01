@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import {el,esc,uid,toast,showMenu} from '../core/ui.js';
 import {icon} from '../core/icons.js';
 import {readAttachment,ATTACHMENT_ACCEPT,MAX_ATTACHMENTS} from '../agent/attachments.js';
@@ -17,8 +20,8 @@ export function mountHomeComposer(app,root,start) {
   ta.oninput=()=>{draft.text=ta.value;};
   const paintModel=()=>{
     const model=resolveModel(settings,draft.model);
-    modelButton.querySelector('span').textContent=model?.name||'选择模型';
-    modelButton.title=model?model.provider+' / '+model.name:'选择本次设计使用的模型';
+    modelButton.querySelector('span').textContent=model?.name||i18nText('选择模型');
+    modelButton.title=model?model.provider+' / '+model.name:i18nText('选择本次设计使用的模型');
     modelButton.classList.toggle('needs-model',!model);
   };
   const loadModels=async()=>{try{const result=await app.api.getSettings();if(disposed)return;settings=result;paintModel();}catch{if(!disposed)paintModel();}};
@@ -26,16 +29,16 @@ export function mountHomeComposer(app,root,start) {
   const off=app.bus.on('settings',()=>{modelReady=loadModels();});
   modelButton.onclick=async()=>{
     await modelReady;if(disposed)return;
-    const list=availableModels(settings),items=[{title:'本次设计的模型'}];
-    if(resolveModel(settings,'auto'))items.push({label:'默认模型',hint:resolveModel(settings,'auto').name,checked:draft.model==='auto',onClick:()=>{draft.model='auto';paintModel();}});
+    const list=availableModels(settings),items=[{title:i18nText('本次设计的模型')}];
+    if(resolveModel(settings,'auto'))items.push({label:i18nText('默认模型'),hint:resolveModel(settings,'auto').name,checked:draft.model==='auto',onClick:()=>{draft.model='auto';paintModel();}});
     for(const model of list)items.push({label:model.name,hint:model.provider,checked:draft.model===model.id,onClick:()=>{draft.model=model.id;paintModel();}});
-    items.push({label:'外部 MCP 助手',hint:'需要外部客户端接管',checked:draft.model==='mcp:external',onClick:()=>{draft.model='mcp:external';paintModel();}},'-',{label:'模型提供商设置',icon:'settings',onClick:()=>app.openSettings('providers')});
+    items.push({label:i18nText('外部 MCP 助手'),hint:i18nText('需要外部客户端接管'),checked:draft.model==='mcp:external',onClick:()=>{draft.model='mcp:external';paintModel();}},'-',{label:i18nText('模型提供商设置'),icon:'settings',onClick:()=>app.openSettings('providers')});
     showMenu(items,0,0,{anchor:modelButton,minWidth:260});
   };
   const paintRefs=()=>{
     const host=box.querySelector('.home-attachments');host.innerHTML='';host.hidden=!draft.refs.length;
     for(const ref of draft.refs){
-      const item=el(`<div class="home-attachment">${ref.media==='image'?`<img src="${esc(ref.url)}" alt="">`:icon(ref.media==='audio'?'volume':'file',19)}<span><b>${esc(ref.name)}</b><small>${Math.max(1,Math.ceil(ref.size/1024))} KB</small></span><button aria-label="移除附件 ${esc(ref.name)}">${icon('close',14)}</button></div>`);
+      const item=el(i18nTpl`<div class="home-attachment">${ref.media==='image'?`<img src="${esc(ref.url)}" alt="">`:icon(ref.media==='audio'?'volume':'file',19)}<span><b>${esc(ref.name)}</b><small>${Math.max(1,Math.ceil(ref.size/1024))} KB</small></span><button aria-label="移除附件 ${esc(ref.name)}">${icon('close',14)}</button></div>`);
       item.querySelector('button').onclick=()=>{draft.refs=draft.refs.filter(r=>r.id!==ref.id);paintRefs();};host.append(item);
     }
   };paintRefs();
@@ -43,7 +46,7 @@ export function mountHomeComposer(app,root,start) {
     uploads=uploads.then(async()=>{
       for(const file of files){
         if(disposed)return;
-        if(draft.refs.length>=MAX_ATTACHMENTS){toast('一次最多添加 4 个参考附件','err');break;}
+        if(draft.refs.length>=MAX_ATTACHMENTS){toast(i18nText('一次最多添加 4 个参考附件'),'err');break;}
         try{const ref=await readAttachment(file);if(!disposed){draft.refs.push({id:uid('attachment'),...ref});paintRefs();}}catch(error){toast(error.message,'err');}
       }
     });return uploads;
@@ -63,7 +66,7 @@ export function mountHomeComposer(app,root,start) {
       const text=ta.value.trim();if(!text&&!draft.refs.length){ta.focus();return;}
       const model=resolveModel(settings,draft.model),issue=attachmentModelIssue(model,draft.refs);
       if(issue){toast(issue,'err');modelButton.focus();return;}
-      const done=await start({text:text||'请参考这些附件设计页面',target:draft.target,model:model.id,refs:structuredClone(draft.refs)});
+      const done=await start({text:text||i18nText('请参考这些附件设计页面'),target:draft.target,model:model.id,refs:structuredClone(draft.refs)});
       if(done)app.homeDraft={text:'',target:draft.target,model:draft.model,refs:[]};
     }catch(error){toast(error.message,'err');}finally{starting=false;send.disabled=false;send.removeAttribute('aria-busy');}
   };

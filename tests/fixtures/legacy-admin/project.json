@@ -1,10 +1,16 @@
 {
-  "id": "admin",
-  "name": "海川 · 运营后台",
-  "type": "admin",
-  "description": "两页后台：数据概览（侧边栏布局、统计卡片、SVG 图表、标签切换、dialog 弹窗、脚本生成的动态）、订单管理（筛选、没写 tbody 的表格、每行按钮共用一个详情弹窗）。带手机适配。",
-  "pages": [
-    { "file": "pages/index.html", "title": "数据概览" },
-    { "file": "pages/orders.html", "title": "订单管理" }
-  ]
+    "id": "admin",
+    "name": "海川 · 运营后台",
+    "type": "admin",
+    "description": "两页后台：数据概览（侧边栏布局、统计卡片、SVG 图表、标签切换、dialog 弹窗、脚本生成的动态）、订单管理（筛选、没写 tbody 的表格、每行按钮共用一个详情弹窗）。带手机适配。",
+    "pages": [
+        {
+            "file": "pages/index.html",
+            "title": "数据概览"
+        },
+        {
+            "file": "pages/orders.html",
+            "title": "订单管理"
+        }
+    ]
 }

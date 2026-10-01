@@ -1,3 +1,7 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
+import { errorText, language } from './i18n.js';
 // api.js —— 封装全部服务端调用（合同 §3）
 // 统一约定：服务端返回 { ok: true, data } 或 { ok: false, error: "中文错误" }；
 // 本模块把 data 直接解出来；出错时抛出 ApiError（message 为服务端中文错误）。
@@ -30,15 +34,15 @@ async function request(method, url, body, opts = {}) {
       cache: 'no-store',
     });
   } catch (e) {
-    const err = new ApiError('连不上本地服务：请确认 CentDeck 服务正在运行');
+    const err = new ApiError(i18nText('连不上本地服务：请确认 CentDeck 服务正在运行'));
     if (opts.toast !== false && opts.withError) opts.withError(err);
     throw err;
   }
   let payload = null;
   try { payload = await res.json(); } catch { /* 非 JSON 响应按失败处理 */ }
   if (!payload || payload.ok !== true) {
-    const msg = payload && payload.error ? payload.error : `请求失败（${res.status}）`;
-    const err = new ApiError(msg, res.status);
+    const msg = payload && payload.error ? payload.error : i18nTpl`请求失败（${res.status}）`;
+    const err = new ApiError(errorText(msg), res.status);
     if (opts.toast !== false && opts.withError) opts.withError(err);
     throw err;
   }
@@ -57,12 +61,12 @@ export const api = {
   restart: () => request('POST','/api/system/restart',{}),
   models: id => request('GET',`/api/providers/${encodeURIComponent(id)}/models`),
   testModel: body=>request('POST','/api/providers/test',body,{toast:false}),
-  compactChat: body=>request('POST','/api/chat/compact',body,{toast:false}),
+  compactChat: body=>request('POST','/api/chat/compact',{...body,language:language()},{toast:false}),
   chatGroups:()=>request('GET','/api/conversations'),
   tasks: id => request('GET',`/api/projects/${encodeURIComponent(id)}/tasks`),
-  startTask: (id,body) => request('POST',`/api/projects/${encodeURIComponent(id)}/tasks`,body,{toast:false}),
+  startTask: (id,body) => request('POST',`/api/projects/${encodeURIComponent(id)}/tasks`,{...body,language:language()},{toast:false}),
   taskAction: (id,tid,body) => request('POST',`/api/projects/${encodeURIComponent(id)}/tasks/${encodeURIComponent(tid)}`,body),
-  listTemplates: (opts) => request('GET', '/api/templates', null, opts),
+  listTemplates: (opts) => request('GET', '/api/templates', null, opts).then(list=>list.map(t=>['qichuan','gewu','northline','site'].includes(t.id)?{...t,name:i18nText(t.name),description:i18nText(t.description)}:t)),
   listProjects: (opts) => request('GET', '/api/projects', null, opts),
   createProject: (template, name, opts) => request('POST', '/api/projects', { template, name }, opts),
   createBlank: (name, opts) => request('POST', '/api/projects', { blank: true, name }, opts),

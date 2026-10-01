@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 const privateField=n=>n.matches?.('input[type=password],input[type=file]')||n.closest?.('[data-private],[data-sensitive]')||/password|api.?key|secret|access.?token/i.test([n.name,n.id,n.getAttribute?.('autocomplete')].filter(Boolean).join(' '));
 export function visibleControl(n){
   if(!n?.isConnected||n.closest('[hidden],[inert]')||!n.getClientRects().length)return false;
@@ -35,17 +38,17 @@ export function collectControls(doc,context,identify){
   });
 }
 export function fillControl(n,value){
-  if(privateField(n)||n.disabled||n.readOnly)throw Error('该字段不可填写或属于受保护字段');
-  const text=String(value??'');if(text.length>32000)throw Error('填写内容最多 32000 字符');
+  if(privateField(n)||n.disabled||n.readOnly)throw Error(i18nText('该字段不可填写或属于受保护字段'));
+  const text=String(value??'');if(text.length>32000)throw Error(i18nText('填写内容最多 32000 字符'));
   const w=n.ownerDocument.defaultView;
   if(n.matches('input[type=checkbox],input[type=radio]')){
-    if(!['true','false'].includes(text))throw Error('勾选字段的 value 必须是 true 或 false');
+    if(!['true','false'].includes(text))throw Error(i18nText('勾选字段的 value 必须是 true 或 false'));
     Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype,'checked').set.call(n,text==='true');
   }else if(n.matches('input:not([type=button]):not([type=submit]),textarea,select')){
-    if(n.tagName==='SELECT'&&![...n.options].some(o=>!o.disabled&&o.value===text))throw Error('选项不存在或已禁用');
+    if(n.tagName==='SELECT'&&![...n.options].some(o=>!o.disabled&&o.value===text))throw Error(i18nText('选项不存在或已禁用'));
     const proto=n.tagName==='TEXTAREA'?w.HTMLTextAreaElement.prototype:n.tagName==='SELECT'?w.HTMLSelectElement.prototype:w.HTMLInputElement.prototype;
     Object.getOwnPropertyDescriptor(proto,'value').set.call(n,text);
   }else if(n.isContentEditable)n.textContent=text;
-  else throw Error('目标不是可填写控件');
+  else throw Error(i18nText('目标不是可填写控件'));
   n.dispatchEvent(new w.Event('input',{bubbles:true}));n.dispatchEvent(new w.Event('change',{bubbles:true}));
 }

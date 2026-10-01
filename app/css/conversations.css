@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 /* Conversation UI shared by the dock, floating windows and history archive. */
 .studio { color:var(--text); }
 .studio h1,.studio h2,.studio .wordmark { color:var(--text); }

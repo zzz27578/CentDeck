@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 const crypto=require('node:crypto');
 const store=require('./store'), extensions=require('./extensions'), registry=require('./tools'), changes=require('./changes');

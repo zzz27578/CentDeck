@@ -1,0 +1,33 @@
+{
+    "source": "Provided by the repository owner for the README",
+    "screenshots": [
+        {
+            "file": "home.png",
+            "source": "首页.png",
+            "width": 3046,
+            "height": 1650,
+            "imageDataSha256": "1762e82dd78319228d5945b360f2f4ab3d9f3e9d48f4e84f5c2211d539a97c8c"
+        },
+        {
+            "file": "overview.png",
+            "source": "总览模式.png",
+            "width": 3052,
+            "height": 1590,
+            "imageDataSha256": "bd30b3bfcbfa45f84159970ffe385faf9be01a3fb305daaa2889c9896466fe1d"
+        },
+        {
+            "file": "visual-editing.png",
+            "source": "拖动修改.png",
+            "width": 3040,
+            "height": 1586,
+            "imageDataSha256": "c59f8a89dd32a56735dce9bf34561ad99deab93d638fe9cd38acf7b30bdec360"
+        },
+        {
+            "file": "multi-agent.png",
+            "source": "多agent展示.png",
+            "width": 3048,
+            "height": 1582,
+            "imageDataSha256": "a24935b5615c26ee89679b61c55094e3b9add58a6e8d867fa674998c4172d058"
+        }
+    ]
+}

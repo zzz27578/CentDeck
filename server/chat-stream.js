@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 const {ApiError}=require('./store');
 // OpenAI-compatible SSE, with JSON fallback for compatible gateways that ignore stream.

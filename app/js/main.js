@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './core/i18n.js';
 import { refreshAppearance } from './core/extensions.js';
 import { connectWorkbench } from './core/mcp-client.js';
 // main.js —— 入口：应用上下文、打开项目、视图切换（总览/编辑/放映）、锁定、插件装配
@@ -49,7 +52,7 @@ app.isLocked = (info) => {
   return !!(info && !info.generated && app.elementLocked(app.state.page, info.selector));
 };
 app.setPageLock = (file, on) => bus.doMeta({
-  label: on ? '锁定页面' : '解锁页面',
+  label: on ? i18nText('锁定页面') : i18nText('解锁页面'),
   apply: () => { const L = locks().pages; const i = L.indexOf(file); if (on && i < 0) L.push(file); if (!on && i >= 0) L.splice(i, 1); },
   revert: () => { const L = locks().pages; const i = L.indexOf(file); if (!on && i < 0) L.push(file); if (on && i >= 0) L.splice(i, 1); },
 });
@@ -60,7 +63,7 @@ app.setElementLock = (file, selector, on) => {
     if (v && i < 0) L.push({ page: file, selector });
     if (!v && i >= 0) L.splice(i, 1);
   };
-  return bus.doMeta({ label: on ? '锁定元素' : '解锁元素', apply: () => set(on), revert: () => set(!on) });
+  return bus.doMeta({ label: on ? i18nText('锁定元素') : i18nText('解锁元素'), apply: () => set(on), revert: () => set(!on) });
 };
 
 // ---------- 视图 ----------
@@ -167,3 +170,4 @@ if(initial.has('project')){await app.openProject(initial.get('project'));if(init
 else renderHome(app);
 
 connectWorkbench(app);
+if(initial.get('settings')==='general')await app.openSettings('general');

@@ -18,3 +18,5 @@ description: 用户要确定或修改项目配色、字体、字号、间距、�
 内置助手没有“只添加风格卡”或“保存个人预设”的独立工具。新方案且用户授权生成页面时，可加载 design-variants 用 publish_variant 同时发布页面与卡片；不要为仅保存配色而擅自生成网页。现有卡片编辑、添加个人预设，可向用户说明设计规范入口，或由具备 ui_action 的外部 MCP 客户端按 ui_state 控件操作。不要改 project.json 绕过元数据接口。
 
 区分最终状态：建议已给出、规范文件已保存、哪些页面实际应用、哪些检查已执行。没有截图/交互证据时不声称完成视觉验收。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

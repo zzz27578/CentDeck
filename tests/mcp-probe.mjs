@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // Manual MCP acceptance client. Set CENTDECK_CONFIG_DIR and CENTDECK_URL for a QA fixture.
 import fs from 'node:fs';
 import path from 'node:path';

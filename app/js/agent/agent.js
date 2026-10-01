@@ -1,3 +1,7 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { locale } from '../core/i18n.js';
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 助手管理：右侧停靠的主窗口 + 任意多个悬浮窗口（多助手协作的壳）。
 // 拖标题栏就能把停靠的助手拽出来变成悬浮窗；把悬浮窗拖到屏幕最右边松手就停靠回去。
 // 右键 @、框选、导入体检等处的引用和提示词，会送到你最近用过的那个助手窗口。
@@ -44,7 +48,7 @@ export function createAgent(app) {
   app.bus.on("settings", loadSettings);
 
   function newSession(opts = {}) {
-    const s = createSession(app, mgr, { name: `助手 ${seq}`, ...opts });
+    const s = createSession(app, mgr, { name: i18nTpl`助手 ${seq}`, ...opts });
     seq++;
     sessions.push(s);
     if (app.project()) restoreConversation(s);
@@ -53,7 +57,7 @@ export function createAgent(app) {
 
   function createConversation(s,data={}){
     const p=app.project();if(!p)return null;
-    const c={id:uid('chat'),assistantId:s.id,title:'新对话',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),msgs:[],refs:[],mode:s.mode,...data};
+    const c={id:uid('chat'),assistantId:s.id,title:i18nText('新对话'),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),msgs:[],refs:[],mode:s.mode,...data};
     conversations(p);if(hasMessages(c))p.conversations.push(c);else p.conversationDrafts[c.id]=c;app.bus.saveMeta();return c;
   }
   function restoreConversation(s,c){
@@ -74,7 +78,7 @@ export function createAgent(app) {
     }
     let s=from;
     const base=sessions.find(x=>x.id===c.assistantId);
-    if(!base){toast('此对话的助手配置已删除','err');return;}
+    if(!base){toast(i18nText('此对话的助手配置已删除'),'err');return;}
     if(floating){s=createSession(app,mgr,{...profile(base)});extraWindows.push(s);}
     else if(!s||s.id!==c.assistantId){s=base;if(docked&&docked!==s){docked.root.remove();docked=null;}dock(s);}
     if(s.conversationId)mgr.saveConversation(s);
@@ -87,7 +91,7 @@ export function createAgent(app) {
     dockHost = host;
     host.style.setProperty("--agent-w", width + "px");
     host.innerHTML =
-      '<div class="agent-inner"><div class="agent-resize" data-tip="拖动改宽度" data-tip-place="left"></div></div>';
+      i18nText('<div class="agent-inner"><div class="agent-resize" data-tip="拖动改宽度" data-tip-place="left"></div></div>');
     dockInner = host.firstElementChild;
     dockInner.firstElementChild.addEventListener("pointerdown", resizeDock);
     if (!docked && !floats.size && sessions.length) docked = sessions[0];
@@ -132,7 +136,7 @@ export function createAgent(app) {
   // ---------- 悬浮窗 ----------
   function floatWin(s, r) {
     const w = el(
-      `<div class="agent-float"><div class="af-body"></div><i class="af-resize" data-tip="拖动改大小"></i></div>`,
+      i18nTpl`<div class="agent-float"><div class="af-body"></div><i class="af-resize" data-tip="拖动改大小"></i></div>`,
     );
     const box = r || {
       x: innerWidth - width - 60,
@@ -232,7 +236,7 @@ export function createAgent(app) {
       const near = ev.clientX > innerWidth - 40 && !!app.state.project;
       if (near && !hint) {
         hint = el(
-          '<div class="agent-dock-hint"><span>松手停靠到右侧</span></div>',
+          i18nText('<div class="agent-dock-hint"><span>松手停靠到右侧</span></div>'),
         );
         document.body.appendChild(hint);
       }
@@ -322,11 +326,11 @@ export function createAgent(app) {
       return settings?.providers.find(p=>p.id===selected.slice(0,split))?.modelCapabilities?.[selected.slice(split+1)]?.contextWindow||0;
     },
     async renameConversation(c){
-      const title=await promptDlg({title:'重命名对话',label:'对话名称',value:c.title});
+      const title=await promptDlg({title:i18nText('重命名对话'),label:i18nText('对话名称'),value:c.title});
       if(title?.trim()){c.title=title.trim().slice(0,80);c.named=true;app.bus.saveMeta();windows().forEach(w=>w.paintPickers());}
     },
     async deleteConversation(c){
-      if(!await confirmDlg({title:'删除对话',body:'删除这段聊天记录，并停止其中仍在运行的回复。已保存的网页修改会保留。',okLabel:'删除',danger:true}))return false;
+      if(!await confirmDlg({title:i18nText('删除对话'),body:i18nText('删除这段聊天记录，并停止其中仍在运行的回复。已保存的网页修改会保留。'),okLabel:i18nText('删除'),danger:true}))return false;
       const p=app.project();
       for(const t of tasksForConversation(taskList,c).filter(t=>!['completed','cancelled'].includes(t.status)))await app.api.taskAction(p.id,t.id,{action:'cancel'});
       p.conversations=p.conversations.filter(x=>x.id!==c.id);
@@ -336,16 +340,16 @@ export function createAgent(app) {
     pickConversation(anchor,s){
       if(pickerAnchor===anchor){closePicker();return;}closePicker();
       pickerAnchor=anchor;anchor.setAttribute('aria-expanded','true');
-      const menu=el(`<div class="assistant-picker conversation-picker" role="dialog" aria-label="项目对话"><header><b>项目对话</b><button class="btn small" data-create>${icon('plus',14)}新对话</button></header><details class="picker-project" open><summary>${esc(app.project().name)}</summary><div class="conversation-list"></div></details><button class="btn block" data-all-history>${icon('history',14)}全部项目的对话历史</button></div>`);
+      const menu=el(i18nTpl`<div class="assistant-picker conversation-picker" role="dialog" aria-label="项目对话"><header><b>项目对话</b><button class="btn small" data-create>${icon('plus',14)}新对话</button></header><details class="picker-project" open><summary>${esc(app.project().name)}</summary><div class="conversation-list"></div></details><button class="btn block" data-all-history>${icon('history',14)}全部项目的对话历史</button></div>`);
       const list=menu.querySelector('.conversation-list');
       for(const c of [...mgr.conversationList()].sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
         const a=sessions.find(x=>x.id===c.assistantId);
-        const row=el(`<div class="conversation-row ${c.id===s.conversationId?'on':''}"><button data-open><b>${esc(c.title)}</b><small>${esc(a?.name||'已删除的助手')} · ${new Date(c.updatedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}</small></button><button class="icon-btn sm" data-more aria-label="管理 ${esc(c.title)}">${icon('more',16)}</button></div>`);
+        const row=el(i18nTpl`<div class="conversation-row ${c.id===s.conversationId?'on':''}"><button data-open><b>${esc(c.title)}</b><small>${esc(a?.name||i18nText('已删除的助手'))} · ${new Date(c.updatedAt).toLocaleString(locale(),{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}</small></button><button class="icon-btn sm" data-more aria-label="管理 ${esc(c.title)}">${icon('more',16)}</button></div>`);
         row.querySelector('[data-open]').onclick=()=>{closePicker();openConversation(c,s);};
         row.querySelector('[data-more]').onclick=e=>showMenu([
-          {label:'在独立窗口打开',icon:'undock',onClick:()=>{closePicker();openConversation(c,null,true);}},
-          {label:'重命名',icon:'edit',onClick:async()=>{closePicker();await mgr.renameConversation(c);}},
-          {label:'删除对话',icon:'trash',danger:true,onClick:async()=>{closePicker();await mgr.deleteConversation(c);}},
+          {label:i18nText('在独立窗口打开'),icon:'undock',onClick:()=>{closePicker();openConversation(c,null,true);}},
+          {label:i18nText('重命名'),icon:'edit',onClick:async()=>{closePicker();await mgr.renameConversation(c);}},
+          {label:i18nText('删除对话'),icon:'trash',danger:true,onClick:async()=>{closePicker();await mgr.deleteConversation(c);}},
         ],0,0,{anchor:e.currentTarget});list.append(row);
       }
       menu.querySelector('[data-create]').onclick=()=>{closePicker();mgr.newConversation(s);};
@@ -379,11 +383,11 @@ export function createAgent(app) {
       if(pickerAnchor===anchor){closePicker();return;}
       closePicker();
       pickerAnchor=anchor;anchor.setAttribute('aria-expanded','true');anchor.setAttribute('aria-haspopup','dialog');
-      const menu=el(`<div class="assistant-picker" role="dialog" aria-label="选择助手"><header>${floating?'在悬浮窗打开':'选择助手'}</header><div class="assistant-picker-list"></div><button class="btn block" data-manage>${icon('plus',15)}新建或管理助手</button></div>`);
+      const menu=el(i18nTpl`<div class="assistant-picker" role="dialog" aria-label="选择助手"><header>${floating?i18nText('在悬浮窗打开'):i18nText('选择助手')}</header><div class="assistant-picker-list"></div><button class="btn block" data-manage>${icon('plus',15)}新建或管理助手</button></div>`);
       const choose=(s,float)=>{closePicker();if(float){mgr.newWindow(s);return;}else{if(docked&&docked!==s){docked.root.remove();docked=null;}dock(s);}mgr.setActive(s);};
       for(const s of sessions){
         const current=s.id===target()?.id;
-        const row=el(`<div class="assistant-picker-row ${current?'current':''}"><i class="picker-avatar">${avatar(s,28)}</i><span><b>${esc(s.name)}</b><small>${esc(s.role)}</small></span><button class="btn small ${current?'current-assistant':''}" data-switch>${current?'当前助手':'切换'}</button><button class="icon-btn" data-float aria-label="在悬浮窗打开 ${esc(s.name)}">${icon('plus',17)}</button></div>`);
+        const row=el(i18nTpl`<div class="assistant-picker-row ${current?'current':''}"><i class="picker-avatar">${avatar(s,28)}</i><span><b>${esc(s.name)}</b><small>${esc(s.role)}</small></span><button class="btn small ${current?'current-assistant':''}" data-switch>${current?i18nText('当前助手'):i18nText('切换')}</button><button class="icon-btn" data-float aria-label="在悬浮窗打开 ${esc(s.name)}">${icon('plus',17)}</button></div>`);
         row.querySelector('[data-switch]').onclick=()=>choose(s,false);row.querySelector('[data-float]').onclick=()=>choose(s,true);menu.querySelector('.assistant-picker-list').append(row);
       }
       menu.querySelector('[data-manage]').onclick=()=>{closePicker();mgr.manage();};document.body.append(menu);
@@ -412,7 +416,7 @@ export function createAgent(app) {
             ].includes(t.status),
         )
       ) {
-        toast("请先停止这个助手的任务", "err");
+        toast(i18nText("请先停止这个助手的任务"), "err");
         return;
       }
       const i = sessions.indexOf(s);
@@ -447,18 +451,18 @@ export function createAgent(app) {
     skills: () => skills,
     skill: (id) => selectedUserSkill(skills,id),
     modelLabel(id) {
-      if (id === 'mcp:external' || (id === 'auto' && settings?.defaultModel === 'mcp:external')) return '外部 MCP 助手';
+      if (id === 'mcp:external' || (id === 'auto' && settings?.defaultModel === 'mcp:external')) return i18nText('外部 MCP 助手');
       if (id === "auto")
         return (
-          settings?.defaultModel?.split(":").slice(1).join(":") || "默认模型"
+          settings?.defaultModel?.split(":").slice(1).join(":") || i18nText("默认模型")
         );
       return String(id).split(":").slice(1).join(":") || id;
     },
     modelMenu(anchor, cur, pick) {
       const items = [
-        {label:'外部 MCP 助手（需连接接管）', checked:cur === 'mcp:external', onClick:() => pick('mcp:external')},
+        {label:i18nText('外部 MCP 助手（需连接接管）'), checked:cur === 'mcp:external', onClick:() => pick('mcp:external')},
         {
-          label: "默认模型",
+          label: i18nText("默认模型"),
           checked: cur === "auto",
           onClick: () => pick("auto"),
         },
@@ -476,9 +480,9 @@ export function createAgent(app) {
           }),
         );
       });
-      if (!on.length) items.push({ title: "还没有启用任何模型" });
+      if (!on.length) items.push({ title: i18nText("还没有启用任何模型") });
       items.push("-", {
-        label: "模型与接口设置…",
+        label: i18nText("模型与接口设置…"),
         icon: "settings",
         onClick: () => app.openSettings(),
       });
@@ -529,7 +533,7 @@ export function createAgent(app) {
   function saveProfiles() {
     for(const w of extraWindows){const base=sessions.find(s=>s.id===w.id);if(base){for(const key of ['name','role','avatar','color','prompt','responsibility','skills'])w[key]=base[key];w.paintPickers();}}
     const p = saveProfileList(sessions);
-    p.catch(() => toast("助手配置保存失败，请在管理页重试", "err"));
+    p.catch(() => toast(i18nText("助手配置保存失败，请在管理页重试"), "err"));
     return p;
   }
   const ready = Promise.all([app.api.getAssistants(),skillsReady])
@@ -538,7 +542,7 @@ export function createAgent(app) {
       docked = sessions[0] || null;
     })
     .catch(() => {
-      toast("助手配置未加载，请刷新后重试", "err");
+      toast(i18nText("助手配置未加载，请刷新后重试"), "err");
     });
   let source = null,
     sourceProject = null,

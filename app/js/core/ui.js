@@ -1,3 +1,7 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
+import { errorText } from './i18n.js';
 // 通用界面零件：转义、提示条、对话框、菜单（右键/下拉）、悬停提示
 import { icon } from './icons.js';
 
@@ -19,7 +23,7 @@ export function fmtTime(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return String(iso);
   const p = (n) => String(n).padStart(2, '0');
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return i18nTpl`${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 export async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true; } catch {
@@ -33,6 +37,7 @@ export async function copyText(text) {
 // ---------- 提示条 ----------
 let toastHost = null;
 export function toast(message, type = '', timeout = 2600) {
+  if(type==='err'||type==='error')message=errorText(message);
   if (!toastHost || !toastHost.isConnected) { toastHost = el('<div class="toast-host"></div>'); document.body.appendChild(toastHost); }
   const ico = type === 'ok' ? icon('check', 16) : type === 'err' ? icon('info', 16) : '';
   const item = el(`<div class="toast ${type}">${ico}<span>${esc(message)}</span></div>`);
@@ -44,12 +49,12 @@ export function toast(message, type = '', timeout = 2600) {
   while (toastHost.children.length > 4) toastHost.firstElementChild.remove();
   return kill;
 }
-export const toastError = (e) => toast(e && e.message ? e.message : String(e || '出错了'), 'err', 4200);
+export const toastError = (e) => toast(e && e.message ? e.message : String(e || i18nText('出错了')), 'err', 4200);
 
 // ---------- 对话框 ----------
 const modalStack = [];
 export function openModal({ title = '', body = '', actions, width, onClose, className = '' }) {
-  const wrap = el(`<div class="modal-mask"><div class="modal ${className}" role="dialog" style="${width ? `width:${width}px` : ''}">
+  const wrap = el(i18nTpl`<div class="modal-mask"><div class="modal ${className}" role="dialog" style="${width ? `width:${width}px` : ''}">
     <div class="modal-head"><div class="modal-title">${esc(title)}</div><button class="icon-btn modal-x" data-tip="关闭" data-kbd="Esc">${icon('close', 16)}</button></div>
     <div class="modal-body"></div><div class="modal-foot"></div></div></div>`);
   const dlg = wrap.firstElementChild;
@@ -66,7 +71,7 @@ export function openModal({ title = '', body = '', actions, width, onClose, clas
   };
   entry.close = close;
   const foot = dlg.querySelector('.modal-foot');
-  (actions || [{ label: '关闭' }]).forEach((a) => {
+  (actions || [{ label: i18nText('关闭') }]).forEach((a) => {
     const b = el(`<button class="btn ${a.kind || ''}">${esc(a.label)}</button>`);
     b.onclick = () => (a.onClick ? a.onClick(close) : close());
     foot.appendChild(b);
@@ -82,29 +87,29 @@ export function openModal({ title = '', body = '', actions, width, onClose, clas
 export const anyModalOpen = () => modalStack.length > 0;
 export function closeTopModal() { if (!modalStack.length) return false; modalStack[modalStack.length - 1].close(); return true; }
 
-export function confirmDlg({ title, body, okLabel = '确定', danger = false }) {
+export function confirmDlg({ title, body, okLabel = i18nText('确定'), danger = false }) {
   return new Promise((resolve) => {
     let done = false;
     openModal({
-      title: title || '请确认', width: 440,
+      title: title || i18nText('请确认'), width: 440,
       body: `<div class="confirm-text">${body || ''}</div>`,
       actions: [
-        { label: '取消', onClick: (c) => { done = true; resolve(false); c(); } },
+        { label: i18nText('取消'), onClick: (c) => { done = true; resolve(false); c(); } },
         { label: okLabel, kind: danger ? 'danger' : 'primary', onClick: (c) => { done = true; resolve(true); c(); } },
       ],
       onClose: () => { if (!done) resolve(false); },
     });
   });
 }
-export function promptDlg({ title, label, placeholder = '', value = '', okLabel = '确定' }) {
+export function promptDlg({ title, label, placeholder = '', value = '', okLabel = i18nText('确定') }) {
   return new Promise((resolve) => {
     const body = el(`<div class="form-row">${label ? `<label>${esc(label)}</label>` : ''}<input class="ipt" placeholder="${esc(placeholder)}" value="${esc(value)}"></div>`);
     const input = body.querySelector('input');
     let done = false;
     const submit = (c) => { const v = input.value.trim(); if (!v) { input.focus(); return; } done = true; resolve(v); c(); };
     const close = openModal({
-      title: title || '请输入', width: 420, body,
-      actions: [{ label: '取消', onClick: (c) => { done = true; resolve(null); c(); } }, { label: okLabel, kind: 'primary', onClick: submit }],
+      title: title || i18nText('请输入'), width: 420, body,
+      actions: [{ label: i18nText('取消'), onClick: (c) => { done = true; resolve(null); c(); } }, { label: okLabel, kind: 'primary', onClick: submit }],
       onClose: () => { if (!done) resolve(null); },
     });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(close); } });

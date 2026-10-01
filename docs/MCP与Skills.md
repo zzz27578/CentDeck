@@ -112,3 +112,5 @@ With `mcp:external`, call `external_requests`, then `external_claim`, then `exte
 ```
 
 Expanded MCP schemas require project IDs for project tools. Markdown and page display names use guarded transactions. Reload-safe control identities and independent heartbeats protect UI operations. The editor now exposes preview controls and layout evidence. `capture_page` returns a real PNG from a fresh isolated local-project render; it does not capture the user's live browser state or load remote assets.
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // writeback.js —— 三灯判定 + 精确回写
 // 纯函数、零依赖、不碰 DOM，Node 下可测。
 // 移植自 demo/core.js（setInlineStyle / setCssRule / parseStyle / diffLines）与 demo/edit.js（三灯判定逻辑）。
@@ -232,7 +235,7 @@ function resolveTarget(parsed, target) {
 
 // 程序生成元素的具体原因：在脚本数据清单里找原文，区分"多处歧义 / 拼出来的找不到 / 程序生成"三种红灯
 function generatedReason(source, parsed, edit) {
-  const base = '目标是程序运行时生成的内容，源码里没有它自己的一行，不宜直接写回；请把意图记成草图标记交给 AI。';
+  const base = i18nText('目标是程序运行时生成的内容，源码里没有它自己的一行，不宜直接写回；请把意图记成草图标记交给 AI。');
   if (edit.kind === 'text' && edit.meta && edit.meta.text) {
     const old = String(edit.meta.text).trim();
     if (old) {
@@ -243,9 +246,9 @@ function generatedReason(source, parsed, edit) {
           while ((idx = source.indexOf(q + old + q, from)) >= 0 && idx < r[1]) { hits++; hitLine = parsed.lineOf(idx + 1); from = idx + 1; }
         });
       });
-      if (hits > 1) return '源码里有 ' + hits + ' 处相同的「' + old + '」，不确定该改哪一处（多处歧义），不宜直接写回；请记成草图标记交给 AI。';
-      if (hits === 1) return '这段字来自第 ' + hitLine + ' 行脚本里的数据清单，内容由程序循环生成，没有源码行可直接对应；请记成草图标记、改清单的任务交给 AI。';
-      return '目标文字在源码里找不到原文（可能是程序临时拼接的），不宜直接写回；请记成草图标记交给 AI。';
+      if (hits > 1) return i18nText('源码里有 ') + hits + i18nText(' 处相同的「') + old + i18nText('」，不确定该改哪一处（多处歧义），不宜直接写回；请记成草图标记交给 AI。');
+      if (hits === 1) return i18nText('这段字来自第 ') + hitLine + i18nText(' 行脚本里的数据清单，内容由程序循环生成，没有源码行可直接对应；请记成草图标记、改清单的任务交给 AI。');
+      return i18nText('目标文字在源码里找不到原文（可能是程序临时拼接的），不宜直接写回；请记成草图标记交给 AI。');
     }
   }
   return base;
@@ -277,9 +280,9 @@ export function applyEdit(source, edit, opts = {}) {
   }
   const info = t.el;
   if (!info) {
-    return fail('在源码里找不到目标元素（' + JSON.stringify(edit.target) + '），源码可能已变化；请重新选中后再试。');
+    return fail(i18nText('在源码里找不到目标元素（') + JSON.stringify(edit.target) + i18nText('），源码可能已变化；请重新选中后再试。'));
   }
-  const at = x => x + '（第 ' + info.line + ' 行 <' + info.tag + '>）';
+  const at = x => x + i18nText('（第 ') + info.line + i18nText(' 行 <') + info.tag + '>）';
 
   let newSource = null, scopeClass = null, note = null, lineAt = null;
 
@@ -287,15 +290,15 @@ export function applyEdit(source, edit, opts = {}) {
     // —— 改某一段文字（混合内容也可以）：只替换真正变了的那几个字符 ——
     const segs = textSegments(source, info);
     const k = edit.index;
-    if (!(k >= 0 && k < segs.length)) return fail(at('这段文字') + '在代码里定位不到（页面结构可能被浏览器自动纠正或被脚本改过），不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
-    if (!segs[k]) return fail(at('这段文字') + '在代码里没有对应的位置，不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    if (!(k >= 0 && k < segs.length)) return fail(at(i18nText('这段文字')) + i18nText('在代码里定位不到（页面结构可能被浏览器自动纠正或被脚本改过），不宜直接写回；请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
+    if (!segs[k]) return fail(at(i18nText('这段文字')) + i18nText('在代码里没有对应的位置，不宜直接写回；请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
     const [a, b] = segs[k];
     const { text, map } = decodeMap(source.slice(a, b));
     const oldT = String(edit.oldText == null ? '' : edit.oldText);
     const newT = String(edit.newText == null ? '' : edit.newText);
-    if (text !== oldT) return fail(at('这段文字') + '在代码里的原文和页面上显示的不一致（可能由脚本改写），不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
-    if (!newT.trim() && info.textOnly) return fail('不能把文字全部删空：那等于删掉内容；要删整个元素请用"删除"。', { selector: info.selector, line: info.line });
-    if (oldT === newT) return fail('文字没有变化。', { selector: info.selector, line: info.line, unchanged: true });
+    if (text !== oldT) return fail(at(i18nText('这段文字')) + i18nText('在代码里的原文和页面上显示的不一致（可能由脚本改写），不宜直接写回；请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
+    if (!newT.trim() && info.textOnly) return fail(i18nText('不能把文字全部删空：那等于删掉内容；要删整个元素请用"删除"。'), { selector: info.selector, line: info.line });
+    if (oldT === newT) return fail(i18nText('文字没有变化。'), { selector: info.selector, line: info.line, unchanged: true });
     const lim = Math.min(oldT.length, newT.length);
     let p = 0;
     while (p < lim && oldT[p] === newT[p]) p++;
@@ -306,21 +309,21 @@ export function applyEdit(source, edit, opts = {}) {
     const rs = a + map[p], re = a + map[oldT.length - s];
     newSource = source.slice(0, rs) + encText(newT.slice(p, newT.length - s)) + source.slice(re);
     lineAt = parsed.lineOf(rs);
-    if (info.jsDynamic) note = '这一块被页面脚本引用：代码里的文字已改好，但页面运行时脚本仍可能改写它。';
+    if (info.jsDynamic) note = i18nText('这一块被页面脚本引用：代码里的文字已改好，但页面运行时脚本仍可能改写它。');
   } else if (edit.kind === 'text') {
     // —— 改字 ——
     const nt = String(edit.newText == null ? '' : edit.newText);
-    if (/\r|\n/.test(nt)) return fail('新文字里不允许换行：换行会改变行数，无法做到"只改那一行"。', { selector: info.selector, line: info.line });
-    if (!nt.trim()) return fail('不能把文字清空：清空文字相当于改内容结构；如要删整块内容请用删除命令（会按波及情况亮黄灯）。', { selector: info.selector, line: info.line });
+    if (/\r|\n/.test(nt)) return fail(i18nText('新文字里不允许换行：换行会改变行数，无法做到"只改那一行"。'), { selector: info.selector, line: info.line });
+    if (!nt.trim()) return fail(i18nText('不能把文字清空：清空文字相当于改内容结构；如要删整块内容请用删除命令（会按波及情况亮黄灯）。'), { selector: info.selector, line: info.line });
     // 非纯文字元素：给出 oldText（元素内唯一的文本段）时放行——定位替换只动那一小串，标签与行数都不变
-    if (!info.textOnly && edit.oldText == null) return fail('目标内部还嵌套着别的标签，不是一行纯文字；请选中里面具体的那段文字，或在右侧属性面板的"文字内容"里分段修改。', { selector: info.selector, line: info.line });
-    if (info.jsDynamic) return fail('该区域被脚本引用、内容疑似由 JS 生成，写回源码里的文字不会生效；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    if (!info.textOnly && edit.oldText == null) return fail(i18nText('目标内部还嵌套着别的标签，不是一行纯文字；请选中里面具体的那段文字，或在右侧属性面板的"文字内容"里分段修改。'), { selector: info.selector, line: info.line });
+    if (info.jsDynamic) return fail(i18nText('该区域被脚本引用、内容疑似由 JS 生成，写回源码里的文字不会生效；请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
     const raw = info.text;
     const lead = /^\s*/.exec(raw)[0], trail = /\s*$/.exec(raw)[0];
     if (edit.oldText != null) {
       const occ = occurrences(raw, String(edit.oldText));
-      if (occ.length === 0) return fail(at('目标文字') + '在源码里找不到原文（可能由脚本拼接或经过转义），不宜直接写回。', { selector: info.selector, line: info.line });
-      if (occ.length > 1) return fail('第 ' + info.line + ' 行里有 ' + occ.length + ' 处相同的「' + edit.oldText + '」，无法确定改哪一处。', { selector: info.selector, line: info.line });
+      if (occ.length === 0) return fail(at(i18nText('目标文字')) + i18nText('在源码里找不到原文（可能由脚本拼接或经过转义），不宜直接写回。'), { selector: info.selector, line: info.line });
+      if (occ.length > 1) return fail(i18nText('第 ') + info.line + i18nText(' 行里有 ') + occ.length + i18nText(' 处相同的「') + edit.oldText + i18nText('」，无法确定改哪一处。'), { selector: info.selector, line: info.line });
       const pos = info.openEnd + occ[0];
       newSource = source.slice(0, pos) + escText(nt) + source.slice(pos + String(edit.oldText).length);
     } else {
@@ -331,29 +334,29 @@ export function applyEdit(source, edit, opts = {}) {
     // —— 字号 / 字体 / 颜色 / 缩放等行内样式 ——
     const props = {};
     Object.keys(edit.props || {}).forEach(k => { props[k.toLowerCase()] = edit.props[k]; });
-    if (!Object.keys(props).length) return fail('edit.props 为空，没有要执行的样式修改。');
+    if (!Object.keys(props).length) return fail(i18nText('edit.props 为空，没有要执行的样式修改。'));
     if ('transform' in props) {
-      return fail('绝不写 transform（那是动画通道）：挪位请用 move（写独立 translate），缩放请写独立 scale；写 transform 会被动画覆盖、元素"弹回去"。', { selector: info.selector, line: info.line });
+      return fail(i18nText('绝不写 transform（那是动画通道）：挪位请用 move（写独立 translate），缩放请写独立 scale；写 transform 会被动画覆盖、元素"弹回去"。'), { selector: info.selector, line: info.line });
     }
     const bad = Object.keys(props).filter(k => STRUCTURAL.has(k));
-    if (bad.length) return fail(at(bad.join('、') + ' 这些属性属于排列结构') + '：三列变两列、绝对定位拔出队伍这类改动等于"改结构"，不宜直接写回；请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+    if (bad.length) return fail(at(bad.join('、') + i18nText(' 这些属性属于排列结构')) + i18nText('：三列变两列、绝对定位拔出队伍这类改动等于"改结构"，不宜直接写回；请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
     if (edit.scope === 'class') {
       const cls = edit.className || info.classes[0];
-      if (!cls || !info.classes.includes(cls)) return fail('scope:"class" 要求目标带指定 class；该元素上没有 class "' + cls + '"。', { selector: info.selector, line: info.line });
+      if (!cls || !info.classes.includes(cls)) return fail(i18nText('scope:"class" 要求目标带指定 class；该元素上没有 class "') + cls + '"。', { selector: info.selector, line: info.line });
       newSource = setCssRule(source, parsed, '.' + cls, props);
-      if (newSource == null) return fail('页面里没有 <style> 块，无处写共用规则。', { selector: info.selector, line: info.line });
+      if (newSource == null) return fail(i18nText('页面里没有 <style> 块，无处写共用规则。'), { selector: info.selector, line: info.line });
       scopeClass = cls;
     } else if (edit.media) {
       const t = mediaTarget(source, parsed, info);
       newSource = upsertMediaRule(t.source, t.selector, props, edit.media);
-      note = '只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。';
+      note = i18nText('只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。');
     } else {
       newSource = setInlineStyle(source, info, props).src;
     }
   } else if (edit.kind === 'move') {
     // —— 挪位：只写独立 translate，绝不写 transform ——
     if (edit.crossed) {
-      return fail(at('跨区域移动') + '属于"改结构"：需要把整段代码剪切到新位置并适应新区域的排版，不宜直接写回；已恢复原样，请记成草图标记交给 AI。', { selector: info.selector, line: info.line });
+      return fail(at(i18nText('跨区域移动')) + i18nText('属于"改结构"：需要把整段代码剪切到新位置并适应新区域的排版，不宜直接写回；已恢复原样，请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
     }
     const dx = +edit.dx || 0, dy = +edit.dy || 0;
     let target = null, base = curTranslate(info);
@@ -366,19 +369,19 @@ export function applyEdit(source, edit, opts = {}) {
     const nv = (nx || ny) ? nx + 'px ' + ny + 'px' : null; // 回到原点就清掉 translate
     if (target) {
       newSource = upsertMediaRule(target.source, target.selector, { translate: nv || '0px 0px' }, edit.media);
-      note = '只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。';
+      note = i18nText('只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。');
     } else if (edit.scope === 'class') {
       const cls = edit.className || info.classes[0];
-      if (!cls || !info.classes.includes(cls)) return fail('scope:"class" 要求目标带指定 class。', { selector: info.selector, line: info.line });
+      if (!cls || !info.classes.includes(cls)) return fail(i18nText('scope:"class" 要求目标带指定 class。'), { selector: info.selector, line: info.line });
       newSource = setCssRule(source, parsed, '.' + cls, { translate: nv });
-      if (newSource == null) return fail('页面里没有 <style> 块，无处写共用规则。', { selector: info.selector, line: info.line });
+      if (newSource == null) return fail(i18nText('页面里没有 <style> 块，无处写共用规则。'), { selector: info.selector, line: info.line });
       scopeClass = cls;
     } else {
       newSource = setInlineStyle(source, info, { translate: nv }).src;
     }
-    if (info.transformAnim) note = '该元素占用 transform 动画通道：本次写的是独立 translate，与动画互不干扰，不会被"弹回去"。';
+    if (info.transformAnim) note = i18nText('该元素占用 transform 动画通道：本次写的是独立 translate，与动画互不干扰，不会被"弹回去"。');
   } else {
-    return fail('未知的编辑类型 kind="' + edit.kind + '"（支持 text / style / move）。');
+    return fail(i18nText('未知的编辑类型 kind="') + edit.kind + i18nText('"（支持 text / style / move）。'));
   }
 
   // —— 判定灯色与波及 ——
@@ -388,7 +391,7 @@ export function applyEdit(source, edit, opts = {}) {
     // scope:"class" 是显式"同类一起改"：被波及者可以静态列出（同 class 的其他元素）
     affected = parsed.elements
       .filter(el => el.loc !== info.loc && el.classes.includes(scopeClass))
-      .map(el => ({ loc: el.loc, selector: el.selector, line: el.line, tag: el.tag, note: '与你改的元素共用 class .' + scopeClass + '，会一起变' }));
+      .map(el => ({ loc: el.loc, selector: el.selector, line: el.line, tag: el.tag, note: i18nText('与你改的元素共用 class .') + scopeClass + i18nText('，会一起变') }));
   }
   if (typeof opts.measure === 'function') {
     let m = null;

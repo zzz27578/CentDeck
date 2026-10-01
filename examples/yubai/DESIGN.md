@@ -15,3 +15,5 @@
 ## 源码与规范
 
 实际样式在 style.css，规范元数据在 design/tokens.json。页面使用 --brand / --bg / --text 等变量；--blue / --paper / --ink 为兼容别名。修改已有页面先读取当前版本，保留用户局部修改。手动规范文件变更不等于所有硬编码布局已自动更新。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

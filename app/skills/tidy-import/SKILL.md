@@ -12,3 +12,5 @@ description: 用户要求整理导入网页、修复源码映射或让指定元�
 保留文字、布局、资源、表单、事件及导航。不以换行/缩进为可编辑前提，不为了修改一个字重新排版所有文件。用户明确要求静态化时，先说明会丢失哪些动态能力，再在授权范围内转换；普通“整理”不授权移除原框架。
 
 使用 `read_page` 的当前版本，经 `patch_text` 或 `write_files` 提交。列出处理前后影响与仍无法直接编辑的部分；未做浏览器对比时不能声称外观完全不变。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

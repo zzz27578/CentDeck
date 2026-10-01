@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 // ZIP (stored entries, UTF-8) without a build step or third-party runtime.
 const fs=require('node:fs'),path=require('node:path'),store=require('./store');

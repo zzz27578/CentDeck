@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // 引擎回归测试：node tests/engine.test.mjs
 // 覆盖各种"非规定"写法：缩进、压成一行、CRLF、<div />、省略结束标签、表格没写 tbody、实体、SVG 自闭合
 import { parse, instrument } from '../app/js/engine/parse.js';

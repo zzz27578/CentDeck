@@ -16,3 +16,5 @@ delegate 返回任务记录不代表子任务完成。依赖任务由调度器�
 外部 MCP 的 start_agent/agent_status/agent_action 属于另一套入口，只在当前清单提供时使用。start_agent 返回排队任务，不能假设它拥有 delegate 的参数或能力。
 
 冲突时重新读取当前版本，不能通过解除锁定、换模式或扩大 scope 消除问题。涉及需求选择时调用 request_input 并等待；普通问题在当前权限内修复。达到工具/时间上限或输出截断时保留结果，等待用户继续，不循环派发新的同目标任务。
+
+<!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

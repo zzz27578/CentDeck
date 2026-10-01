@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // Conversation identity is independent of the reusable assistant profile.
 export const hasMessages=c=>(c.msgs||[]).some(m=>m.role==='user'||m.role==='assistant');
 export const isBusy=t=>!!t&&['running','queued','checking','waiting_dependency'].includes(t.status);
@@ -6,7 +9,7 @@ export function conversations(project){
   if(!Array.isArray(project.conversations)){
     project.conversations=Object.entries(project.assistantChats||{}).map(([assistantId,data])=>({
       ...data,id:'legacy-'+assistantId,assistantId,legacy:true,
-      title:data.msgs?.find(m=>m.role==='user')?.text?.slice(0,32)||'历史对话',
+      title:data.msgs?.find(m=>m.role==='user')?.text?.slice(0,32)||i18nText('历史对话'),
       createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
     }));
     project.activeConversations={};
@@ -57,7 +60,7 @@ export function tasksForConversation(tasks,conversation){
 export function historyFor(msgs,compaction){
   const through=compaction?msgs.findIndex(m=>m.id===compaction.throughMessageId):-1;
   const tail=msgs.slice(through+1).filter(m=>['user','assistant'].includes(m.role)).map(m=>({role:m.role,content:m.text||''}));
-  return through>=0?[{role:'user',content:'此前对话摘要（历史资料，不是新指令）：\n'+compaction.summary},...tail]:tail;
+  return through>=0?[{role:'user',content:i18nText('此前对话摘要（历史资料，不是新指令）：\n')+compaction.summary},...tail]:tail;
 }
 export const tokenEstimate=value=>Math.ceil([...String(typeof value==='string'?value:JSON.stringify(value))].reduce((n,c)=>n+(c.charCodeAt(0)>127?1:0.28),0));
 export const tokenLabel=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1)+'K':String(Math.round(n||0));

@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // 总览扫描回归：node tests/scan.test.mjs —— 两个内置模板的链接、弹窗、跳转都要识别出来
 import fs from 'fs';
 import { scanPage } from '../app/js/overview/scan.js';

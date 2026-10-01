@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // 把源码里看不见的 BOM 字符（U+FEFF）换成显式的 ﻿ 写法：node tests/fix-invisible.mjs
 import fs from 'fs';
 import path from 'path';

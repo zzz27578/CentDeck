@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 // Deliberately narrow: ambiguous requests keep the normal project tools.
 function directReply(text, refs=[]) {

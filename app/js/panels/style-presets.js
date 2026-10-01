@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 // Familiar visual directions, expressed as editable tokens rather than brand copies.
 export const DEFAULT_PRESET_NAME='现代 SaaS';
 export const PRESETS={

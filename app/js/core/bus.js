@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 // bus.js —— 命令总线 + 内置插件骨架（内核）
 //
 // 两条铁律：
@@ -83,7 +86,7 @@ export function createBus(deps) {
 
   // 执行一条命令：apply() 里完成 PUT 保存与重渲染；失败则不入栈
   async function do_(cmd) {
-    if (!cmd || typeof cmd.apply !== 'function') throw new Error('命令缺少 apply()');
+    if (!cmd || typeof cmd.apply !== 'function') throw new Error(i18nText('命令缺少 apply()'));
     setSaveState('saving');
     try {
       await cmd.apply();
@@ -141,10 +144,10 @@ export function createBus(deps) {
     const proj = getProject();
     if (!proj) return;
     const cmd = {
-      label: label || '修改项目设置',
+      label: label || i18nText('修改项目设置'),
       page: null,
-      apply: async () => { apply(proj); if (await flushMeta() === false) { revert(proj); emit('stack'); throw new Error('项目保存失败，修改已撤回'); } },
-      revert: async () => { revert(proj); if (await flushMeta() === false) { apply(proj); emit('stack'); throw new Error('撤销保存失败'); } },
+      apply: async () => { apply(proj); if (await flushMeta() === false) { revert(proj); emit('stack'); throw new Error(i18nText('项目保存失败，修改已撤回')); } },
+      revert: async () => { revert(proj); if (await flushMeta() === false) { apply(proj); emit('stack'); throw new Error(i18nText('撤销保存失败')); } },
     };
     return do_(cmd);
   }
@@ -155,24 +158,24 @@ export function createBus(deps) {
   const toolbarActions = []; // { id, title, icon, when?(ctx), onClick(ctx) }
 
   function registerPanel(p) {
-    if (!p || !p.id || typeof p.render !== 'function') throw new Error('registerPanel 需要 { id, render }');
-    if (panels.some((x) => x.id === p.id)) throw new Error('面板 id 重复：' + p.id);
+    if (!p || !p.id || typeof p.render !== 'function') throw new Error(i18nText('registerPanel 需要 { id, render }'));
+    if (panels.some((x) => x.id === p.id)) throw new Error(i18nText('面板 id 重复：') + p.id);
     panels.push({ side: 'left', icon: '▦', ...p });
     emit('panels');
     return p;
   }
   function registerCommand(name, fn) {
-    if (commands.has(name)) throw new Error('命令重复注册：' + name);
+    if (commands.has(name)) throw new Error(i18nText('命令重复注册：') + name);
     commands.set(name, fn);
   }
   function runCommand(name, ctx, ...args) {
     const fn = commands.get(name);
-    if (!fn) throw new Error('命令未注册：' + name);
+    if (!fn) throw new Error(i18nText('命令未注册：') + name);
     return fn(ctx, ...args);
   }
   function registerToolbarAction(a) {
-    if (!a || !a.id || typeof a.onClick !== 'function') throw new Error('registerToolbarAction 需要 { id, onClick }');
-    if (toolbarActions.some((x) => x.id === a.id)) throw new Error('工具栏按钮 id 重复：' + a.id);
+    if (!a || !a.id || typeof a.onClick !== 'function') throw new Error(i18nText('registerToolbarAction 需要 { id, onClick }'));
+    if (toolbarActions.some((x) => x.id === a.id)) throw new Error(i18nText('工具栏按钮 id 重复：') + a.id);
     toolbarActions.push(a);
     emit('toolbar');
     return a;

@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 工作台外壳：顶栏（项目/页面/视图切换/保存状态/撤销/助手）、左侧栏+抽屉面板、右侧属性栏、状态栏
 import { icon } from '../core/icons.js';
 import { el, esc, showMenu, toast, closeMenu, menuOpen, anyModalOpen, closeTopModal, segSync } from '../core/ui.js';
@@ -6,9 +9,9 @@ import { bindKey, showKeyHelp } from '../core/keys.js';
 import { mark, toggleTheme } from '../core/brand.js';
 
 const VIEWS = [
-  { id: 'overview', label: '总览', icon: 'overview', kbd: 'Alt+1' },
-  { id: 'edit', label: '编辑', icon: 'edit', kbd: 'Alt+2' },
-  { id: 'present', label: '放映', icon: 'play', kbd: 'F5' },
+  { id: 'overview', label: i18nText('总览'), icon: 'overview', kbd: 'Alt+1' },
+  { id: 'edit', label: i18nText('编辑'), icon: 'edit', kbd: 'Alt+2' },
+  { id: 'present', label: i18nText('放映'), icon: 'play', kbd: 'F5' },
 ];
 
 export function buildShell(app) {
@@ -18,7 +21,7 @@ export function buildShell(app) {
   const listen = (event, fn) => disposers.push(app.bus.on(event, fn));
   document.body.className = 'wb';
   const root = document.getElementById('app');
-  root.innerHTML = `
+  root.innerHTML = i18nTpl`
     <header class="topbar">
       <div class="tb-left">
         <button class="tb-logo" id="tb-home" data-tip="回到首页">${mark(32)}CentDeck</button>
@@ -81,28 +84,28 @@ export function buildShell(app) {
     b.onclick = () => {
       setDevice(b.dataset.dev);
       syncDev();
-      if (b.dataset.dev === 'mobile') toast('手机模式：在这里改的位置、大小、字号只对手机屏幕生效，电脑版不受影响', '', 3800);
+      if (b.dataset.dev === 'mobile') toast(i18nText('手机模式：在这里改的位置、大小、字号只对手机屏幕生效，电脑版不受影响'), '', 3800);
     };
   });
   syncDev();
   $('#tb-settings').onclick = () => app.openSettings('general');
   $('#tb-more').onclick = (e) => showMenu([
-    {label:'导出项目 ZIP',icon:'download',onClick:async()=>{if(await app.bus.flushMeta()===false)return;const a=document.createElement('a');a.href='/api/projects/'+encodeURIComponent(app.project().id)+'/export';a.download='centdeck-project.zip';a.click();}},
-    {label:'Agent 工作台',icon:'centdeck',onClick:()=>app.openSettings()},
-    {label:'亮色 / 暗色',icon:'palette',onClick:toggleTheme},
-    {label:'设置',icon:'settings',onClick:()=>app.openSettings('general')},
-    { label: '快捷键一览', icon: 'keyboard', kbd: '?', onClick: showKeyHelp },
+    {label:i18nText('导出项目 ZIP'),icon:'download',onClick:async()=>{if(await app.bus.flushMeta()===false)return;const a=document.createElement('a');a.href='/api/projects/'+encodeURIComponent(app.project().id)+'/export';a.download='centdeck-project.zip';a.click();}},
+    {label:i18nText('Agent 工作台'),icon:'centdeck',onClick:()=>app.openSettings()},
+    {label:i18nText('亮色 / 暗色'),icon:'palette',onClick:toggleTheme},
+    {label:i18nText('设置'),icon:'settings',onClick:()=>app.openSettings('general')},
+    { label: i18nText('快捷键一览'), icon: 'keyboard', kbd: '?', onClick: showKeyHelp },
   ], 0, 0, { anchor: e.currentTarget, align: 'right' });
   $('#tb-page').onclick = (e) => {
     const cur = app.state.page;
-    showMenu([{ title: '切换页面' }, ...app.project().pages.map((p) => ({
+    showMenu([{ title: i18nText('切换页面') }, ...app.project().pages.map((p) => ({
       label: p.title, hint: p.file, checked: p.file === cur, onClick: () => app.openPage(p.file),
     }))], 0, 0, { anchor: e.currentTarget, minWidth: 230 });
   };
 
   // ---------- 保存状态 / 撤销状态 ----------
   const saveEl = $('#save-state');
-  const saveText = { saved: '已保存', saving: '保存中…', dirty: '待保存…', error: '保存失败' };
+  const saveText = { saved: i18nText('已保存'), saving: i18nText('保存中…'), dirty: i18nText('待保存…'), error: i18nText('保存失败') };
   listen('savestate', (s) => { saveEl.className = 'save-state ' + s; saveEl.lastElementChild.textContent = saveText[s] || s; });
   const syncStack = () => {
     const u = $('#tb-undo'), r = $('#tb-redo');
@@ -110,7 +113,7 @@ export function buildShell(app) {
     u.disabled = !app.bus.canUndo;
     r.disabled = !app.bus.canRedo;
     const top = app.bus.peekUndo();
-    u.setAttribute('data-tip', top ? '撤销：' + top.label : '撤销');
+    u.setAttribute('data-tip', top ? i18nText('撤销：') + top.label : i18nText('撤销'));
   };
   listen('stack', syncStack);
   syncStack();
@@ -130,7 +133,7 @@ export function buildShell(app) {
       rail.appendChild(b);
     });
     rail.appendChild(el('<div class="grow"></div>'));
-    const help = el(`<button class="icon-btn" data-tip="快捷键" data-tip-place="right" data-kbd="?">${icon('keyboard', 19)}</button>`);
+    const help = el(i18nTpl`<button class="icon-btn" data-tip="快捷键" data-tip-place="right" data-kbd="?">${icon('keyboard', 19)}</button>`);
     help.onclick = showKeyHelp;
     rail.appendChild(help);
   }
@@ -187,13 +190,13 @@ export function bindShellKeys(app) {
     if (anyModalOpen()) { closeTopModal(); return; }
     return false;
   } });
-  bindKey(['Ctrl+Z'], { label: '撤销', group: '通用', when: inWb, run: () => { app.bus.undo(); } });
-  bindKey(['Ctrl+Shift+Z', 'Ctrl+Y'], { label: '重做', group: '通用', when: inWb, run: () => { app.bus.redo(); } });
-  bindKey('Ctrl+S', { label: '保存（改动会自动保存）', group: '通用', field: true, when: inWb, run: () => { app.bus.flushMeta(); toast('所有改动都已自动保存', 'ok', 1600); } });
-  bindKey('Ctrl+K', { id: 'agent.toggle', label: '召唤 / 收起助手', group: '通用', field: true, when: inWb, run: () => { app.toggleAgent(); } });
-  bindKey('?', { label: '快捷键一览', group: '通用', run: () => { showKeyHelp(); } });
-  bindKey('Alt+1', { id: 'view.overview', label: '总览', group: '视图', when: inWb, run: () => { app.setView('overview'); } });
-  bindKey('Alt+2', { id: 'view.edit', label: '编辑', group: '视图', when: inWb, run: () => { app.setView('edit'); } });
-  bindKey('F5', { id: 'view.present', label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
-  bindKey('Shift+F5', { id: 'view.presentHere', label: '放映（从当前页）', group: '视图', field: true, when: inWb, run: () => { app.present(app.state.page); } });
+  bindKey(['Ctrl+Z'], { label: i18nText('撤销'), group: i18nText('通用'), when: inWb, run: () => { app.bus.undo(); } });
+  bindKey(['Ctrl+Shift+Z', 'Ctrl+Y'], { label: i18nText('重做'), group: i18nText('通用'), when: inWb, run: () => { app.bus.redo(); } });
+  bindKey('Ctrl+S', { label: i18nText('保存（改动会自动保存）'), group: i18nText('通用'), field: true, when: inWb, run: () => { app.bus.flushMeta(); toast(i18nText('所有改动都已自动保存'), 'ok', 1600); } });
+  bindKey('Ctrl+K', { id: 'agent.toggle', label: i18nText('召唤 / 收起助手'), group: i18nText('通用'), field: true, when: inWb, run: () => { app.toggleAgent(); } });
+  bindKey('?', { label: i18nText('快捷键一览'), group: i18nText('通用'), run: () => { showKeyHelp(); } });
+  bindKey('Alt+1', { id: 'view.overview', label: i18nText('总览'), group: i18nText('视图'), when: inWb, run: () => { app.setView('overview'); } });
+  bindKey('Alt+2', { id: 'view.edit', label: i18nText('编辑'), group: i18nText('视图'), when: inWb, run: () => { app.setView('edit'); } });
+  bindKey('F5', { id: 'view.present', label: i18nText('放映（从当前页）'), group: i18nText('视图'), field: true, when: inWb, run: () => { app.present(app.state.page); } });
+  bindKey('Shift+F5', { id: 'view.presentHere', label: i18nText('放映（从当前页）'), group: i18nText('视图'), field: true, when: inWb, run: () => { app.present(app.state.page); } });
 }

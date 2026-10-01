@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 总览画布右侧的工具条：指针 / 框选 / 画笔 / 手
 //   框选：框住页面上的一块，直接变成助手输入框里的一个引用（图标 + 页面名 + 区域）
 //   画笔：在画布上随手写写画画（整块画布的批注，可撤销，右键删除）
@@ -9,13 +12,13 @@ import {notePalette} from '../core/note-colors.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 export const OV_TOOLS = [
-  { id: 'pointer', label: '指针', tip: '指针：点选页面、拖标题摆位置', icon: 'select', kbd: 'R' },
-  { id: 'marquee', label: '框选', tip: '框选：框住页面上的一块，直接引用到助手', icon: 'marquee', kbd: 'M' },
-  { id: 'pen', label: '画笔', tip: '画笔：在画布上随手批注', icon: 'pen', kbd: 'D' },
-  { id: 'eraser', label: '橡皮', tip: '橡皮：擦除批注或便签', icon: 'eraser', kbd: 'X' },
-  { id: 'note', label: '便签', tip: '便签：点击画布就地输入', icon: 'sticky2', kbd: 'S' },
-  { id: 'picker', label: '取色', tip: '取色：点击网页取背景或文字颜色', icon: 'droplet', kbd: 'C' },
-  { id: 'hand', label: '手', tip: '手：拖动画布（也可以按住空格或中键）', icon: 'hand', kbd: 'H' },
+  { id: 'pointer', label: i18nText('指针'), tip: i18nText('指针：点选页面、拖标题摆位置'), icon: 'select', kbd: 'R' },
+  { id: 'marquee', label: i18nText('框选'), tip: i18nText('框选：框住页面上的一块，直接引用到助手'), icon: 'marquee', kbd: 'M' },
+  { id: 'pen', label: i18nText('画笔'), tip: i18nText('画笔：在画布上随手批注'), icon: 'pen', kbd: 'D' },
+  { id: 'eraser', label: i18nText('橡皮'), tip: i18nText('橡皮：擦除批注或便签'), icon: 'eraser', kbd: 'X' },
+  { id: 'note', label: i18nText('便签'), tip: i18nText('便签：点击画布就地输入'), icon: 'sticky2', kbd: 'S' },
+  { id: 'picker', label: i18nText('取色'), tip: i18nText('取色：点击网页取背景或文字颜色'), icon: 'droplet', kbd: 'C' },
+  { id: 'hand', label: i18nText('手'), tip: i18nText('手：拖动画布（也可以按住空格或中键）'), icon: 'hand', kbd: 'H' },
 ];
 
 export function createCanvasTools(app, c) {
@@ -69,8 +72,8 @@ export function createCanvasTools(app, c) {
     if (tool === 'note') { stickies.add(a, color); setTool('pointer'); return true; }
     if (tool === 'picker') {
       const picked = c.sampleColor(e.clientX, e.clientY);
-      if (picked) { color = picked; toast('已取色 ' + color + '，用于画笔', 'ok'); }
-      else toast('请点击网页上的文字或背景取色');
+      if (picked) { color = picked; toast(i18nText('已取色 ') + color + i18nText('，用于画笔'), 'ok'); }
+      else toast(i18nText('请点击网页上的文字或背景取色'));
       return true;
     }
     if (tool === 'eraser') {
@@ -89,7 +92,7 @@ export function createCanvasTools(app, c) {
         });
       };
       const up = () => { cancelGesture(); if (!removed.length) return;
-        app.bus.doMeta({ label: '擦除画布批注', apply: () => removed.forEach(({s}) => { const i = list.indexOf(s); if (i >= 0) list.splice(i,1); }), revert: () => removed.slice().sort((a,b) => a.i-b.i).forEach(({s,i}) => list.splice(i,0,s)) }).then(paintInk);
+        app.bus.doMeta({ label: i18nText('擦除画布批注'), apply: () => removed.forEach(({s}) => { const i = list.indexOf(s); if (i >= 0) list.splice(i,1); }), revert: () => removed.slice().sort((a,b) => a.i-b.i).forEach(({s,i}) => list.splice(i,0,s)) }).then(paintInk);
       };
       cancelGesture = () => { window.removeEventListener('pointermove', erase, true); window.removeEventListener('pointerup', up, true); };
       erase(e); window.addEventListener('pointermove', erase, true); window.addEventListener('pointerup', up, true); return true;
@@ -109,7 +112,7 @@ export function createCanvasTools(app, c) {
         if (pts.length < 3) return;
         const s = { id: uid('ink'), pts, color, width: Math.round(w * 10) / 10 };
         const list = ink();
-        app.bus.doMeta({ label: '画布批注', apply: () => list.push(s), revert: () => { const i = list.indexOf(s); if (i >= 0) list.splice(i, 1); } }).then(paintInk);
+        app.bus.doMeta({ label: i18nText('画布批注'), apply: () => list.push(s), revert: () => { const i = list.indexOf(s); if (i >= 0) list.splice(i, 1); } }).then(paintInk);
       };
       cancelGesture = () => { window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); live.remove(); };
       window.addEventListener('pointermove', mv, true);
@@ -131,7 +134,7 @@ export function createCanvasTools(app, c) {
       setTimeout(() => box.remove(), 900);
       if (r.w * c.cam().z < 8 || r.h * c.cam().z < 8) return;
       const hits = c.cards().filter((k) => r.x < k.x + k.w && r.x + r.w > k.x && r.y < k.y + k.h && r.y + r.h > k.y);
-      if (!hits.length) { toast('框里没有页面', 'err'); return; }
+      if (!hits.length) { toast(i18nText('框里没有页面'), 'err'); return; }
       hits.forEach((k) => {
         const x1 = Math.max(r.x, k.x), y1 = Math.max(r.y, k.y), x2 = Math.min(r.x + r.w, k.x + k.w), y2 = Math.min(r.y + r.h, k.y + k.h);
         const s = k.scale || 1;
@@ -142,7 +145,7 @@ export function createCanvasTools(app, c) {
         });
       });
       app.toggleAgent(true);
-      toast(`已把 ${hits.length} 处框选放进助手输入框`, 'ok', 2200);
+      toast(i18nTpl`已把 ${hits.length} 处框选放进助手输入框`, 'ok', 2200);
     };
     cancelGesture = () => { window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); box.remove(); };
     window.addEventListener('pointermove', mv, true);
@@ -155,19 +158,19 @@ export function createCanvasTools(app, c) {
     e.preventDefault();
     const list = ink();
     const item = list.find((x) => x.id === s.dataset.id);
-    showMenu([{ label: '删除这笔批注', icon: 'trash', danger: true, onClick: () => {
+    showMenu([{ label: i18nText('删除这笔批注'), icon: 'trash', danger: true, onClick: () => {
       const i = list.indexOf(item);
-      app.bus.doMeta({ label: '删除画布批注', apply: () => list.splice(list.indexOf(item), 1), revert: () => list.splice(i, 0, item) }).then(paintInk);
+      app.bus.doMeta({ label: i18nText('删除画布批注'), apply: () => list.splice(list.indexOf(item), 1), revert: () => list.splice(i, 0, item) }).then(paintInk);
     } }], e.clientX, e.clientY);
     return true;
   }
   function clearInk() {
     const list = ink(), old = list.slice();
     if (!old.length) return;
-    app.bus.doMeta({ label: '清除画布批注', apply: () => list.splice(0), revert: () => list.push(...old) }).then(paintInk);
+    app.bus.doMeta({ label: i18nText('清除画布批注'), apply: () => list.splice(0), revert: () => list.push(...old) }).then(paintInk);
   }
 
   const inOv = () => app.state.view === 'overview';
-  OV_TOOLS.forEach((t) => bindKey(t.kbd, { id: 'ov.tool.' + t.id, label: t.label, group: '总览', when: inOv, run: () => setTool(t.id) }));
+  OV_TOOLS.forEach((t) => bindKey(t.kbd, { id: 'ov.tool.' + t.id, label: t.label, group: i18nText('总览'), when: inOv, run: () => setTool(t.id) }));
   return { mount, syncNotes:stickies.sync, unmount() { cancelGesture(); stickies.unmount(); strip = inkLayer = null; }, setTool, down, context, clearInk, repaint: paintInk, get tool() { return tool; } };
 }

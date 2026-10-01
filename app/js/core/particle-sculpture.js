@@ -1,6 +1,9 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 export function particleSculpture() {
-  return `<section class="noir-particles" aria-label="可交互粒子主视觉">
-    <button type="button" class="particle-surface" aria-label="粒子特效：单击打散，双击换形，拖动轻推；回车换形，空格打散">
+  return i18nTpl`<section class="noir-particles" aria-label="可交互粒子主视觉">
+    <button type="button" class="particle-surface" aria-label="粒子特效：单击打散，双击换形，拖动轻晃；回车换形，空格打散">
       <canvas aria-hidden="true"></canvas>
     </button>
   </section>`;
@@ -33,7 +36,7 @@ export function mountParticleSculpture(root) {
   const pointer = { x: -9999, y: -9999, active: false };
   let width = 0, height = 0, frame = 0, last = 0, time = 0, shape = 0;
   let active = false, visible = true, disposed = false, paused = reduced.matches;
-  const offset = { x: 0, y: 0 }, targetOffset = { ...offset };
+  const tilt = { x: 0, y: 0 }, targetTilt = { ...tilt };
   let drag = null, dragged = false, pressStarted = 0, wave = null, transitionStart = 0, transition = false;
   let lastTap = null;
   let from = null, targets = null;
@@ -61,13 +64,15 @@ export function mountParticleSculpture(root) {
       const r = p.seed, s = random(i + 4100), t = random(i + 8100);
       if (index === 0 && mark.length) {
         const point = mark[Math.floor(r * mark.length)];
-        return { x: point.x + (s - 0.5) * 0.027, y: point.y + (t - 0.5) * 0.027, z: (random(i + 1100) - 0.5) * 0.22 };
+        return { x: point.x + (s - 0.5) * 0.027, y: point.y + (t - 0.5) * 0.027, z: (random(i + 1100) - 0.5) * 0.32 };
       }
-      if (index === 1) {
-        const arm = i % 4;
-        const radius = Math.pow(r, 0.57) * 1.35;
-        const a = arm * tau / 4 + radius * 3.0 + (s - 0.5) * (0.3 + radius * 0.18);
-        return { x: Math.cos(a) * radius, y: Math.sin(a) * radius, z: (t - 0.5) * 0.12 };
+      if (index === 3) {
+        // A dense nucleus and two continuous, tapered spiral arms.
+        const core = i % 5 === 0;
+        const radius = core ? Math.sqrt(r) * 0.25 : Math.pow(r, 0.7) * 1.32;
+        const spread = (s - 0.5) * (0.55 - radius * 0.24);
+        const angle = core ? s * tau : (i % 2) * Math.PI + radius * 4.5 + spread;
+        return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, z: (t - 0.5) * 0.10 };
       }
       if (index === 2) {
         const bridge = i % 10 < 3;
@@ -87,16 +92,21 @@ export function mountParticleSculpture(root) {
   const forms = Array.from({ length: shapeCount }, (_, index) => positions(index));
 
   // Animate geometry before morphing, keeping the camera square to the page.
-  // The logo sways in its plane, the galaxy turns clockwise, and DNA twists
+  // The logo pivots in 3D around its fixed centre, the galaxy turns clockwise, and DNA twists
   // around a fixed vertical axis. No form inherits another form's rotation.
   function pose(point, index, i) {
     const { x, y, z } = point;
     if (index === 0) {
-      const roll = Math.sin(time * 0.48) * 0.025;
-      return { x: x * Math.cos(roll) - y * Math.sin(roll) + Math.sin(time * 0.52) * 0.035,
-        y: x * Math.sin(roll) + y * Math.cos(roll) + Math.sin(time * 0.68) * 0.045, z };
+      const yaw = -0.10 + Math.sin(time * 0.58) * 0.22 + tilt.y;
+      const pitch = Math.sin(time * 0.43) * 0.11 + tilt.x;
+      const rx = x * Math.cos(yaw) + z * Math.sin(yaw);
+      const rz = -x * Math.sin(yaw) + z * Math.cos(yaw);
+      const ry = y * Math.cos(pitch) - rz * Math.sin(pitch);
+      const depth = y * Math.sin(pitch) + rz * Math.cos(pitch);
+      const perspective = 5 / (5 + depth);
+      return { x: rx * perspective, y: ry * perspective, z: depth };
     }
-    if (index === 1) {
+    if (index === 3) {
       const angle = time * 0.30;
       return { x: x * Math.cos(angle) - y * Math.sin(angle), y: x * Math.sin(angle) + y * Math.cos(angle), z };
     }
@@ -131,9 +141,9 @@ export function mountParticleSculpture(root) {
     if (!paused) time += dt / 60;
     context.clearRect(0, 0, width, height);
     const scale = Math.min(width / 3.0, height / 3.0);
-    offset.x += (targetOffset.x - offset.x) * 0.09 * dt;
-    offset.y += (targetOffset.y - offset.y) * 0.09 * dt;
-    const centerX = width / 2 + offset.x * scale, centerY = height / 2 + offset.y * scale;
+    tilt.x += (targetTilt.x - tilt.x) * 0.09 * dt;
+    tilt.y += (targetTilt.y - tilt.y) * 0.09 * dt;
+    const centerX = width / 2, centerY = height / 2;
     const elapsed = now - transitionStart;
     let morphing = false;
 
@@ -248,15 +258,15 @@ export function mountParticleSculpture(root) {
       const x = event.clientX - drag.x, y = event.clientY - drag.y;
       dragged ||= Math.hypot(x, y) > 5;
       if (dragged) lastTap = null;
-      targetOffset.x = Math.max(-0.12, Math.min(0.12, drag.ox + x * 0.001));
-      targetOffset.y = Math.max(-0.10, Math.min(0.10, drag.oy + y * 0.001));
+      targetTilt.y = Math.max(-0.18, Math.min(0.18, drag.ry + x * 0.002));
+      targetTilt.x = Math.max(-0.12, Math.min(0.12, drag.rx - y * 0.002));
     }
     wake();
   }, { signal, passive: true });
   surface.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     locate(event); dragged = false;pressStarted = performance.now();
-    drag = { x: event.clientX, y: event.clientY, ox: targetOffset.x, oy: targetOffset.y };
+    drag = { x: event.clientX, y: event.clientY, rx: targetTilt.x, ry: targetTilt.y };
     surface.setPointerCapture(event.pointerId); host.classList.add('is-dragging');
   }, { signal });
   const release = event => {

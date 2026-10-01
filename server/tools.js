@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 'use strict';
 const store=require('./store'), changes=require('./changes'), extensions=require('./extensions'), ui=require('./ui-bridge');
 const str={type:'string'};

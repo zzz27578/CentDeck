@@ -1,4 +1,6 @@
 @echo off
+rem Copyright (c) 2026 zzz27578 and CentDeck contributors.
+rem SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0
 chcp 65001 >nul
 cd /d "%~dp0"
 where node >nul 2>nul

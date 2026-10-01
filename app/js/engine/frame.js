@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // frame.js —— 预览宿主：把页面源码渲染进 iframe（注入隐藏门牌号 data-cd-loc，源码本身不动）。
 // 双缓冲：改完代码后在后台那块 iframe 里渲染好、恢复滚动位置，再无闪烁地换到前台。
 import { parse, instrument } from './parse.js';
@@ -28,7 +31,7 @@ export function createFrame(host, { baseHref = '/', onNavigate, onReady } = {}) 
   const frames = [0, 1].map(() => {
     const f = document.createElement('iframe');
     f.className = 'pf';
-    f.setAttribute('title', '页面');
+    f.setAttribute('title', i18nText('页面'));
     host.appendChild(f);
     return f;
   });
@@ -172,7 +175,7 @@ export function collateral(before, after, targetLoc, parsed) {
     if (!b || skip.has(loc) || a.tag !== b.tag) return;
     if (Math.abs(a.x - b.x) > 1 || Math.abs(a.y - b.y) > 1 || Math.abs(a.w - b.w) > 1 || Math.abs(a.h - b.h) > 1) {
       const e = els[loc];
-      moved.push({ loc, selector: e ? e.selector : null, line: e ? e.line : null, tag: e ? e.tag : null, dx: Math.round(b.x - a.x), dy: Math.round(b.y - a.y), note: '被挤动（排版让位）' });
+      moved.push({ loc, selector: e ? e.selector : null, line: e ? e.line : null, tag: e ? e.tag : null, dx: Math.round(b.x - a.x), dy: Math.round(b.y - a.y), note: i18nText('被挤动（排版让位）') });
     }
   });
   return moved.filter((m) => !moved.some((o) => o !== m && isAnc(o.loc, m.loc)));

@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { el, esc, uid, showMenu, openModal, toast } from "../core/ui.js";
 import { icon } from "../core/icons.js";
 import { PRESETS, DEFAULT_PRESET_NAME } from "../panels/style-presets.js";
@@ -17,7 +20,7 @@ export function createStyleCard(app, c) {
       p.designGroups = [
         {
           id: "original",
-          name: "原始方案",
+          name: i18nText("原始方案"),
           pages: p.pages.map((x) => x.file),
           tokens: structuredClone(
             p.tokens || {
@@ -78,16 +81,16 @@ export function createStyleCard(app, c) {
   function edit(g) {
     const t = g.tokens || {};
     const body = el(
-      `<form class="board-edit"><label>方案名称<input class="ipt" name="name" value="${esc(g.name)}" required></label><label>字体<input class="ipt" name="font" value="${esc(t.fontFamily || "system-ui")}"></label><label>字号阶梯<input class="ipt" name="sizes" value="${esc((t.fontSizes || []).join(", "))}"></label><label>圆角<input class="ipt" name="radius" value="${esc((t.radius || []).join(", "))}"></label><div class="board-color-fields">${["brand", "accent", "bg", "text"].map((k) => `<label>${{ brand: "主色", accent: "辅色", bg: "背景", text: "文字" }[k]}<input name="${k}" class="ipt" value="${esc(t.colors?.[k] || "")}" placeholder="#rrggbb"></label>`).join("")}</div></form>`,
+      i18nTpl`<form class="board-edit"><label>方案名称<input class="ipt" name="name" value="${esc(g.name)}" required></label><label>字体<input class="ipt" name="font" value="${esc(t.fontFamily || "system-ui")}"></label><label>字号阶梯<input class="ipt" name="sizes" value="${esc((t.fontSizes || []).join(", "))}"></label><label>圆角<input class="ipt" name="radius" value="${esc((t.radius || []).join(", "))}"></label><div class="board-color-fields">${["brand", "accent", "bg", "text"].map((k) => `<label>${{ brand: i18nText("主色"), accent: i18nText("辅色"), bg: i18nText("背景"), text: i18nText("文字") }[k]}<input name="${k}" class="ipt" value="${esc(t.colors?.[k] || "")}" placeholder="#rrggbb"></label>`).join("")}</div></form>`,
     );
     openModal({
-      title: "设计规范",
+      title: i18nText("设计规范"),
       body,
       width: 500,
       actions: [
-        { label: "取消" },
+        { label: i18nText("取消") },
         {
-          label: "保存",
+          label: i18nText("保存"),
           kind: "primary",
           onClick: async (close) => {
             const f = new FormData(body),
@@ -95,7 +98,7 @@ export function createStyleCard(app, c) {
             for (const k of ["brand", "accent", "bg", "text"]) {
               const v = String(f.get(k) || "").trim();
               if (v && !/^#[0-9a-f]{3,8}$/i.test(v)) {
-                toast("颜色请使用十六进制值", "err");
+                toast(i18nText("颜色请使用十六进制值"), "err");
                 return;
               }
               if (v) colors[k] = v;
@@ -119,7 +122,7 @@ export function createStyleCard(app, c) {
                   radius: units("radius"),
                 },
               },
-              "编辑方案规范",
+              i18nText("编辑方案规范"),
             );
             close();
           },
@@ -132,7 +135,7 @@ export function createStyleCard(app, c) {
       colors = t.colors || {},
       known = Object.keys(colors).length;
     const node = el(
-      `<section class="ov-style-card design-board" data-group="${esc(g.id)}"><header>${icon("palette", 40)}<b>${esc(g.name)}</b><button data-menu aria-label="方案操作">${icon("more", 26)}</button><button data-delete aria-label="删除风格卡片">${icon("trash",24)}</button></header><div class="design-board-grid"><div class="board-colors">${Object.entries(
+      i18nTpl`<section class="ov-style-card design-board" data-group="${esc(g.id)}"><header>${icon("palette", 40)}<b>${esc(g.name)}</b><button data-menu aria-label="方案操作">${icon("more", 26)}</button><button data-delete aria-label="删除风格卡片">${icon("trash",24)}</button></header><div class="design-board-grid"><div class="board-colors">${Object.entries(
         colors,
       )
         .slice(0, 4)
@@ -142,13 +145,13 @@ export function createStyleCard(app, c) {
         )
         .join(
           "",
-        )}${!known ? '<div class="board-unknown">配色待提取<button data-extract>从页面提取 ↗</button></div>' : ""}</div><div class="board-type"><div><small>DISPLAY</small><span>Aa</span><p>${esc(t.fontFamily || "页面字体")}</p></div><div><small>BODY</small><span>百映 Aa</span><p>${esc((t.fontSizes || []).join(" / "))}</p></div></div><div class="board-components"><div class="board-buttons"><span style="background:${colors.brand || "#52663d"}">Primary</span><span>Secondary</span></div><div class="board-lines"><i style="background:${colors.brand || "#52663d"}"></i><i style="background:${colors.accent || "#778b8a"}"></i><i></i></div><div class="board-example"><span style="border-radius:${(t.radius || [])[1] || "12px"}">${icon("centdeck", 44)}</span><p>Design with intention.</p></div></div></div><footer><span>${g.pages.length} 个关联页面</span><button data-edit>编辑规范</button><button data-apply>应用规范</button><button data-choose class="${app.project().selectedDesignGroup === g.id ? "chosen" : ""}">${app.project().selectedDesignGroup === g.id ? "已选方案" : "选用方案"} ↗</button></footer></section>`,
+        )}${!known ? i18nText('<div class="board-unknown">配色待提取<button data-extract>从页面提取 ↗</button></div>') : ""}</div><div class="board-type"><div><small>DISPLAY</small><span>Aa</span><p>${esc(t.fontFamily || i18nText("页面字体"))}</p></div><div><small>BODY</small><span>百映 Aa</span><p>${esc((t.fontSizes || []).join(" / "))}</p></div></div><div class="board-components"><div class="board-buttons"><span style="background:${colors.brand || "#52663d"}">Primary</span><span>Secondary</span></div><div class="board-lines"><i style="background:${colors.brand || "#52663d"}"></i><i style="background:${colors.accent || "#778b8a"}"></i><i></i></div><div class="board-example"><span style="border-radius:${(t.radius || [])[1] || "12px"}">${icon("centdeck", 44)}</span><p>Design with intention.</p></div></div></div><footer><span>${g.pages.length} 个关联页面</span><button data-edit>编辑规范</button><button data-apply>应用规范</button><button data-choose class="${app.project().selectedDesignGroup === g.id ? "chosen" : ""}">${app.project().selectedDesignGroup === g.id ? i18nText("已选方案") : i18nText("选用方案")} ↗</button></footer></section>`,
     );
     node.style.cssText = `left:${g.x}px;top:${g.y}px;`;
     c.world.appendChild(node);
     nodes.push({ node, g });
     node.querySelector("[data-delete]").onclick = () => remove(g);
-    node.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showMenu([{label:"保存为我的预设",icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},{label:"删除风格卡片",icon:"trash",danger:true,onClick:()=>remove(g)}],e.clientX,e.clientY);};
+    node.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showMenu([{label:i18nText("保存为我的预设"),icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},{label:i18nText("删除风格卡片"),icon:"trash",danger:true,onClick:()=>remove(g)}],e.clientX,e.clientY);};
     node.querySelector("[data-edit]").onclick = () => edit(g);
     node.querySelector("[data-apply]").onclick = () =>
       app.tokens.applyToSite({ tokens: g.tokens, files: g.pages });
@@ -159,7 +162,7 @@ export function createStyleCard(app, c) {
           selectedPages: p.selectedPages,
         };
       await app.bus.doMeta({
-        label: "选择设计方案",
+        label: i18nText("选择设计方案"),
         apply: () => {
           p.selectedDesignGroup = g.id;
           p.selectedPages = g.pages.slice();
@@ -174,9 +177,9 @@ export function createStyleCard(app, c) {
     node.querySelector("[data-menu]").onclick = (e) =>
       showMenu(
         [
-          { label: "关联页面", icon: "layers", onClick: () => assign(g) },
-          {label:"保存为我的预设",icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},
-          {label:"删除风格卡片",icon:"trash",danger:true,onClick:()=>remove(g)},
+          { label: i18nText("关联页面"), icon: "layers", onClick: () => assign(g) },
+          {label:i18nText("保存为我的预设"),icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},
+          {label:i18nText("删除风格卡片"),icon:"trash",danger:true,onClick:()=>remove(g)},
           ...Object.keys(PRESETS).map((name) => ({
             label: name,
             icon: "palette",
@@ -184,7 +187,7 @@ export function createStyleCard(app, c) {
               mutate(
                 g,
                 { tokens: structuredClone(PRESETS[name]), name },
-                "选择风格",
+                i18nText("选择风格"),
               ),
           })),
         ],
@@ -208,7 +211,7 @@ export function createStyleCard(app, c) {
         cleanup();
         const next = { x: g.x, y: g.y };
         Object.assign(g, old);
-        mutate(g, next, "移动设计规范");
+        mutate(g, next, i18nText("移动设计规范"));
       };
       const cancel = () => {
         cleanup();
@@ -265,10 +268,10 @@ export function createStyleCard(app, c) {
             },
           },
         },
-        "从页面提取规范",
+        i18nText("从页面提取规范"),
       );
     } catch {
-      toast("页面仍在加载，请稍后提取");
+      toast(i18nText("页面仍在加载，请稍后提取"));
     }
   }
   function assign(g) {
@@ -282,12 +285,12 @@ export function createStyleCard(app, c) {
         .join("")}</div>`,
     );
     openModal({
-      title: "关联页面",
+      title: i18nText("关联页面"),
       body,
       actions: [
-        { label: "取消" },
+        { label: i18nText("取消") },
         {
-          label: "保存",
+          label: i18nText("保存"),
           kind: "primary",
           onClick: async (close) => {
             await mutate(
@@ -297,7 +300,7 @@ export function createStyleCard(app, c) {
                   (i) => i.value,
                 ),
               },
-              "关联设计方案",
+              i18nText("关联设计方案"),
             );
             close();
           },
@@ -327,9 +330,9 @@ export function createStyleCard(app, c) {
   }
   async function remove(g) {
     const p=app.project(),old={designGroups:p.designGroups.slice(),selectedDesignGroup:p.selectedDesignGroup,selectedPages:p.selectedPages,designGroupsInitialized:p.designGroupsInitialized};
-    await app.bus.doMeta({label:'删除设计规范卡片',apply:()=>{p.designGroups=p.designGroups.filter(x=>x.id!==g.id);p.designGroupsInitialized=true;if(p.selectedDesignGroup===g.id){p.selectedDesignGroup=null;p.selectedPages=[];}},revert:()=>Object.assign(p,old)});refresh();
+    await app.bus.doMeta({label:i18nText('删除设计规范卡片'),apply:()=>{p.designGroups=p.designGroups.filter(x=>x.id!==g.id);p.designGroupsInitialized=true;if(p.selectedDesignGroup===g.id){p.selectedDesignGroup=null;p.selectedPages=[];}},revert:()=>Object.assign(p,old)});refresh();
   }
-  async function show(tokens=PRESETS[DEFAULT_PRESET_NAME],name='新风格方案') {
+  async function show(tokens=PRESETS[DEFAULT_PRESET_NAME],name=i18nText('新风格方案')) {
     const p = app.project(),
       point = c.toWorld(
         c.host.getBoundingClientRect().left + 80,
@@ -344,7 +347,7 @@ export function createStyleCard(app, c) {
       };
     if (!p.designGroups) p.designGroups = [];
     await app.bus.doMeta({
-      label: "添加设计规范",
+      label: i18nText("添加设计规范"),
       apply: () => p.designGroups.push(g),
       revert: () =>
         (p.designGroups = p.designGroups.filter((x) => x.id !== g.id)),

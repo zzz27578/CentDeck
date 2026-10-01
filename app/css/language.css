@@ -1,0 +1,30 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+.language-settings label { display:grid;gap:10px;max-width:360px;color:var(--text-2);font-size:14px; }
+.language-settings p { margin-top:12px;line-height:1.7;font-size:13px;color:var(--text-2); }
+html[lang=en] .wordmark-sub,html[lang=en] .wordmark > small { display:none; }
+html[lang=en] .home-hero h1 { font-size:clamp(30px,3.7vw,52px);letter-spacing:-1.7px;max-width:900px; }
+html[lang=en] .studio-nav button { font-size:13px;line-height:1.35; }
+html[lang=en] .studio-main h1 { font-size:clamp(25px,3vw,34px);letter-spacing:-.8px; }
+html[lang=en] .studio-exit { font-size:13px;white-space:nowrap; }
+html[lang=en] .studio-form label,html[lang=en] .provider-setting-row b { line-height:1.5; }
+html[lang=en] .provider-models > header { row-gap:12px; }
+html[lang=en] .provider-models > header .btn { font-size:12px;padding-inline:10px; }
+html[lang=en] .provider-config-header { flex-wrap:wrap; }
+html[lang=en] .provider-config-header > div { flex-basis:200px; }
+html[lang=en] .tb-left { min-width:0; }.tb-proj { overflow:hidden;text-overflow:ellipsis; }
+html[lang=en] .tb-center { gap:8px; }
+html[lang=en] .topbar button { font-size:12px; }
+html[lang=en] .view-switch button { padding-inline:12px; }
+html[lang=en] .ag-conversations { gap:6px;font-size:11px; }
+html[lang=en] .comp-controls { display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,.85fr);gap:4px; }
+html[lang=en] .comp-controls select { min-width:0;width:100%;font-size:11px;padding-inline:3px;text-overflow:ellipsis; }
+html[lang=en] .comp-controls .seg button { font-size:11px;padding-inline:8px; }
+html[lang=en] .comp-bar .comp-pick { font-size:11px; }
+html[lang=en] .msg-actions { flex-wrap:wrap; }
+html[lang=en] .inspector .btn { font-size:11px;padding-inline:8px; }
+html[lang=en] .ag.drop::after,html[lang=en] .agent.drop::after { content:'Drop files to add them to this conversation'; }
+html[lang=en] .landing-copy h1 { font-size:clamp(48px,6.8vw,98px);letter-spacing:-4px;line-height:1.12; }
+html[lang=en] .landing-copy p { font-size:16px;line-height:1.65; }
+@media(max-width:1050px){html[lang=en] .topbar .dev-switch button{font-size:0;gap:0;padding-inline:8px}html[lang=en] .topbar .dev-switch button svg{width:16px}html[lang=en] .save-state{display:none}}
+@media(max-width:760px){html[lang=en] .home-bar-right{gap:5px}html[lang=en] .home-bar-right .btn{font-size:11px;padding-inline:8px}html[lang=en] .studio-nav button{font-size:12px;padding-inline:8px}html[lang=en] .landing-copy h1{font-size:clamp(42px,10vw,64px);letter-spacing:-2px}html[lang=en] .home-hero h1{letter-spacing:-1px}}

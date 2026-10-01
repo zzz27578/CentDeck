@@ -1,3 +1,5 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {conversations,tasksForConversation,historyFor,commitFingerprint,hasMessages,tokenLabel} from '../app/js/agent/conversations.js';

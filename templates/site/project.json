@@ -1,12 +1,24 @@
 {
-  "id": "site",
-  "name": "云帆 · 产品官网",
-  "type": "site",
-  "description": "四页官网：首页（弹窗、脚本生成的列表、页内锚点、动画）、价格（多个按钮共用一个弹窗、表格）、联系表单（提交后跳转）、感谢页（5 秒自动返回）。带手机适配。",
-  "pages": [
-    { "file": "pages/index.html", "title": "首页" },
-    { "file": "pages/pricing.html", "title": "价格方案" },
-    { "file": "pages/contact.html", "title": "联系我们" },
-    { "file": "pages/thanks.html", "title": "提交成功" }
-  ]
+    "id": "site",
+    "name": "云帆 · 产品官网",
+    "type": "site",
+    "description": "四页官网：首页（弹窗、脚本生成的列表、页内锚点、动画）、价格（多个按钮共用一个弹窗、表格）、联系表单（提交后跳转）、感谢页（5 秒自动返回）。带手机适配。",
+    "pages": [
+        {
+            "file": "pages/index.html",
+            "title": "首页"
+        },
+        {
+            "file": "pages/pricing.html",
+            "title": "价格方案"
+        },
+        {
+            "file": "pages/contact.html",
+            "title": "联系我们"
+        },
+        {
+            "file": "pages/thanks.html",
+            "title": "提交成功"
+        }
+    ]
 }

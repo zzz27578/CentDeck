@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from './i18n.js';
 // 快捷键中心：所有快捷键在这里登记；带 id 的可以在"快捷键"面板里改键（存在浏览器里），
 // 撤销、删除、方向键这类基础键固定不可改。页面 iframe 里的按键也转发到这里。
 import { openModal, esc, toast, closeMenu } from './ui.js';
@@ -37,7 +40,7 @@ export function inField(t) {
 
 const sortAll = () => bindings.sort((a, b) => b.priority - a.priority);
 function push(combos, opts) {
-  combos.forEach((c, i) => bindings.push({ priority: 0, group: '通用', ...opts, combo: c, hidden: opts.hidden || i > 0 }));
+  combos.forEach((c, i) => bindings.push({ priority: 0, group: i18nText('通用'), ...opts, combo: c, hidden: opts.hidden || i > 0 }));
 }
 // opts.id 表示可改键；不带 id 的是固定键
 export function bindKey(combo, opts) {
@@ -94,8 +97,8 @@ window.addEventListener('blur', () => { spaceDown = false; });
 
 // ---------- 快捷键面板：可改的点一下按新键，固定的带锁 ----------
 const EXTRA = {
-  '编辑': [['拖动元素', '按住拖'], ['拖动时暂停吸附', 'Alt'], ['拖动时只走横 / 竖', 'Shift'], ['角点等比缩放 / 边线改宽高', '拖手柄'], ['改字', '双击文字']],
-  '视图': [['缩放画面', 'Ctrl+滚轮'], ['平移画面', '空格+拖 / 中键拖'], ['滚动网页', '滚轮']],
+  '编辑': [[i18nText('拖动元素'), i18nText('按住拖')], [i18nText('拖动时暂停吸附'), 'Alt'], [i18nText('拖动时只走横 / 竖'), 'Shift'], [i18nText('角点等比缩放 / 边线改宽高'), i18nText('拖手柄')], [i18nText('改字'), i18nText('双击文字')]],
+  '视图': [[i18nText('缩放画面'), i18nText('Ctrl+滚轮')], [i18nText('平移画面'), i18nText('空格+拖 / 中键拖')], [i18nText('滚动网页'), i18nText('滚轮')]],
 };
 export function showKeyHelp() {
   const box = document.createElement('div');
@@ -108,14 +111,14 @@ export function showKeyHelp() {
       if (!g.has(key)) g.set(key, { b, combos: [] });
       if (!g.get(key).combos.includes(b.combo)) g.get(key).combos.push(b.combo);
     });
-    let html = '<p class="hint" style="margin-bottom:10px">点一下带下划线的按键就能改成你顺手的键；带锁的是基础键，不能改。改动只保存在这台电脑的浏览器里。</p><div class="keyhelp">';
+    let html = i18nText('<p class="hint" style="margin-bottom:10px">点一下带下划线的按键就能改成你顺手的键；带锁的是基础键，不能改。改动只保存在这台电脑的浏览器里。</p><div class="keyhelp">');
     new Set([...groups.keys(), ...Object.keys(EXTRA)]).forEach((name) => {
       html += `<section><h4>${esc(name)}</h4>`;
       (groups.get(name) || new Map()).forEach(({ b, combos }) => {
         const custom = b.id && userMap[b.id];
         html += `<div class="kh-row"><span>${esc(b.label)}</span><span>${b.fixed
-          ? combos.map((c) => `<kbd>${esc(c)}</kbd>`).join(' ') + ' <i class="kh-lock" title="基础键，不能改">🔒</i>'
-          : `<button class="kh-key" data-id="${esc(b.id)}">${esc(combos[0])}</button>${custom ? `<button class="kh-reset" data-reset="${esc(b.id)}" title="恢复默认">↺</button>` : ''}`}</span></div>`;
+          ? combos.map((c) => `<kbd>${esc(c)}</kbd>`).join(' ') + i18nText(' <i class="kh-lock" title="基础键，不能改">🔒</i>')
+          : `<button class="kh-key" data-id="${esc(b.id)}">${esc(combos[0])}</button>${custom ? i18nTpl`<button class="kh-reset" data-reset="${esc(b.id)}" title="恢复默认">↺</button>` : ''}`}</span></div>`;
       });
       (EXTRA[name] || []).forEach(([l, k]) => { html += `<div class="kh-row"><span>${esc(l)}</span><span><kbd>${esc(k)}</kbd></span></div>`; });
       html += '</section>';
@@ -126,17 +129,17 @@ export function showKeyHelp() {
       k.onclick = () => {
         box.querySelectorAll('.kh-key.wait').forEach((x) => x.classList.remove('wait'));
         k.classList.add('wait');
-        k.textContent = '按下新按键…';
+        k.textContent = i18nText('按下新按键…');
         capturing = (e) => {
           const c = comboOf(e);
           if (!c) return;
           capturing = null;
           if (c === 'Esc') { paint(); return; }
           const fixed = bindings.find((x) => x.fixed && x.combo === c);
-          if (fixed) { toast(`${c} 是基础键（${fixed.label || '系统'}），换一个吧`, 'err'); paint(); return; }
+          if (fixed) { toast(i18nTpl`${c} 是基础键（${fixed.label || i18nText('系统')}），换一个吧`, 'err'); paint(); return; }
           const me = defs.get(k.dataset.id);
           const other = bindings.find((x) => x.id && x.id !== k.dataset.id && x.combo === c && x.group === me.opts.group);
-          if (other) { remap(other.id, comboFor(k.dataset.id)); toast(`已和「${other.label}」互换按键`); }
+          if (other) { remap(other.id, comboFor(k.dataset.id)); toast(i18nTpl`已和「${other.label}」互换按键`); }
           remap(k.dataset.id, c);
           paint();
         };
@@ -144,5 +147,5 @@ export function showKeyHelp() {
     });
   };
   paint();
-  openModal({ title: '快捷键', body: box, width: 760, actions: [{ label: '全部恢复默认', onClick: () => { [...defs.keys()].forEach((id) => { if (userMap[id]) remap(id, null); }); paint(); } }, { label: '完成', kind: 'primary' }], onClose: () => { capturing = null; } });
+  openModal({ title: i18nText('快捷键'), body: box, width: 760, actions: [{ label: i18nText('全部恢复默认'), onClick: () => { [...defs.keys()].forEach((id) => { if (userMap[id]) remap(id, null); }); paint(); } }, { label: i18nText('完成'), kind: 'primary' }], onClose: () => { capturing = null; } });
 }

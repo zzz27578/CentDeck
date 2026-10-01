@@ -1,3 +1,4 @@
+# CentDeck repository; project and credential data remain local.
 # 依赖与构建产物
 node_modules/
 dist/
@@ -15,3 +16,6 @@ projects/*
 
 # 模型接口设置与密钥（只在本机）
 config.local/
+
+# Local screenshot originals; reviewed release copies are in docs/assets/.
+/图片/

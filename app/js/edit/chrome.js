@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 编辑视图周边：页面标签（含视口选择）、底部工具坞、缩放、三灯判定卡、右键菜单、路径条
 import { icon } from '../core/icons.js';
 import { el, esc, toast, showMenu, promptDlg } from '../core/ui.js';
@@ -9,7 +12,7 @@ export function buildChrome(ed, wrap) {
   const label = el('<div class="frame-label"></div>');
   ed.host.appendChild(label);
   const dock = el('<div class="tool-dock"></div>');
-  const zoom = el(`<div class="zoom-dock">
+  const zoom = el(i18nTpl`<div class="zoom-dock">
     <button class="icon-btn" data-z="out" data-tip="缩小" data-kbd="Ctrl+-">${icon('minus', 16)}</button>
     <button class="zoom-val" data-z="menu" data-tip="缩放比例"></button>
     <button class="icon-btn" data-z="in" data-tip="放大" data-kbd="Ctrl++">${icon('plus', 16)}</button>
@@ -24,7 +27,7 @@ export function buildChrome(ed, wrap) {
     if (k === 'out') ed.stage.zoomOut();
     if (k === 'fit') ed.stage.fit(true);
     if (k === 'menu') showMenu([
-      { label: '适应屏幕', kbd: 'Shift+1', checked: ed.stage.mode === 'fit', onClick: () => ed.stage.fit(true) },
+      { label: i18nText('适应屏幕'), kbd: 'Shift+1', checked: ed.stage.mode === 'fit', onClick: () => ed.stage.fit(true) },
       '-',
       ...[0.5, 0.75, 1, 1.5, 2].map((z) => ({ label: Math.round(z * 100) + '%', kbd: z === 1 ? 'Ctrl+0' : '', checked: ed.stage.mode !== 'fit' && Math.abs(ed.stage.zoom - z) < 0.01, onClick: () => ed.stage.setZoom(z, { animate: true }) })),
     ], 0, 0, { anchor: b, align: 'center', minWidth: 150 });
@@ -34,21 +37,21 @@ export function buildChrome(ed, wrap) {
     const cur = getViewport();
     const a = autoSize();
     if (cur.device === 'mobile') {
-      showMenu([{ title: '按哪种手机排版' }, ...MOBILE_PRESETS.map((p) => ({ label: `${p.label} · ${p.w} × ${p.h}`, checked: cur.id === p.id, onClick: () => setViewport(p.id) }))], 0, 0, { anchor, minWidth: 260 });
+      showMenu([{ title: i18nText('按哪种手机排版') }, ...MOBILE_PRESETS.map((p) => ({ label: `${p.label} · ${p.w} × ${p.h}`, checked: cur.id === p.id, onClick: () => setViewport(p.id) }))], 0, 0, { anchor, minWidth: 260 });
       return;
     }
     showMenu([
-      { title: '按哪种电脑屏幕排版（真实比例，再等比缩放显示）' },
+      { title: i18nText('按哪种电脑屏幕排版（真实比例，再等比缩放显示）') },
       ...PRESETS.map((p) => ({
-        label: p.id === 'auto' ? `本机浏览器 · ${a.w} × ${a.h}` : `${p.label} · ${p.w} × ${p.h}`,
-        hint: p.id === 'auto' ? '和你现在这台电脑最大化浏览器时一模一样' : '',
+        label: p.id === 'auto' ? i18nTpl`本机浏览器 · ${a.w} × ${a.h}` : `${p.label} · ${p.w} × ${p.h}`,
+        hint: p.id === 'auto' ? i18nText('和你现在这台电脑最大化浏览器时一模一样') : '',
         checked: cur.id === p.id, onClick: () => setViewport(p.id),
       })),
       '-',
-      { label: '自定义尺寸…', checked: cur.id === 'custom', onClick: async () => {
-        const v = await promptDlg({ title: '自定义视口', label: '宽 × 高（像素），例如 1680x900', value: `${cur.w}x${cur.h}` });
+      { label: i18nText('自定义尺寸…'), checked: cur.id === 'custom', onClick: async () => {
+        const v = await promptDlg({ title: i18nText('自定义视口'), label: i18nText('宽 × 高（像素），例如 1680x900'), value: `${cur.w}x${cur.h}` });
         const m = v && /^(\d{3,4})\s*[x×*,\s]\s*(\d{3,4})$/.exec(v.trim());
-        if (m) setViewport('custom', +m[1], +m[2]); else if (v) toast('格式像 1680x900', 'err');
+        if (m) setViewport('custom', +m[1], +m[2]); else if (v) toast(i18nText('格式像 1680x900'), 'err');
       } },
     ], 0, 0, { anchor, minWidth: 300 });
   }
@@ -62,12 +65,12 @@ export function buildChrome(ed, wrap) {
       label.style.left = dr.left - hr.left + 'px';
       label.style.top = dr.top - hr.top - 26 + 'px';
       label.style.maxWidth = Math.max(260, dr.width) + 'px';
-      label.innerHTML = `<b>${esc(pg ? pg.title : '')}</b><span class="fl-dim">${esc(ed.page || '')}</span>
+      label.innerHTML = i18nTpl`<b>${esc(pg ? pg.title : '')}</b><span class="fl-dim">${esc(ed.page || '')}</span>
         <button data-vp data-tip="换一种屏幕尺寸">${icon('monitor', 14)}${vp.w} × ${vp.h}${icon('chevDown', 12)}</button>
-        ${app.pageLocked(ed.page) ? `<span class="chip yellow">${icon('lock', 12)}本页已锁定</span>` : ''}`;
+        ${app.pageLocked(ed.page) ? i18nTpl`<span class="chip yellow">${icon('lock', 12)}本页已锁定</span>` : ''}`;
       label.querySelector('[data-vp]').onclick = (e) => viewportMenu(e.currentTarget);
       zoom.querySelector('.zoom-val').textContent = Math.round(ed.stage.zoom * 100) + '%';
-      app.setStatusRight(`视口 ${vp.w}×${vp.h} · ${Math.round(ed.stage.zoom * 100)}%${ed.stage.mode === 'fit' ? '（适应）' : ''}`);
+      app.setStatusRight(i18nTpl`视口 ${vp.w}×${vp.h} · ${Math.round(ed.stage.zoom * 100)}%${ed.stage.mode === 'fit' ? i18nText('（适应）') : ''}`);
     },
     renderDock() {
       dock.innerHTML = '';
@@ -81,7 +84,7 @@ export function buildChrome(ed, wrap) {
       const sk = tools.filter((t) => t.group === 'sketch');
       if (sk.length) {
         dock.appendChild(el('<span class="dock-sep"></span>'));
-        dock.appendChild(el('<span class="dock-label">草图</span>'));
+        dock.appendChild(el(i18nText('<span class="dock-label">草图</span>')));
         sk.forEach(add);
       }
       if (app.sketch && app.sketch.dockTail) { dock.appendChild(el('<span class="dock-sep"></span>')); dock.appendChild(app.sketch.dockTail(ed)); }
@@ -106,28 +109,28 @@ export function showVerdict(ed, res, extra = {}) {
   if (!res || !ed.host) return;
   hideVerdict(ed);
   if (res.light === 'green') {
-    toast(`已写回代码 · 只改了第 ${res.line} 行${res.note ? '。' + res.note : ''}`, 'ok', 2200);
+    toast(i18nTpl`已写回代码 · 只改了第 ${res.line} 行${res.note ? '。' + res.note : ''}`, 'ok', 2200);
     return;
   }
   const wrap = ed.host.parentElement;
   const yellow = res.light === 'yellow';
   const aff = (res.affected || []).filter((a) => a.tag);
   const card = el(`<div class="verdict ${res.light}">
-    <div class="verdict-head"><i class="dot"></i><span class="grow">${yellow ? '已写回，但有连带影响' : '没有写回，页面保持原样'}</span>
+    <div class="verdict-head"><i class="dot"></i><span class="grow">${yellow ? i18nText('已写回，但有连带影响') : i18nText('没有写回，页面保持原样')}</span>
       <button class="icon-btn sm" data-a="x">${icon('close', 14)}</button></div>
     <div class="verdict-body">${yellow
-      ? `${aff.length ? `会让 ${aff.length} 个元素挪位（页面上橙色闪框）：<ul>${aff.slice(0, 6).map((a) => `<li>&lt;${esc(a.tag)}&gt; 第 ${a.line} 行 · ${esc(a.note || '被挤动')}</li>`).join('')}</ul>` : ''}${res.note ? esc(res.note) : ''}`
-      : esc(res.reason || '这次修改不适合直接写回。')}</div>
+      ? `${aff.length ? i18nTpl`会让 ${aff.length} 个元素挪位（页面上橙色闪框）：<ul>${aff.slice(0, 6).map((a) => i18nTpl`<li>&lt;${esc(a.tag)}&gt; 第 ${a.line} 行 · ${esc(a.note || i18nText('被挤动'))}</li>`).join('')}</ul>` : ''}${res.note ? esc(res.note) : ''}`
+      : esc(res.reason || i18nText('这次修改不适合直接写回。'))}</div>
     <div class="verdict-acts"></div></div>`);
   const acts = card.querySelector('.verdict-acts');
   const btn = (label, kind, fn) => { const b = el(`<button class="btn small ${kind}">${label}</button>`); b.onclick = () => { card.remove(); fn && fn(); }; acts.appendChild(b); };
   if (yellow) {
-    btn('保留', 'primary');
-    btn('撤销这次修改', '', () => ed.app.bus.undo());
-    btn('再转成草图标记', '', () => ed.app.sketch && ed.app.sketch.markFromVerdict(res, extra));
+    btn(i18nText('保留'), 'primary');
+    btn(i18nText('撤销这次修改'), '', () => ed.app.bus.undo());
+    btn(i18nText('再转成草图标记'), '', () => ed.app.sketch && ed.app.sketch.markFromVerdict(res, extra));
   } else {
-    if (!extra.auto) btn('记成草图标记交给 AI', 'primary', () => ed.app.sketch && ed.app.sketch.markFromVerdict(res, extra));
-    btn('知道了', extra.auto ? 'primary' : '');
+    if (!extra.auto) btn(i18nText('记成草图标记交给 AI'), 'primary', () => ed.app.sketch && ed.app.sketch.markFromVerdict(res, extra));
+    btn(i18nText('知道了'), extra.auto ? 'primary' : '');
   }
   card.querySelector('[data-a=x]').onclick = () => card.remove();
   wrap.appendChild(card);
@@ -143,27 +146,27 @@ export function openContextMenu(ed, x, y, onElement) {
   const app = ed.app, info = ed.selection;
   if (!onElement || !info) {
     showMenu([
-      { label: '在这里新建文本框', icon: 'text', onClick: () => ed.addTextBoxAt(x, y) },
-      { label: '切到交互（像真实浏览）', icon: 'hand', kbd: comboFor('tool.interact', 'E'), onClick: () => ed.setTool('interact') },
+      { label: i18nText('在这里新建文本框'), icon: 'text', onClick: () => ed.addTextBoxAt(x, y) },
+      { label: i18nText('切到交互（像真实浏览）'), icon: 'hand', kbd: comboFor('tool.interact', 'E'), onClick: () => ed.setTool('interact') },
       '-',
-      { label: '适应屏幕', icon: 'fit', kbd: 'Shift+1', onClick: () => ed.stage.fit(true) },
-      { label: '实际大小 100%', icon: 'zoomIn', kbd: 'Ctrl+0', onClick: () => ed.stage.actual() },
+      { label: i18nText('适应屏幕'), icon: 'fit', kbd: 'Shift+1', onClick: () => ed.stage.fit(true) },
+      { label: i18nText('实际大小 100%'), icon: 'zoomIn', kbd: 'Ctrl+0', onClick: () => ed.stage.actual() },
     ], x, y);
     return;
   }
   const locked = !info.generated && app.elementLocked(ed.page, info.selector);
   showMenu([
     { title: ed.describe(info) },
-    info.hasText && !info.generated ? { label: '改文字', icon: 'text', kbd: 'Enter', onClick: () => ed.editTextOf(info.element, null) } : null,
-    { label: '选择外面一层', icon: 'parent', kbd: 'Shift+Enter', onClick: () => ed.selectParent() },
+    info.hasText && !info.generated ? { label: i18nText('改文字'), icon: 'text', kbd: 'Enter', onClick: () => ed.editTextOf(info.element, null) } : null,
+    { label: i18nText('选择外面一层'), icon: 'parent', kbd: 'Shift+Enter', onClick: () => ed.selectParent() },
     '-',
-    { label: '@ 引用到助手', icon: 'at', hint: '让 AI 准确知道你说的是这一块', onClick: () => app.agent.addRef({ kind: 'element', page: ed.page, selector: info.selector, line: info.line, title: `${(app.project().pages.find((p) => p.file === ed.page) || {}).title || ed.page} · ${ed.describe(info)}` }) },
-    { label: '添加元素长期规则…', icon: 'sticky', onClick: () => app.notes && app.notes.addFor(info) },
-    { label: '记成草图标记…', icon: 'marks', onClick: () => app.sketch && app.sketch.markElement(info) },
-    !info.generated ? { label: `在源码里看（第 ${info.line} 行）`, icon: 'code', onClick: () => app.openPanel('codeview') } : null,
+    { label: i18nText('@ 引用到助手'), icon: 'at', hint: i18nText('让 AI 准确知道你说的是这一块'), onClick: () => app.agent.addRef({ kind: 'element', page: ed.page, selector: info.selector, line: info.line, title: `${(app.project().pages.find((p) => p.file === ed.page) || {}).title || ed.page} · ${ed.describe(info)}` }) },
+    { label: i18nText('添加元素长期规则…'), icon: 'sticky', onClick: () => app.notes && app.notes.addFor(info) },
+    { label: i18nText('记成草图标记…'), icon: 'marks', onClick: () => app.sketch && app.sketch.markElement(info) },
+    !info.generated ? { label: i18nTpl`在源码里看（第 ${info.line} 行）`, icon: 'code', onClick: () => app.openPanel('codeview') } : null,
     '-',
-    !info.generated ? { label: locked ? '解锁' : '锁定（手和 AI 都改不了）', icon: locked ? 'unlock' : 'lock', kbd: 'Ctrl+Shift+L', onClick: () => app.setElementLock(ed.page, info.selector, !locked) } : null,
-    { label: '删除', icon: 'trash', kbd: 'Del', danger: true, onClick: () => ed.deleteSelection() },
+    !info.generated ? { label: locked ? i18nText('解锁') : i18nText('锁定（手和 AI 都改不了）'), icon: locked ? 'unlock' : 'lock', kbd: 'Ctrl+Shift+L', onClick: () => app.setElementLock(ed.page, info.selector, !locked) } : null,
+    { label: i18nText('删除'), icon: 'trash', kbd: 'Del', danger: true, onClick: () => ed.deleteSelection() },
   ], x, y, { minWidth: 230 });
 }
 
@@ -171,7 +174,7 @@ export function openContextMenu(ed, x, y, onElement) {
 export function renderCrumbs(ed) {
   const app = ed.app;
   if (!ed.frame || !ed.sel || !ed.sel.isConnected) {
-    const t = el('<span class="crumb" style="color:var(--dim)">没有选中元素 · 点页面里的内容选中它</span>');
+    const t = el(i18nText('<span class="crumb" style="color:var(--dim)">没有选中元素 · 点页面里的内容选中它</span>'));
     app.setCrumbs(t);
     return;
   }

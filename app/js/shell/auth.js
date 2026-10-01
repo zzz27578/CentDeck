@@ -1,3 +1,6 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { pixelField, mountPixelField } from "../core/pixel-field.js";
 import { particleSculpture, mountParticleSculpture } from "../core/particle-sculpture.js";
 import { mark, toggleTheme, styleSwitch, bindStyleSwitch, moveSculpture } from "../core/brand.js";
@@ -9,7 +12,7 @@ export async function requireLogin(app) {
   }
   document.body.className = "entry-page";
   const root = document.getElementById("app");
-  root.innerHTML = `<main class="welcome"><section class="login-under"><button class="login-back" aria-label="返回首页">←</button><form class="login-form"><div class="login-monogram">${mark(54)}</div><span class="login-step">01 / 开始创作</span><h1>欢迎回来</h1><p class="login-intro">登录你的设计空间</p><label>用户名<input name="username" autocomplete="username" value="centdeck" required maxlength="60"></label><label>密码<input name="password" type="password" autocomplete="current-password" required></label><p class="login-error" role="alert"></p><button type="submit" class="btn primary">进入工作台 <span>↗</span></button><p class="first-account">首次使用：centdeck / centdeck</p></form></section><section class="landing-cover">${pixelField()}<header><a class="wordmark" href="/">${mark(36)}<span>CentDeck<span class="wordmark-sub">百映</span></span></a><nav>${styleSwitch()}<button data-theme aria-label="切换亮色与暗色模式">◐</button><a href="https://github.com/zzz27578/CentDeck" target="_blank" rel="noopener">GitHub ↗</a><button class="btn" data-login>登录 ↗</button></nav></header><div class="landing-copy"><div class="landing-overline">THE SPACE BETWEEN IDEA & REALITY</div><h1>让灵感<br><span>映成现实</span></h1><p>从一个想法，到一整个网站。</p><button class="landing-cta" data-login>开始设计 <span>↗</span></button></div>${particleSculpture()}<div class="brand-sculpture" aria-hidden="true"><div class="sculpture-face">${mark(350)}</div><span class="sculpture-caption">一百种可能 · 你的那一种</span></div><div class="login-art" aria-hidden="true"><span>IDEA / IN MOTION</span><div class="login-art-mark">${mark(240, { draw: true })}</div><strong>每一个想法<br>都有新的可能</strong><small>YOUR SPACE TO CREATE</small></div><footer><span>DESIGN WITH INTENTION.</span><span>CentDeck / 01</span></footer></section></main>`;
+  root.innerHTML = i18nTpl`<main class="welcome"><section class="login-under"><button class="login-back" aria-label="返回首页">←</button><form class="login-form"><div class="login-monogram">${mark(54)}</div><span class="login-step">01 / 开始创作</span><h1>欢迎回来</h1><p class="login-intro">登录你的设计空间</p><label>用户名<input name="username" autocomplete="username" value="centdeck" required maxlength="60"></label><label>密码<input name="password" type="password" autocomplete="current-password" required></label><p class="login-error" role="alert"></p><button type="submit" class="btn primary">进入工作台 <span>↗</span></button><p class="first-account">首次使用：centdeck / centdeck</p></form></section><section class="landing-cover">${pixelField()}<header><a class="wordmark" href="/">${mark(36)}<span>CentDeck<span class="wordmark-sub">百映</span></span></a><nav>${styleSwitch()}<button data-theme aria-label="切换亮色与暗色模式">◐</button><a href="https://github.com/zzz27578/CentDeck" target="_blank" rel="noopener">GitHub ↗</a><button class="btn" data-login>登录 ↗</button></nav></header><div class="landing-copy"><div class="landing-overline">THE SPACE BETWEEN IDEA & REALITY</div><h1>让灵感<br><span>映成现实</span></h1><p>从一个想法，到一整个网站。</p><button class="landing-cta" data-login>开始设计 <span>↗</span></button></div>${particleSculpture()}<div class="brand-sculpture" aria-hidden="true"><div class="sculpture-pivot"><div class="sculpture-face">${mark(350)}</div><div class="sculpture-orbit"><span class="orbit-track"></span></div></div><span class="sculpture-caption">一百种可能 · 你的那一种</span></div><div class="login-art" aria-hidden="true"><span>IDEA / IN MOTION</span><div class="login-art-mark">${mark(240, { draw: true })}</div><strong>每一个想法<br>都有新的可能</strong><small>YOUR SPACE TO CREATE</small></div><footer><span>DESIGN WITH INTENTION.</span><span>CentDeck / 01</span></footer></section></main>`;
   bindStyleSwitch(root);
   moveSculpture(root);
   mountPixelField(root);
@@ -37,19 +40,19 @@ export async function requireLogin(app) {
   };
   function setup() {
     reveal();
-    form.querySelector("h1").textContent = "请修改初始密码";
-    form.querySelector(".login-step").textContent = "02 / 设置新密码";
-    form.querySelector(".login-intro").textContent = "首次登录，请设置你的专属密码后进入工作台";
+    form.querySelector("h1").textContent = i18nText("请修改初始密码");
+    form.querySelector(".login-step").textContent = i18nText("02 / 设置新密码");
+    form.querySelector(".login-intro").textContent = i18nText("首次登录，请设置你的专属密码后进入工作台");
     form.elements.username.value = state.username;
     form.elements.password.value = "";
     form.elements.password.autocomplete = "new-password";
     form.elements.password.minLength = 8;
     form.querySelector("label:nth-of-type(2)").firstChild.textContent =
-      "新密码";
+      i18nText("新密码");
     form.querySelector("button[type=submit]").innerHTML =
-      "保存并进入 <span>↗</span>";
+      i18nText("保存并进入 <span>↗</span>");
     form.querySelector(".first-account").textContent =
-      "新密码至少 8 位 · 用户名可保留";
+      i18nText("新密码至少 8 位 · 用户名可保留");
     root.querySelector(".login-back").hidden = true;
 
   }

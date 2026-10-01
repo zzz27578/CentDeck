@@ -1,9 +1,12 @@
+/* Copyright (c) 2026 zzz27578 and CentDeck contributors.
+ * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 拖动与缩放：只改视觉预览（translate / scale / width），松手才写回源码。
 import { buildIndex, snapMove, linesFor, snapEdge } from './guides.js';
 import { toast } from '../core/ui.js';
 
 export const CONTAINERS = 'section, header, footer, nav, main, article, aside';
-const NAMES = { section: '版块', header: '页眉', footer: '页脚', nav: '导航', main: '主体', article: '文章块', aside: '侧栏', body: '整页' };
+const NAMES = { section: i18nText('版块'), header: i18nText('页眉'), footer: i18nText('页脚'), nav: i18nText('导航'), main: i18nText('主体'), article: i18nText('文章块'), aside: i18nText('侧栏'), body: i18nText('整页') };
 const T_SCREEN = 6;
 
 const tr = (v) => { const p = String(v || '').split(/\s+/).map(parseFloat); return [p[0] || 0, p[1] || 0]; };
@@ -75,7 +78,7 @@ export function startMove(ed, info0, e0, onClick) {
   function begin() {
     const blk = ed.movableOf(elm);
     if (blk !== elm) { ed.select(blk); info = ed.selection; elm = blk; swapped = true; }
-    if (ed.isLocked(info)) { toast('这个元素已锁定，先解锁再拖', 'err'); return false; }
+    if (ed.isLocked(info)) { toast(i18nText('这个元素已锁定，先解锁再拖'), 'err'); return false; }
     const cont = elm.parentElement ? elm.parentElement.closest(CONTAINERS) : null;
     const scope = cont || ed.frame.doc.body;
     const { refs, peers } = collectRefs(ed, elm, scope);
@@ -88,12 +91,12 @@ export function startMove(ed, info0, e0, onClick) {
     ov.place(ov.origin, st.r0);
     if (contR) {
       ov.place(ov.range, contR);
-      ov.rangeLabel.textContent = `可移动范围：${NAMES[cont.tagName.toLowerCase()] || cont.tagName.toLowerCase()} <${cont.tagName.toLowerCase()}>`;
+      ov.rangeLabel.textContent = i18nTpl`可移动范围：${NAMES[cont.tagName.toLowerCase()] || cont.tagName.toLowerCase()} <${cont.tagName.toLowerCase()}>`;
     }
     ov.sel.classList.add('dragging');
     ov.hide(ov.hover);
     ed.dragging = true;
-    ed.setHint(`${swapped ? `这是行内文字，拖的是它所在的 &lt;${info.tag}&gt; 整块 · ` : ''}拖动中 · 按住 <b>Alt</b> 暂停吸附 · 按住 <b>Shift</b> 只走横 / 竖 · <b>Esc</b> 取消`);
+    ed.setHint(i18nTpl`${swapped ? i18nTpl`这是行内文字，拖的是它所在的 &lt;${info.tag}&gt; 整块 · ` : ''}拖动中 · 按住 <b>Alt</b> 暂停吸附 · 按住 <b>Shift</b> 只走横 / 竖 · <b>Esc</b> 取消`);
     return true;
   }
 
@@ -128,8 +131,8 @@ export function startMove(ed, info0, e0, onClick) {
     ov.range.classList.toggle('out', crossed);
     ov.drawGuides(res.lines, res.gaps);
     const text = crossed
-      ? '移出了所在区域 · 松手后会恢复原位并记成草图标记'
-      : `${arrowX(dx)}　${arrowY(dy)}${res.snapped ? '　<b>已对齐</b>' : ''}`;
+      ? i18nText('移出了所在区域 · 松手后会恢复原位并记成草图标记')
+      : `${arrowX(dx)}　${arrowY(dy)}${res.snapped ? i18nText('　<b>已对齐</b>') : ''}`;
     ov.showPill(text, r0.x + dx, r0.y + dy + r0.h + 10, crossed ? 'out' : res.snapped ? 'snap' : '');
   }, () => {
     if (!st) { if (st === null && onClick) onClick(); return; }
@@ -149,7 +152,7 @@ export function startMove(ed, info0, e0, onClick) {
 // ---------- 缩放（角点=等比视觉缩放；边线=改宽/高）----------
 export function startResize(ed, info, hd, e0) {
   const elm = info.element;
-  if (ed.isLocked(info)) { toast('这个元素已锁定', 'err'); return; }
+  if (ed.isLocked(info)) { toast(i18nText('这个元素已锁定'), 'err'); return; }
   const ov = ed.ov, win = ed.frame.win;
   const cs = win.getComputedStyle(elm);
   const r0 = ed.pageRect(elm);
@@ -169,7 +172,7 @@ export function startResize(ed, info, hd, e0) {
   let s = s0, newW = null, newH = null, moved = false;
   ov.sel.classList.add('dragging');
   ed.dragging = true;
-  ed.setHint(corner ? '拖角点：等比缩放（只改看起来的大小，不挤动别人）· <b>Esc</b> 取消' : '拖边线：改宽度 / 高度（可能让周围内容让位）· <b>Esc</b> 取消');
+  ed.setHint(corner ? i18nText('拖角点：等比缩放（只改看起来的大小，不挤动别人）· <b>Esc</b> 取消') : i18nText('拖边线：改宽度 / 高度（可能让周围内容让位）· <b>Esc</b> 取消'));
 
   const anchorFix = () => {   // 让对角 / 对边保持不动
     const r = ed.pageRect(elm);
@@ -198,7 +201,7 @@ export function startResize(ed, info, hd, e0) {
       s = Math.round(s0 * k * 1000) / 1000;
       setImp(elm, 'scale', String(s));
       anchorFix();
-      ov.showPill(`等比缩放 ${Math.round(s * 100)}%`, p.x + 14, p.y + 14);
+      ov.showPill(i18nTpl`等比缩放 ${Math.round(s * 100)}%`, p.x + 14, p.y + 14);
     } else if (sx) {
       let edge = sx > 0 ? Math.max(r0.x + 8, p.x) : Math.min(r0.x + r0.w - 8, p.x);
       if (!e.altKey) edge += snapEdge(edge, index.xs, T);
@@ -206,7 +209,7 @@ export function startResize(ed, info, hd, e0) {
       newW = Math.max(8, Math.round(cssW + (vis / s0 - layoutW)));
       setImp(elm, 'width', newW + 'px');
       anchorFix();
-      ov.showPill(`宽 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
+      ov.showPill(i18nTpl`宽 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
     } else {
       let edge = sy > 0 ? Math.max(r0.y + 8, p.y) : Math.min(r0.y + r0.h - 8, p.y);
       if (!e.altKey) edge += snapEdge(edge, index.ys, T);
@@ -214,7 +217,7 @@ export function startResize(ed, info, hd, e0) {
       newH = Math.max(8, Math.round(cssH + (vis / s0 - layoutH)));
       setImp(elm, 'height', newH + 'px');
       anchorFix();
-      ov.showPill(`高 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
+      ov.showPill(i18nTpl`高 ${Math.round(vis / s0)} px`, p.x + 14, p.y + 14);
     }
     guideRect = ed.pageRect(elm);
     ov.drawGuides(e.altKey ? [] : linesFor(guideRect, index).lines, []);
@@ -227,7 +230,7 @@ export function startResize(ed, info, hd, e0) {
     const t = (Math.round(tx) || Math.round(ty)) ? `${Math.round(tx)}px ${Math.round(ty)}px` : null;
     if (corner) { props.scale = Math.abs(s - 1) < 0.005 ? null : String(s); props.translate = t; }
     else { if (newW != null) props.width = newW + 'px'; if (newH != null) props.height = newH + 'px'; props.translate = t; }
-    const label = corner ? `缩放到 ${Math.round(s * 100)}%` : newW != null ? `宽度改为 ${newW}px` : `高度改为 ${newH}px`;
+    const label = corner ? i18nTpl`缩放到 ${Math.round(s * 100)}%` : newW != null ? i18nTpl`宽度改为 ${newW}px` : i18nTpl`高度改为 ${newH}px`;
     ed.commitStyle(info, props, label, restore);
   }, () => {
     restoreInline(elm, saved);

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 zzz27578 and CentDeck contributors.
+# SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0
 # CentDeck 百映 · 本地服务启动脚本（等价于 CentDeck.bat）
 set -e
 cd "$(dirname "$0")"
