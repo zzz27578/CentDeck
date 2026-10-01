@@ -23,6 +23,8 @@ try{
   const saved=ext.designPresets({name:'My Style',tokens:{colors:{brand:'#123456'},radius:['4px']}});assert.equal(saved.length,1);assert.equal(ext.designPresets()[0].tokens.colors.brand,'#123456');ext.designPresets({action:'remove',id:saved[0].id});assert.equal(ext.designPresets().length,0);
   ext.updateSkill({id:'my-test',content:'---\nname: my-test\ndescription: test\n---\nRead first.',name:'Test'});assert(ext.skills().some(s=>s.id==='my-test'));
   ext.updateSkill({id:'my-test',enabled:false});assert(!ext.skills().find(s=>s.id==='my-test').enabled);
+  const prefs=ext.preferences({budget:1000,maxSteps:3});assert.equal(prefs.maxSteps,3);assert.equal('budget' in prefs,false);
+  const savedPreferences=JSON.parse(fs.readFileSync(path.join(store.CONFIG_DIR,'extensions.json'),'utf8')).preferences;assert.equal('budget' in savedPreferences,false);
   const before=ext.mcpConfig();const modified=fs.statSync(path.join(store.CONFIG_DIR,'extensions.json')).mtimeMs;ext.mcpConfig();assert.equal(fs.statSync(path.join(store.CONFIG_DIR,'extensions.json')).mtimeMs,modified,'MCP config reads must not write');
   const init=await mcp.dispatch({method:'initialize',params:{protocolVersion:'2025-03-26'}});assert(init.sid);
   const invoke=async(name,args={})=>{const out=await mcp.dispatch({method:'tools/call',params:{name,arguments:args}},init.sid);return out.result;};

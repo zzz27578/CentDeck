@@ -51,7 +51,7 @@ function event(t, type, text) {
   save(t.project);
 }
 function publicTask(t) {
-  const { messages, pending, readSet, ...rest } = t;
+  const { messages, pending, readSet, budget, spent, ...rest } = t;
   return rest;
 }
 function list(id) {
@@ -134,9 +134,7 @@ function start(id, b, parent = null) {
     toolCalls: 0,
     roundToolCalls: 0,
     maxSteps: Math.min(40, Math.max(1, Number(b.maxSteps) || 16)),
-    budget: Math.min(500000, Math.max(1000, Number(b.budget) || 80000)),
     usage: null,
-    spent: 0,
     elapsed: 0,
     maxTime: 600000,
     events: [],
@@ -381,19 +379,12 @@ async function tool(t, name, a, epoch) {
         mode: t.mode,
         model: undefined,
         think: undefined,
-        budget: groupRoot(t).budget,
         maxSteps: t.maxSteps,
       },
       t,
     );
   }
   throw new ApiError(403, "当前模式不提供此工具");
-}
-function used(t) {
-  const root = groupRoot(t);
-  return load(t.project)
-    .filter((x) => x.id === root.id || x.parent === root.id)
-    .reduce((n, x) => n + x.spent, 0);
 }
 function estimateInput(messages, tools) {
   // Images are billed as visual tokens, not as their base64 transport length.
@@ -427,8 +418,6 @@ async function run(t) {
   try {
     while (true) {
       if (t.epoch !== epoch || controller.signal.aborted) return;
-      const remaining = groupRoot(t).budget - used(t);
-      if (remaining < 1000) throw new ApiError(429, "任务组用量已达上限");
       if (t.pending?.length) {
         while (t.pending.length) {
           if ((t.roundToolCalls || 0) >= t.maxSteps) {
@@ -467,16 +456,11 @@ async function run(t) {
             throw new ApiError(409, "连续工具失败，请调整要求后继续");
         }
       }
-      // Reserve estimated input/output against the group budget before sending a request.
       const availableTools = (t.roundToolCalls || 0) >= t.maxSteps ? [] : toolsFor(t);
-      const estimate = estimateInput(t.messages, availableTools),
-        available = groupRoot(t).budget - used(t) - estimate;
-      if (available < 512)
-        throw new ApiError(429, "剩余预算不足以发送当前上下文");
+      const estimate = estimateInput(t.messages, availableTools);
       const capacity=providers.resolve(t.model).provider.contextWindow||0;
       if(capacity&&estimate+512>capacity)throw new ApiError(400,'上下文接近模型窗口上限，请先压缩上下文再重新尝试。');
-      const reserve = estimate + Math.min(8192, available,capacity?capacity-estimate:Infinity);
-      t.spent += reserve;
+      const maxOutputTokens = Math.min(8192, capacity ? capacity - estimate : 8192);
       t.steps++;
       t.phase = 'thinking';
       t.context = {estimatedInputTokens:estimate,overheadTokens:estimateInput(t.messages.filter(m=>m.role==='system'),availableTools),capacity,model:t.model};
@@ -491,7 +475,7 @@ async function run(t) {
           availableTools,
           t.think,
           controller.signal,
-          Math.min(8192, available,capacity?capacity-estimate:Infinity),
+          maxOutputTokens,
           {projectId:t.project, taskId:t.id, mode:t.mode, onProgress(progress){
             if(t.epoch!==epoch||controller.signal.aborted)return;
             t.phase=progress.phase;
@@ -513,8 +497,6 @@ async function run(t) {
       if (response.usage) {
         if(Number.isFinite(response.usage.prompt_tokens))t.context.inputTokens=response.usage.prompt_tokens;
         if(Number.isFinite(response.usage.completion_tokens))t.context.outputTokens=response.usage.completion_tokens;
-        t.spent +=
-          Math.max(0, Number(response.usage.total_tokens) || 0) - reserve;
         t.usage = (t.usage || 0) + (Number(response.usage.total_tokens) || 0);
       }
       const msg = response.message;
@@ -625,8 +607,6 @@ function action(id, tid, b) {
         role: "user",
         content: String(b.text).slice(0, 32000),
       });
-    if (used(t) >= groupRoot(t).budget)
-      throw new ApiError(429, "本任务已达到内部用量保护上限，请新建任务");
     if(t.limitReached || b.text){t.roundToolCalls=0;t.limitReached=false;}
     if(t.truncated){t.messages.push({role:'user',content:'上一条回复因输出长度上限被截断。请读取当前状态，继续未完成的工作并给出完整结果；不要重复已完成的操作。'});t.truncated=false;}
     t.epoch++;

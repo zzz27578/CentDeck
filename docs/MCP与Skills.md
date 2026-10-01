@@ -45,9 +45,9 @@ The local `POST /mcp` JSON-RPC endpoint uses a bearer token and an initializatio
 {"name":"start_agent","arguments":{"projectId":"your-project","assistantId":"assistant-default","mode":"create","think":"high","text":"创建一个响应式品牌官网"}}
 ```
 
-创建任务必须有可用的提供商和模型。`agent_status` 返回真实状态、模型、思考强度、技能、用量及提交记录。401、预算耗尽、冲突等错误不会被伪装为完成。
+创建任务必须有可用的提供商和模型。`agent_status` 返回真实状态、模型、思考强度、技能、用量及提交记录。401、工具调用上限、上下文窗口错误和冲突不会被伪装为完成。
 
-Agent creation requires a configured working provider and model. Status includes actual state, model, reasoning level, skills, usage and commits. Authentication failures, budget limits and conflicts remain explicit failures.
+Agent creation requires a configured working provider and model. Status includes actual state, model, reasoning level, skills, usage and commits. Authentication failures, tool-call limits, context-window errors and conflicts remain explicit failures.
 
 ## 页面接管 / Browser control
 

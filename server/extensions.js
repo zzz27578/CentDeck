@@ -8,7 +8,7 @@ const { ROOT, CONFIG_DIR, ApiError } = require('./store');
 const stateFile = path.join(CONFIG_DIR, 'extensions.json');
 const builtin = path.join(ROOT, 'plugins');
 function read(file, fallback) { return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : fallback; }
-function state() { return read(stateFile, { plugins: {}, skills: {}, preferences: { maxSteps: 24, budget: 100000, collaboration: 'off' }, mcp: { enabled: true, mode: 'create' } }); }
+function state() { return read(stateFile, { plugins: {}, skills: {}, preferences: { maxSteps: 24, collaboration: 'off' }, mcp: { enabled: true, mode: 'create' } }); }
 function save(s) { fs.mkdirSync(CONFIG_DIR,{recursive:true}); fs.writeFileSync(stateFile+'.tmp', JSON.stringify(s,null,2)); fs.renameSync(stateFile+'.tmp',stateFile); }
 function id(value) { if(typeof value!=='string'||! /^[a-z][a-z0-9-]{1,79}$/.test(value)) throw new ApiError(400,'编号仅支持小写英文、数字、短横线'); return value; }
 function validate(bundle) {
@@ -88,8 +88,11 @@ function updateSkill(b) {
 }
 function preferences(b) {
   const s=state();
-  if(b) { s.preferences={...s.preferences,maxSteps:Math.min(40,Math.max(1,Math.floor(Number(b.maxSteps)||24)))}; save(s); }
-  return {budget:100000,collaboration:'off',maxSteps:24,...s.preferences};
+  let changed=false;
+  if(Object.prototype.hasOwnProperty.call(s.preferences||{},'budget')) { delete s.preferences.budget; changed=true; }
+  if(b) { s.preferences={...s.preferences,maxSteps:Math.min(40,Math.max(1,Math.floor(Number(b.maxSteps)||24)))}; changed=true; }
+  if(changed) save(s);
+  return {collaboration:'off',maxSteps:24,...s.preferences};
 }
 function designPresets(b) {
   const s=state();s.designPresets||=[];

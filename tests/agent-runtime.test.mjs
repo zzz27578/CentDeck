@@ -476,7 +476,7 @@ try {
       "<h1>User variant edit</h1>",
     );
   });
-  await test("页面范围、锁和任务预算由服务端执行", async () => {
+  await test("页面范围和锁由服务端执行，任务不受隐藏 Token 预算限制", async () => {
     let t = await settled(
       await start("WRITE SECOND", { scope: ["index.html"] }),
     );
@@ -493,8 +493,9 @@ try {
     await req("PUT", base, { ...p, locks: { pages: [], elements: [] } });
     const count = requests;
     t = await settled(await start("READ ONLY", { budget: 1000 }));
-    assert.equal(t.status, "failed");
-    assert.equal(requests, count);
+    assert.equal(t.status, "completed");
+    assert.equal(requests, count + 1);
+    assert.equal("budget" in t, false);
   });
   await test('同批和跨多次模型请求的工具调用均受一轮总上限约束',async()=>{
     const t=await start('BATCH LIMIT',{maxSteps:2});
