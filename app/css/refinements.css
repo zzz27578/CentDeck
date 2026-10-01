@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 /* Shared controls and compact workspace surfaces. */
 .extension-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px; }
 .extension-card { background:var(--panel);border:1px solid var(--line-2);padding:18px;border-radius:14px;gap:12px;box-shadow:0 3px 12px #00000005; }

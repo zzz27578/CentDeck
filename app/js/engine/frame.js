@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // frame.js —— 预览宿主：把页面源码渲染进 iframe（注入隐藏门牌号 data-cd-loc，源码本身不动）。
 // 双缓冲：改完代码后在后台那块 iframe 里渲染好、恢复滚动位置，再无闪烁地换到前台。

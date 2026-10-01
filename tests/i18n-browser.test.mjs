@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {spawn} from 'node:child_process';import {createRequire} from 'node:module';import {browser} from './browser-driver.mjs';
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'centdeck-i18n-'));process.env.CENTDECK_CONFIG_DIR=path.join(temp,'config');process.env.CENTDECK_PROJECTS_DIR=path.join(temp,'projects');fs.mkdirSync(process.env.CENTDECK_CONFIG_DIR);fs.mkdirSync(process.env.CENTDECK_PROJECTS_DIR);
 fs.writeFileSync(path.join(process.env.CENTDECK_CONFIG_DIR,'account.json'),JSON.stringify({username:'tester',password:'test-only-password',mustChange:false}));

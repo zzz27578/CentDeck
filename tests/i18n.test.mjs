@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';
 const values=new Map();globalThis.localStorage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value)};
 const {text,template,errorText,changeLanguage}=await import('../app/js/core/i18n.js');

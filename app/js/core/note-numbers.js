@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // Display numbers may be reused; identity and assistant references always use id.
 export function nextColorNumber(list, color, except) {
   const used = new Set(list.filter(n => n !== except && n.color?.toLowerCase() === color?.toLowerCase()).map(n => n.no));

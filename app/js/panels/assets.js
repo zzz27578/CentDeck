@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 素材库：上传（大图自动压缩）、替换选中图片、插入图片、拖到页面上、导入字体
 import { el, esc, toast } from '../core/ui.js';

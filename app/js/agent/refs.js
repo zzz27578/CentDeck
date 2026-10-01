@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 助手的"引用"：像给 AI 看参考图一样，把页面、元素、草图标记、框选区域精确地指给它
 // 每个引用 = { kind, label, icon, ...数据 }，在输入框上方显示成一个小标签（文字过长自动省略）

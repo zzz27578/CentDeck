@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { locale } from '../core/i18n.js';
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 助手管理：右侧停靠的主窗口 + 任意多个悬浮窗口（多助手协作的壳）。

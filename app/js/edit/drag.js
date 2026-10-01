@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 拖动与缩放：只改视觉预览（translate / scale / width），松手才写回源码。
 import { buildIndex, snapMove, linesFor, snapEdge } from './guides.js';

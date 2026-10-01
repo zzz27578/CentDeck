@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 导入体检：逐页判断能不能直接改，用大白话说明原因
 //   green = 完整可改；yellow = 大部分能改，个别地方要注意；red = 只能查看、圈选，修改交给 AI

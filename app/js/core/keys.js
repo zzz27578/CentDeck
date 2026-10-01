@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from './i18n.js';
 // 快捷键中心：所有快捷键在这里登记；带 id 的可以在"快捷键"面板里改键（存在浏览器里），
 // 撤销、删除、方向键这类基础键固定不可改。页面 iframe 里的按键也转发到这里。

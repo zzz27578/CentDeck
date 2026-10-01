@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 编辑视图周边：页面标签（含视口选择）、底部工具坞、缩放、三灯判定卡、右键菜单、路径条
 import { icon } from '../core/icons.js';

@@ -36,6 +36,6 @@ Use an English commit title that describes the change. Explain the user-facing r
 
 ## Licensing
 
-By contributing, you confirm that you have the right to submit the work and agree to license it under the [CentDeck Source License 1.0](LICENSE). Retain third-party attribution and licenses.
+By contributing, you confirm that you have the right to submit the work and agree to license it under the [GNU Affero General Public License v3.0](LICENSE), including the CentDeck attribution and trademark terms. Retain third-party attribution and licenses.
 
 <!-- CentDeck documentation. Licensing: LICENSE and THIRD_PARTY_NOTICES.md. -->

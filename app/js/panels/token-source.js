@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { parse } from '../vendor/parse5.js';
 
 // 按源码位置修改，覆盖单引号、大写标签、无 head 和省略闭合标签。

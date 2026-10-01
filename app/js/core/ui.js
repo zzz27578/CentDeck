@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from './i18n.js';
 import { errorText } from './i18n.js';
 // 通用界面零件：转义、提示条、对话框、菜单（右键/下拉）、悬停提示

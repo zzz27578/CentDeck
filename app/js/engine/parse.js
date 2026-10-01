@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // parse.js —— 源码解析：用 parse5（和浏览器同一套 HTML 解析规则）找出每个元素、每段文字在源码里的精确位置。
 // 任何写法都行：缩进、压成一行、省略结束标签、<div />、实体字符……解析出的结构和浏览器里的页面一致。
 // 纯函数、不碰 DOM，Node 与浏览器通用。

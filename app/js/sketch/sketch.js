@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 草图：画笔 / 箭头 / 方框 / 圆圈 / 便签钉 / 参考图 / 橡皮。画在页面上方的透明层里（页面坐标，随页面滚动），
 // 贴着下面的元素走；每一笔都能写一句要求，全部可撤销；攒一批导出任务单交给 AI。

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from './i18n.js';
 const privateField=n=>n.matches?.('input[type=password],input[type=file]')||n.closest?.('[data-private],[data-sensitive]')||/password|api.?key|secret|access.?token/i.test([n.name,n.id,n.getAttribute?.('autocomplete')].filter(Boolean).join(' '));
 export function visibleControl(n){

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 /* Shared layout and the original green presentation, retained from the former
    mixed stylesheet. Visual variants must not redefine input or dialog sizing. */
 :root[data-style="original"] {

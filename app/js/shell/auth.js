@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { pixelField, mountPixelField } from "../core/pixel-field.js";
 import { particleSculpture, mountParticleSculpture } from "../core/particle-sculpture.js";

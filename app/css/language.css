@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 .language-settings label { display:grid;gap:10px;max-width:360px;color:var(--text-2);font-size:14px; }
 .language-settings p { margin-top:12px;line-height:1.7;font-size:13px;color:var(--text-2); }
 html[lang=en] .wordmark-sub,html[lang=en] .wordmark > small { display:none; }

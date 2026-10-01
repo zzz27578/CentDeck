@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 'use strict';
 const {ApiError}=require('./store'),providers=require('./providers');
 const estimate=value=>Math.ceil([...JSON.stringify(value)].reduce((n,c)=>n+(c.charCodeAt(0)>127?1:.28),0));

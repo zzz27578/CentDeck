@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 总览画布右侧的工具条：指针 / 框选 / 画笔 / 手
 //   框选：框住页面上的一块，直接变成助手输入框里的一个引用（图标 + 页面名 + 区域）

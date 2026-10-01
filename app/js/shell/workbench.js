@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 工作台外壳：顶栏（项目/页面/视图切换/保存状态/撤销/助手）、左侧栏+抽屉面板、右侧属性栏、状态栏
 import { icon } from '../core/icons.js';

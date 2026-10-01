@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { errorText } from '../core/i18n.js';
 // 一个助手窗口：标题栏（可拖动、停靠 / 弹出）、对话区、输入框（+ 上传与引用、@、技能、模型、思考强度）

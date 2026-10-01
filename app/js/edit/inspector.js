@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 右侧属性栏：没选中时显示本页信息和操作提示；选中后按"文字 / 字体 / 位置大小 / 操作"分组
 import { icon } from '../core/icons.js';

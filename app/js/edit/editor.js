@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 编辑视图：真实桌面视口里的页面 + 覆盖层交互。三个基础工具互不干扰：
 //   交互（E）= 像真实浏览一样点按钮、开弹窗、填表单；选择（R）= 点选/拖动/缩放；文字（T）= 点哪改哪（按键可改）。

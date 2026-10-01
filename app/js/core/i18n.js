@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // Localize application-owned literals before inserting user data. This module
 // never walks the DOM, translates project documents, or changes message text.
 import english from './locales/en.js';

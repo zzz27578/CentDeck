@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import http from 'node:http';import {createRequire} from 'node:module';
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'centdeck-provider-options-'));process.env.CENTDECK_CONFIG_DIR=path.join(temp,'config');
 const require=createRequire(import.meta.url),providers=require('../server/providers'),compact=require('../server/conversation-context').compact,requests=[];let release;

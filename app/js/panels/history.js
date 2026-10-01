@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 版本历史：每次写回代码前服务端自动留一份旧版本（最多 20 份），可一键恢复
 import { el, esc, fmtTime, confirmDlg, toast } from '../core/ui.js';

@@ -7,7 +7,7 @@
 [![CI](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![No build](https://img.shields.io/badge/Build-Not_required-315bff)](#quick-start)
-[![License](https://img.shields.io/badge/License-CentDeck_Source_1.0-315bff)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-315bff)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/zzz27578/CentDeck?style=flat&color=315bff)](https://github.com/zzz27578/CentDeck/stargazers)
 
 **Build with agents. Refine your frontend like a presentation.**
@@ -91,7 +91,7 @@ Start with multipage hospitality, homeware or English architecture templates. Ad
 
 ## License
 
-Licensed under the [CentDeck Source License 1.0](LICENSE). Use, modification and compliant collaborative forks are permitted. Redistribution must retain attribution, the license and provenance; false authorship and rebranded replicas are prohibited. Independently created websites are not covered merely because they were made with CentDeck. Third-party components retain [their own licenses](THIRD_PARTY_NOTICES.md).
+Licensed under the [GNU Affero General Public License v3.0](LICENSE), with CentDeck attribution, provenance and trademark terms. Derivative works and network deployments must retain the CentDeck copyright and license notices, identify the work as based on CentDeck, describe material changes, and must not imply official sponsorship or endorsement. Independently created websites are not covered merely because they were made with CentDeck. Third-party components retain [their own licenses](THIRD_PARTY_NOTICES.md).
 
 If CentDeck improves your workflow, give it a **Star**. Contributions, issues and examples of what you build are welcome.
 

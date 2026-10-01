@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 /* stage.css —— 编辑舞台：设备屏幕、覆盖层、选中框、范围框、参考线、工具坞、缩放、判定卡、属性栏 */
 .stage-host {
   position: relative; flex: 1; min-height: 0; overflow: hidden;

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 导入网页：选文件 / 选文件夹 / 直接拖进来 → 上传 → 体检 → 报告（有问题可一键把整理提示词放进助手）
 import { el, esc, toast, openModal } from '../core/ui.js';

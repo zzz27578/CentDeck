@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 .studio-main:has(.provider-workspace) { padding-inline:32px; }
 .studio-content:has(.provider-workspace) { max-width:1280px; }
 .provider-workspace { display:grid;grid-template-columns:210px minmax(0,1fr);border:1px solid var(--line);border-radius:20px;background:var(--panel);overflow:hidden;min-height:640px; }

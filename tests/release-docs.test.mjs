@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';
 import {createHash} from 'node:crypto';
 const readmes=['README.md','README.zh-TW.md','README.en.md'];
@@ -12,7 +12,7 @@ for(const file of readmes){
   for(const match of source.matchAll(/\]\(([^)]+)\)/g)){const target=match[1];if(!/^(https?:|#)/.test(target))assert(fs.existsSync(path.resolve(target)),file+' broken link '+target);}
 }
 assert(!fs.readFileSync('README.md','utf8').includes('## English'));
-assert(fs.readFileSync('LICENSE','utf8').includes('No rebranded replicas'));
+const license=fs.readFileSync('LICENSE','utf8');assert(license.includes('GNU AFFERO GENERAL PUBLIC LICENSE'));assert(license.includes('ADDITIONAL TERMS FOR CENTDECK'));assert(license.includes('Attribution and provenance'));
 const topics=JSON.parse(fs.readFileSync('.github/topics.json','utf8'));assert(topics.length<=20&&new Set(topics).size===topics.length);assert(topics.every(t=>/^[a-z0-9-]+$/.test(t)));
 assert(fs.readFileSync('.github/workflows/ci.yml','utf8').includes('tests/run-checks.mjs'));
 const media=JSON.parse(fs.readFileSync('docs/assets/screenshots/sources.json','utf8'));

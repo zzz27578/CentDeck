@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 'use strict';
 // Standard MCP stdio transport; keeps credentials in the local configuration.
 const readline=require('node:readline');

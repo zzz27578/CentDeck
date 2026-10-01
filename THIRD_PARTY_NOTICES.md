@@ -16,7 +16,7 @@ that file. Project: https://github.com/inikulin/parse5
 
 Copyright (c) 2013–2019 Ivan Nikulin and contributors.
 
-The CentDeck Source License does not replace or restrict parse5's MIT license.
+The CentDeck AGPL-3.0 terms do not replace or restrict parse5's MIT license.
 Check the bundled file for additional retained notices associated with its
 dependencies.
 
@@ -24,7 +24,7 @@ dependencies.
 
 Repository screenshots may show user-provided website content or avatars.
 Rights in those depicted assets remain with their respective owners; the
-CentDeck Source License does not relicense them.
+CentDeck AGPL-3.0 terms do not relicense them.
 
 MCP, Agent Skills and other referenced projects are interoperability or
 design references. Mentioning them does not imply endorsement, bundling

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { mountCustomHome } from '../core/extensions.js';
 // 首页：描述想做的网站 → 空白项目 / 模板 / 导入；我的项目（搜索、排序、重命名、删除需输入名称确认）

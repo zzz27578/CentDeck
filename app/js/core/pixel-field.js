@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // A decorative pixel wake. It never captures input, runs only after interaction,
 // and disposes itself when the containing screen is replaced.
 export function pixelField() {

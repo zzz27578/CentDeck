@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import {spawnSync} from 'node:child_process';
 const browser=process.argv.includes('--browser');
 const cases=browser?['conversations-browser','i18n-browser','templates-release','capture-page','mcp-transport']:[

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';
 import { createBus } from '../app/js/core/bus.js';
 import { inspectResponsiveSource } from '../app/js/shell/responsive-source.js';

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 export function availableModels(settings) {
   return (settings?.providers||[]).filter(p=>p.enabled).flatMap(p=>(p.models||[]).map(model=>({id:p.id+':'+model,name:model,provider:p.name,capabilities:{vision:!!p.vision,audio:!!p.audio,tools:p.tools!==false,...p.modelCapabilities?.[model]}})));

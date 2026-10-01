@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 就地改字：点哪里光标就在哪里（像 Word）；回车确认、Esc 取消、点别处自动确认。
 // 提交时逐个元素对比"文字段"，只把变了的字符写回源码；如果删掉了里面的换行、加粗等结构，整次取消。

@@ -7,7 +7,7 @@
 [![CI](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![No build](https://img.shields.io/badge/Build-Not_required-315bff)](#quick-start)
-[![License](https://img.shields.io/badge/License-CentDeck_Source_1.0-315bff)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-315bff)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/zzz27578/CentDeck?style=flat&color=315bff)](https://github.com/zzz27578/CentDeck/stargazers)
 
 **讓 Agent 搭建前端，讓你像做 PPT 一樣完成設計。**
@@ -91,7 +91,7 @@ cd CentDeck
 
 ## 授權
 
-採用 [CentDeck Source License 1.0](LICENSE)。允許使用、修改及符合授權條款的協作 Fork；散布時須保留署名、授權及來源，禁止冒充原創或將整體專案換牌散布。使用 CentDeck 獨立創作的網站不因使用本工具而受此授權約束。第三方元件遵循[各自授權](THIRD_PARTY_NOTICES.md)。
+採用 [GNU Affero General Public License v3.0](LICENSE)，並包含 CentDeck 的署名、來源與商標附加條款。二次開發與網路部署必須保留 CentDeck 版權及授權聲明，明確標示基於 CentDeck 並說明主要修改，不得冒充官方專案或暗示官方背書。獨立創作的網站不因使用本工具而受此授權約束。第三方元件遵循[各自授權](THIRD_PARTY_NOTICES.md)。
 
 如果 CentDeck 讓你的前端工作流程更順手，歡迎給予 **Star**，也歡迎分享作品、提交 Issue 與 Pull Request。
 

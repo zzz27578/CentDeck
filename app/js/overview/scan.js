@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 页面结构扫描（纯静态、不跑脚本）：跳转链接及触发按钮、页内锚点、版块、弹窗及打开它的按钮、自动跳转
 import { parse, attr } from '../engine/parse.js';

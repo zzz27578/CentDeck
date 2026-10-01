@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from './i18n.js';
 // 真实桌面视口：网页按"在这台电脑的浏览器里最大化打开"时的尺寸排版，再整体等比缩放显示。
 // 这样媒体查询、vh 单位、首屏高度都和真实浏览完全一致，只是看起来小一号。

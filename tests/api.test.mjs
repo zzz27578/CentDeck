@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // 服务端接口回归：node tests/api.test.mjs（会临时启动一个服务，结束后清理测试项目）
 import { spawn } from 'child_process';
 import fs from 'fs';

@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 覆盖层：悬停框、选中框（标签+8 个手柄）、可移动范围框、原位置轮廓、参考线、数值气泡、波及闪框。
 // 放在工作台文档里、盖在 iframe 上方，页面代码完全不受影响；.ovl-page 跟随页面滚动，里面用"页面坐标"。

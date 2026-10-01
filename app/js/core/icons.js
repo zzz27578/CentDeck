@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 // 内联线性图标（24 网格，描边 currentColor）
 const P = {
   github: '<path d="M9 19c-4.3 1.3-4.3-2.2-6-2.7m12 5v-3.4c0-1 .1-1.4-.5-2 3.3-.4 6.8-1.6 6.8-7.3A5.8 5.8 0 0019.7 5a5.4 5.4 0 00-.1-3.6S18.3 1 15 3a13.3 13.3 0 00-6 0C5.7 1 4.4 1.4 4.4 1.4A5.4 5.4 0 004.3 5a5.8 5.8 0 00-1.6 4.1c0 5.7 3.5 6.9 6.8 7.3-.5.5-.6 1.2-.5 2V22"/>',

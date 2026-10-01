@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 任务单：把未完成的草图标记整理成一份说明，每条带页面、元素、代码行和相关片段，直接粘贴给任何 AI
 import { el, esc, toast, openModal, copyText } from '../core/ui.js';

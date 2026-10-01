@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 总览：所有页面按真实桌面视口摊在无限画布上。连线从"具体的按钮/链接"连到目标页；
 // 弹窗等子页面画成挂在主页面下方的小卡片（虚线连到打开它的按钮）；长页面可展开成一格格的屏幕分镜。

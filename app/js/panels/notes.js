@@ -1,5 +1,5 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
- * SPDX-License-Identifier: LicenseRef-CentDeck-Source-1.0 */
+ * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 便签：贴在元素上的"一次性任务"或"长期规则"（第二步起 AI 改这一块前必须先读规则）
 import { el, esc, uid, toast, openModal } from '../core/ui.js';
