@@ -4,6 +4,9 @@ const store=require('./store'), extensions=require('./extensions'), registry=req
 const sessions=new Map();
 const str={type:'string'};
 const extra=[
+  {name:'external_requests',description:'列出选择 mcp:external 的内置 Agent 等待请求。外部助手负责推理，内置运行时执行工具。',inputSchema:{type:'object',properties:{}}},
+  {name:'external_claim',description:'接管一个请求，读取上下文和可用工具；租约三分钟，可重新接管续期。',inputSchema:{type:'object',properties:{id:str},required:['id']}},
+  {name:'external_respond',description:'提交真实外部助手回复或工具调用。必须使用同会话最新租约；model 仅自行报告。',inputSchema:{type:'object',properties:{id:str,lease:str,model:str,message:{type:'object',properties:{role:{const:'assistant'},content:{type:['string','null']},tool_calls:{type:'array',items:{type:'object'}}},required:['role']}},required:['id','lease','message']}},
   {name:'list_projects',description:'列出本机项目',inputSchema:{type:'object',properties:{}}},
   {name:'create_project',description:'新建空白项目',inputSchema:{type:'object',properties:{name:str},required:['name']}},
   {name:'list_assistants',description:'列出内置 Agent 及模型配置（不含密钥）',inputSchema:{type:'object',properties:{}}},
@@ -11,7 +14,7 @@ const extra=[
   {name:'agent_status',description:'读取任务结果、思考强度和已保存变更',inputSchema:{type:'object',properties:{projectId:str},required:['projectId']}},
   {name:'agent_action',description:'停止、暂停或继续内置任务；更改思考强度',inputSchema:{type:'object',properties:{projectId:str,taskId:str,action:{type:'string',enum:['cancel','pause','resume','think']},think:str},required:['projectId','taskId','action']}},
 ];
-function catalog(mode){return [...extra.filter(t=>mode==='create'||!['create_project','start_agent','agent_action'].includes(t.name)),...registry.list(mode).map(t=>({...t,inputSchema:{...t.inputSchema,properties:{projectId:str,...t.inputSchema.properties}}}))];}
+function catalog(mode){return [...extra.filter(t=>mode==='create'||!['external_requests','external_claim','external_respond','create_project','start_agent','agent_action'].includes(t.name)),...registry.list(mode).map(t=>({...t,inputSchema:{...t.inputSchema,properties:{projectId:str,...t.inputSchema.properties}}}))];}
 async function dispatch(body,sessionId){
   const config=extensions.mcpConfig();
   if(!config.enabled)throw new store.ApiError(403,'MCP 已停用');
@@ -34,6 +37,9 @@ async function dispatch(body,sessionId){
     if(!catalog(config.mode).some(t=>t.name===name))throw new store.ApiError(403,'工具不可用或 MCP 处于只读模式');
     let result;
     if(name==='list_projects')result=store.listProjects();
+    else if(name==='external_requests')result=require('./external-agent').list();
+    else if(name==='external_claim')result=require('./external-agent').claim(a.id,sessionId);
+    else if(name==='external_respond')result=require('./external-agent').respond(a,sessionId);
     else if(name==='create_project')result=store.createProject({blank:true,name:a.name});
     else if(name==='list_assistants')result=store.getAssistants();
     else if(name==='start_agent')result=require('./tasks').start(a.projectId,{...a,...extensions.preferences(),collaboration:'off'});

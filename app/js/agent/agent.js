@@ -1,7 +1,8 @@
 // 助手管理：右侧停靠的主窗口 + 任意多个悬浮窗口（多助手协作的壳）。
 // 拖标题栏就能把停靠的助手拽出来变成悬浮窗；把悬浮窗拖到屏幕最右边松手就停靠回去。
 // 右键 @、框选、导入体检等处的引用和提示词，会送到你最近用过的那个助手窗口。
-import { el, showMenu, toast } from "../core/ui.js";
+import { el, esc, showMenu, toast } from "../core/ui.js";
+import { icon } from '../core/icons.js';
 import { createSession } from "./session.js";
 import { openAssistantManager } from "./manager.js";
 
@@ -17,6 +18,7 @@ export function createAgent(app) {
     seq = 1;
   const floats = new Map(); // session → 窗口元素
   const sessions = [];
+  let closePicker=()=>{};
 
   const loadSkills = () => fetch('/api/skills').then(r=>r.json()).then(r=>{skills=r.data.filter(s=>s.enabled);}).catch(()=>{});
   loadSkills();
@@ -275,6 +277,21 @@ export function createAgent(app) {
       s.paintPickers();
       if (!w.classList.contains("collapsed")) s.focus();
     },
+    pickSession(anchor, floating=false) {
+      closePicker();
+      const menu=el(`<div class="assistant-picker" role="dialog" aria-label="选择助手"><header>${floating?'在悬浮窗打开':'选择助手'}</header><div class="assistant-picker-list"></div><button class="btn block" data-manage>${icon('plus',15)}新建或管理助手</button></div>`);
+      const choose=(s,float)=>{closePicker();if(float){if(s===docked)undock(s);show(s);}else{if(docked&&docked!==s){docked.root.remove();docked=null;}dock(s);}mgr.setActive(s);};
+      for(const s of sessions){
+        const row=el(`<div class="assistant-picker-row"><span><b>${esc(s.name)}</b><small>${esc(s.role)}</small></span><button class="btn small" data-switch>${s===docked?'当前':'切换'}</button><button class="icon-btn" data-float aria-label="在悬浮窗打开 ${esc(s.name)}">${icon('plus',17)}</button></div>`);
+        row.querySelector('[data-switch]').onclick=()=>choose(s,false);row.querySelector('[data-float]').onclick=()=>choose(s,true);menu.querySelector('.assistant-picker-list').append(row);
+      }
+      menu.querySelector('[data-manage]').onclick=()=>{closePicker();mgr.manage();};document.body.append(menu);
+      const r=anchor.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(innerWidth-320,r.left))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,r.bottom+8))+'px';
+      const outside=e=>{if(!menu.contains(e.target)&&!anchor.contains(e.target))closePicker();};
+      const key=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closePicker();anchor.focus();}};
+      closePicker=()=>{menu.remove();document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',key,true);};
+      document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',key,true);menu.querySelector('button')?.focus();
+    },
     manage: () => openAssistantManager(mgr, app),
     sessions: () => sessions,
     show,
@@ -318,10 +335,11 @@ export function createAgent(app) {
       p.assistantChats[s.id] = s.conversation();
       app.bus.saveMeta();
     },
-    skills: () => skills,
+    skills: () => skills.filter(s=>!s.internal),
     skill: (id) =>
       skills.find((k) => k.id === id) || { id, name: id, icon: "book" },
     modelLabel(id) {
+      if (id === 'mcp:external' || (id === 'auto' && settings?.defaultModel === 'mcp:external')) return '外部 MCP 助手';
       if (id === "auto")
         return (
           settings?.defaultModel?.split(":").slice(1).join(":") || "默认模型"
@@ -330,6 +348,7 @@ export function createAgent(app) {
     },
     modelMenu(anchor, cur, pick) {
       const items = [
+        {label:'外部 MCP 助手（需连接接管）', checked:cur === 'mcp:external', onClick:() => pick('mcp:external')},
         {
           label: "默认模型",
           checked: cur === "auto",

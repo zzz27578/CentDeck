@@ -10,13 +10,13 @@ export function refLabel(r) {
   if (r.kind === 'page') return { icon: r.popup ? 'popup' : 'file', text: r.title };
   if (r.kind === 'region') return { icon: 'marquee', text: `${r.title} · 框选 ${r.rect.w}×${r.rect.h}` };
   if (r.kind === 'element') return { icon: 'target', text: r.title };
-  if (r.kind === 'mark') return { icon: 'marks', text: `#${r.no} ${r.title}` };
+  if (r.kind === 'mark') return { icon: 'marks', text: `${colorName(r.color)} #${r.no} ${r.title}`, color:r.color };
   if (r.kind === 'marks-color') return { icon: 'marks', text: `全部${colorName(r.color)}标记（${r.count}）`, color: r.color };
   if (r.kind === 'marks-all') return { icon: 'marks', text: `全部草图标记（${r.count}）` };
   if (r.kind === 'file') return { icon: 'paperclip', text: r.name };
   return { icon: 'info', text: r.title || '引用' };
 }
-export const refKey = (r) => [r.kind, r.id, r.page, r.popup, r.no, r.color, r.selector, r.rect && [r.rect.x, r.rect.y, r.rect.w, r.rect.h].join(','), r.name].join('|');
+export const refKey = (r) => r.id&&['mark','canvas-note'].includes(r.kind)?r.kind+'|'+r.id:[r.kind, r.id, r.page, r.popup, r.no, r.color, r.selector, r.rect && [r.rect.x, r.rect.y, r.rect.w, r.rect.h].join(','), r.name].join('|');
 
 const pageTitle = (app, f) => ((app.project().pages.find((p) => p.file === f) || {}).title || f);
 
@@ -37,8 +37,8 @@ export function mentionItems(app, add) {
       if (n) items.push({ label: `全部${colorName(c)}标记（${n}）`, icon: 'marks', onClick: () => add({ kind: 'marks-color', color: c, count: n }) });
     });
     marks.slice(-12).reverse().forEach((m) => items.push({
-      label: `#${m.no} ${TYPE_NAME[m.type] || '标记'} · ${pageTitle(app, m.page)}`, hint: (m.text || m.meta || '').slice(0, 30), icon: 'marks',
-      onClick: () => add({ kind: 'mark', no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'} · ${pageTitle(app, m.page)}` }),
+      label: `${colorName(m.color)} #${m.no} ${TYPE_NAME[m.type] || '标记'} · ${pageTitle(app, m.page)}`, hint: (m.text || m.meta || '').slice(0, 30), icon: 'marks',
+      onClick: () => add({ kind: 'mark', id:m.id, color:m.color, no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'} · ${pageTitle(app, m.page)}` }),
     }));
   }
   const notes = app.project().canvasNotes || [];
@@ -53,7 +53,7 @@ export function describeRefs(app, refs) {
     if (r.kind === 'region') return `页面「${r.title}」上框选的区域：左 ${r.rect.x}、上 ${r.rect.y}、宽 ${r.rect.w}、高 ${r.rect.h}（${r.page}）`;
     if (r.kind === 'page') return `页面「${r.title}」（${r.page}）`;
     if (r.kind === 'element') return `元素 ${r.title}`;
-    if (r.kind === 'mark') return `草图标记 #${r.no}`;
+    if (r.kind === 'mark') { const m=app.project().marks?.find(m=>m.id===r.id); return m ? `${colorName(m.color)}草图标记 #${m.no}（ID: ${m.id}）：${m.text||''}` : `${colorName(r.color)}草图标记 #${r.no}（${r.id||r.page}）`; }
     if (r.kind === 'marks-color') return `全部${colorName(r.color)}草图标记`;
     if (r.kind === 'marks-all') return '全部未完成的草图标记';
     if (r.kind === 'file') return `附件 ${r.name}`;

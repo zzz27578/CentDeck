@@ -43,7 +43,7 @@ function validate(bundle) {
 function official() { return fs.existsSync(builtin) ? fs.readdirSync(builtin).filter(x=>x.endsWith('.json')).map(x=>validate(read(path.join(builtin,x)))) : []; }
 function plugins() {
   const s=state();
-  return [...official().map(b=>({...b,official:true})),...Object.values(s.plugins).filter(x=>x.bundle).map(x=>({...x.bundle,official:false}))].map(b=>({...b,enabled:s.plugins[b.manifest.id]?.enabled ?? b.official,settings:{...Object.fromEntries(Object.entries(b.manifest.settingsSchema||{}).map(([k,v])=>[k,v.default])),...s.plugins[b.manifest.id]?.settings}}));
+  return [...official().map(b=>({...b,official:true})),...Object.values(s.plugins).filter(x=>x.bundle).map(x=>({...x.bundle,official:false}))].map(b=>({...b,enabled:b.manifest.id==='official-inspector'?true:(s.plugins[b.manifest.id]?.enabled ?? b.official),settings:{...Object.fromEntries(Object.entries(b.manifest.settingsSchema||{}).map(([k,v])=>[k,v.default])),...s.plugins[b.manifest.id]?.settings}}));
 }
 function install(bundle) {
   const b=validate(bundle), s=state();
@@ -52,6 +52,7 @@ function install(bundle) {
   s.plugins[b.manifest.id]={bundle:b,enabled:false}; save(s); return plugins();
 }
 function updatePlugin(pid, action, settings) {
+  if(pid==='official-inspector'&&action!=='configure') throw new ApiError(403,'项目速览是内部工具，无需启停');
   if(!['enable','disable','remove','configure'].includes(action))throw new ApiError(400,'插件操作无效');
   const p=plugins().find(x=>x.manifest.id===pid); if(!p) throw new ApiError(404,'插件不存在');
   const s=state();
@@ -68,10 +69,11 @@ function skills() {
   const core=read(path.join(ROOT,'app/skills/index.json'),[]).map(x=>({...x,source:'builtin',content:fs.readFileSync(path.join(ROOT,'app/skills',x.file),'utf8')}));
   const custom=Object.values(s.skills).filter(x=>x.content).map(x=>({...x,source:'local'}));
   const packaged=plugins().filter(p=>p.enabled).flatMap(p=>(p.manifest.skills||[]).map(x=>({...x,id:p.manifest.id+'--'+x.id,content:p.files[x.file],source:p.manifest.name})));
-  return [...core,...custom,...packaged].map(x=>({...x,enabled:s.skills[x.id]?.enabled!==false,desc:x.desc||x.description||'',icon:x.icon||'book'}));
+  return [...core,...custom,...packaged].map(x=>({...x,internal:x.source==='builtin'||x.id.startsWith('official-inspector--'),enabled:x.source==='builtin'||x.id.startsWith('official-inspector--')||s.skills[x.id]?.enabled!==false,desc:x.desc||x.description||'',icon:x.icon||'book'}));
 }
 function updateSkill(b) {
   const s=state(); id(b.id);
+  if(skills().some(x=>x.id===b.id&&x.internal))throw new ApiError(403,'基础技能由平台自动启用，无需手动管理');
   if(b.action==='remove') { if(!s.skills[b.id]?.content) throw new ApiError(403,'内置技能只能停用'); delete s.skills[b.id]; }
   else if(b.content!=null) {
     if(skills().some(x=>x.id===b.id&&x.source!=='local')) throw new ApiError(409,'不能覆盖内置技能');
@@ -82,8 +84,23 @@ function updateSkill(b) {
 }
 function preferences(b) {
   const s=state();
-  if(b) { s.preferences={maxSteps:Math.min(40,Math.max(1,Number(b.maxSteps)||24)),budget:Math.min(500000,Math.max(1000,Number(b.budget)||100000)),collaboration:['off','confirm','auto'].includes(b.collaboration)?b.collaboration:'off'}; save(s); }
-  return s.preferences;
+  if(b) { s.preferences={...s.preferences,maxSteps:Math.min(40,Math.max(1,Math.floor(Number(b.maxSteps)||24)))}; save(s); }
+  return {budget:100000,collaboration:'off',maxSteps:24,...s.preferences};
+}
+function designPresets(b) {
+  const s=state();s.designPresets||=[];
+  if(b){
+    if(b.action==='remove')s.designPresets=s.designPresets.filter(x=>x.id!==b.id);
+    else {
+      if(s.designPresets.length>=100)throw new ApiError(400,'个人预设最多 100 个');
+      const t=b.tokens||{}, colors={};
+      for(const [k,v] of Object.entries(t.colors||{}))if(/^[a-zA-Z][\w-]{0,40}$/.test(k)&&/^#[\da-f]{3,8}$/i.test(v))colors[k]=v;
+      if(!Object.keys(colors).length)throw new ApiError(400,'预设需要有效配色');
+      const tokens={colors,fontFamily:String(t.fontFamily||'system-ui').replace(/[;{}<>]/g,'').slice(0,200)};
+      for(const k of ['fontSizes','spacing','radius'])tokens[k]=(Array.isArray(t[k])?t[k]:[]).map(v=>typeof v==='number'?v+'px':v).filter(v=>/^\d+(\.\d+)?(px|rem|em|%)$/.test(v)).slice(0,12);
+      s.designPresets.push({id:crypto.randomUUID(),name:String(b.name||'我的风格').slice(0,80),tokens});
+    }save(s);
+  }return s.designPresets;
 }
 function mcpConfig(b) {
   const s=state(); s.mcp||={enabled:true,mode:'create'};
@@ -92,4 +109,4 @@ function mcpConfig(b) {
   if(b) { if('enabled' in b)s.mcp.enabled=!!b.enabled; if('mode' in b)s.mcp.mode=b.mode==='create'?'create':'plan'; }
   if(dirty)save(s); return s.mcp;
 }
-module.exports={state,plugins,official,install,updatePlugin,skills,updateSkill,preferences,mcpConfig,validate};
+module.exports={state,plugins,official,install,updatePlugin,skills,updateSkill,preferences,designPresets,mcpConfig,validate};

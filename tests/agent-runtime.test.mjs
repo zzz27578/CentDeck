@@ -103,9 +103,13 @@ const upstream = http.createServer(async (req, res) => {
       pendingSlow = null;
     }
   }
+  if(goal.includes('BATCH LIMIT')&&!results.length){m=tool('read_page',{path:'index.html'});m.tool_calls=Array.from({length:4},(_,i)=>({...m.tool_calls[0],id:'batch-'+i}));}
+  if(goal.includes('LOOP LIMIT'))m=tool('read_page',{path:'index.html'});
+  if(goal.includes('LIMIT FINAL')&&results.length<2)m=tool('read_page',{path:'index.html'});
+  const truncated=goal.includes('TRUNCATE')&&!b.messages.some(m=>m.role==='assistant');
   res.setHeader("Content-Type", "application/json");
   res.end(
-    JSON.stringify({ choices: [{ message: m }], usage: { total_tokens: 30 } }),
+    JSON.stringify({ choices: [{ message: m,finish_reason:truncated?'length':'stop' }], usage: { total_tokens: 30 } }),
   );
 });
 await new Promise((r) => upstream.listen(0, "127.0.0.1", r));
@@ -478,6 +482,21 @@ try {
     t = await settled(await start("READ ONLY", { budget: 1000 }));
     assert.equal(t.status, "failed");
     assert.equal(requests, count);
+  });
+  await test('同批和跨多次模型请求的工具调用均受一轮总上限约束',async()=>{
+    const t=await start('BATCH LIMIT',{maxSteps:2});
+    const paused=await until(async()=>{const x=await getTask(t);return x.status==='paused'?x:null;});
+    assert.equal(paused.toolCalls,2);assert.equal(paused.roundToolCalls,2);assert.equal(paused.steps,1);
+    await req('POST',base+'/tasks/'+t.id,{action:'resume'});
+    const done=await settled(t);assert.equal(done.status,'completed');assert.equal(done.toolCalls,4);assert.equal(done.roundToolCalls,2);
+    const cycle=await start('LOOP LIMIT',{maxSteps:2});
+    const stopped=await until(async()=>{const x=await getTask(cycle);return x.status==='paused'?x:null;});
+    assert.equal(stopped.toolCalls,2);assert.equal(stopped.steps,3);
+    const final=await settled(await start('LIMIT FINAL',{maxSteps:2}));assert.equal(final.status,'completed');assert.equal(final.toolCalls,2);
+  });
+  await test('模型截断保留结果并暂停，继续后可以完成',async()=>{
+    const t=await start('TRUNCATE');const paused=await until(async()=>{const x=await getTask(t);return x.status==='paused'?x:null;});assert.equal(paused.truncated,true);assert.equal(paused.commits.length,0);
+    await req('POST',base+'/tasks/'+t.id,{action:'resume'});assert.equal((await settled(t)).status,'completed');
   });
   await test("多文件提交失败不留下部分改动", async () => {
     const before = await source();

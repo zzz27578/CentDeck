@@ -23,7 +23,7 @@ export function createOverview(app) {
   const byFile = (f) => pages.find((p) => p.file === f);
   let offVp = null, generation = 0, flight = 0;
   const tctx = {
-    host: null, world: null, cam: () => cam, sampleColor, select: (f) => select(f), redraw: () => { drawLinks(); styleCard.drawLinks(); },
+    host: null, world: null, cam: () => cam, sampleColor, select: (f) => select(f), redraw: () => { drawLinks(); styleCard.drawLinks(); tools.syncNotes(); },
     toWorld: (x, y) => { const r = host.getBoundingClientRect(); return { x: (x - r.left - cam.x) / cam.z, y: (y - r.top - cam.y) / cam.z }; },
     cards: () => pages.flatMap((p) => [{ file: p.file, title: p.title, x: p.x, y: p.y, w: VW, h: cardH(p), scale: 1 },
       ...subs(p).map((pop, i) => { const sp = subPos(p, i); return { file: p.file, title: p.title, popup: pop.title, x: sp.x, y: sp.y, w: VW * SUB, h: VH * SUB, scale: SUB }; })]),
@@ -347,6 +347,7 @@ export function createOverview(app) {
     svg.appendChild(c);
   }
   function drawLinks() {
+    tools.syncNotes();
     if (!svg) return;
     svg.innerHTML = '';
     world.querySelectorAll('.ov-label').forEach((n) => n.remove());
@@ -430,7 +431,7 @@ export function createOverview(app) {
     }, { passive: false });
     host.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.ov-tools')) return;
-      if (tools.tool !== 'hand' && !isSpaceDown() && e.button !== 1 && e.target.closest('.ov-sticky, .ov-style-card') && tools.tool !== 'eraser') return;
+      if (tools.tool !== 'hand' && !isSpaceDown() && e.button !== 1 && e.target.closest('.ov-sticky, .ov-note-pin, .ov-note-editor, .ov-style-card') && tools.tool !== 'eraser') return;
       if (!isSpaceDown() && tools.down(e)) return;
       const onCard = e.target.closest('.ov-card, .ov-sub');
       if (e.button === 0 && tools.tool === 'pointer' && !isSpaceDown()) { if (!onCard) select(null); return; }
@@ -558,7 +559,7 @@ export function createOverview(app) {
       <button class="dock-toggle" data-a="layout" data-tip="按跳转关系重新摆放">${icon('grid', 15)}整理</button>
       <span class="dock-sep"></span>
       <button class="dock-toggle" data-a="add" data-tip="新建一个空白页面">${icon('plus', 15)}新页面</button>
-      <button class="dock-toggle" data-a="style" data-tip="配色、字号、圆角：挑一套或让助手出几套">${icon('palette', 15)}风格</button></div>`);
+      </div>`);
     wrap.appendChild(toolbar);
     const zoom = el(`<div class="zoom-dock"><button class="icon-btn" data-z="out">${icon('minus', 16)}</button><button class="zoom-val" data-z="fit" data-tip="看全部">20%</button><button class="icon-btn" data-z="in">${icon('plus', 16)}</button></div>`);
     wrap.appendChild(zoom);
@@ -572,7 +573,7 @@ export function createOverview(app) {
     toolbar.querySelector('[data-a=subs]').onclick = toggleSubs;
     toolbar.querySelector('[data-a=layout]').onclick = relayout;
     toolbar.querySelector('[data-a=add]').onclick = addPage;
-    toolbar.querySelector('[data-a=style]').onclick = () => styleCard.show();
+    app.designBoards = { add: styleCard.show };
     tctx.host = host;
     tctx.world = world;
     tools.mount(wrap);

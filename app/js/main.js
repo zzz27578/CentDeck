@@ -19,7 +19,7 @@ import { setupTokens } from './panels/tokens.js';
 import { setupHistory } from './panels/history.js';
 import { setupCodeview } from './panels/codeview.js';
 import { checkMobileProject } from './shell/responsive.js';
-import { onViewportChange } from './core/viewport.js';
+import { onViewportChange, setDevice } from './core/viewport.js';
 import { requireLogin } from './shell/auth.js';
 
 setApiErrorHandler(toastError);
@@ -81,6 +81,7 @@ app.openProject = async (id) => {
   if (app.state.project && await bus.flushMeta() === false) return;
   if (app.state.view && views[app.state.view]) views[app.state.view].leave();
   app.state = { project: proj, view: null, page: proj.pages[0] ? proj.pages[0].file : null, presentFrom: null };
+  if(proj.target)setDevice(proj.target==='app'?'mobile':'desktop');
   bus.clearStacks();
   bus.bindProject(() => app.state.project);
   buildShell(app);

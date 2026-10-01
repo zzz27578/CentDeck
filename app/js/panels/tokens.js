@@ -1,5 +1,5 @@
 // 设计规范（手动版）：颜色、字号 / 间距 / 圆角阶梯、预设风格；"应用到全站"一次改所有页面
-import { el, esc, toast } from '../core/ui.js';
+import { el, esc, toast, promptDlg } from '../core/ui.js';
 import { injectTokens } from './token-source.js';
 import { icon } from '../core/icons.js';
 
@@ -9,8 +9,12 @@ export const PRESETS = {
   墨绿: { colors: { brand: '#1f6f50', brandDeep: '#14503a', accent: '#c9a227', bg: '#f4f7f4', text: '#1c2a24', muted: '#5f7168', card: '#ffffff', border: '#dde7e0' }, fontSizes: ['12px', '14px', '16px', '21px', '30px', '42px'], spacing: ['8px', '16px', '26px', '42px', '68px'], radius: ['6px', '12px', '20px'] },
   暗夜紫: { colors: { brand: '#9d7bff', brandDeep: '#7a5ae0', accent: '#4cc9f0', bg: '#14121c', text: '#eceaf4', muted: '#9a94b0', card: '#1e1b2a', border: '#332e48' }, fontSizes: ['12px', '14px', '16px', '20px', '28px', '46px'], spacing: ['8px', '16px', '24px', '40px', '64px'], radius: ['10px', '16px', '26px'] },
 };
+PRESETS.极简黑白 = {colors:{brand:'#202020',accent:'#757575',bg:'#f7f7f7',text:'#151515',card:'#ffffff',border:'#dddddd'},fontSizes:['12px','14px','16px','24px','36px','56px'],spacing:['8px','16px','24px','48px','80px'],radius:['0px','4px','8px']};
+PRESETS.柔和沙岩 = {colors:{brand:'#7b6650',accent:'#788c82',bg:'#f5f1ea',text:'#302c27',card:'#fffdf9',border:'#ddd4c6'},fontSizes:['12px','14px','17px','24px','34px','52px'],spacing:['8px','16px','28px','44px','72px'],radius:['8px','16px','24px']};
 const VAR = { brand: 'brand', brandDeep: 'brand-deep', accent: 'accent', bg: 'bg', text: 'text', muted: 'muted', card: 'card', border: 'border' };
 export function toCss(t) {
+  t=structuredClone(t);
+  for(const k of ['fontSizes','spacing','radius'])if(Array.isArray(t[k]))t[k]=t[k].map(v=>typeof v==='number'?v+'px':v);
   const L = [':root{'];
   Object.entries(t.colors || {}).forEach(([k, v]) => L.push(`  --${VAR[k] || k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}:${v};`));
   ['fs-s', 'fs-m', 'fs-body', 'fs-h3', 'fs-h2', 'fs-h1'].forEach((n, i) => { if ((t.fontSizes || [])[i]) L.push(`  --${n}:${t.fontSizes[i]};`); });
@@ -48,21 +52,42 @@ export function setupTokens(app) {
       toast(`已应用到 ${pages.length} 页${proj.pages.length > pages.length ? '，已跳过有锁定内容的页面' : ''}，可撤销`, 'ok');
     } catch { /* API 已提示 */ }
   }
-  app.tokens = { applyToSite };
+  let personal=[];
+  const loadPresets=async()=>{personal=await app.api.extension('design-presets');return personal;};
+  async function savePreset(tokens,name) {
+    const title=await promptDlg({title:'保存为我的预设',label:'预设名称',value:name||'我的风格',okLabel:'保存'});
+    if(!title)return;
+    personal=await app.api.extension('design-presets',{name:title,tokens},'PUT');bus.emit('presets');toast('已保存，可在其他项目复用','ok');
+  }
+  app.tokens = { applyToSite, savePreset };
+
 
   bus.registerPanel({
-    id: 'tokens', title: '设计规范', icon: 'palette', views: ['edit'],
-    render(host) {
+    id: 'tokens', title: '设计规范', icon: 'palette', views: ['edit','overview'],
+    async render(host) {
+      const generation=Symbol();this._generation=generation;
+      await loadPresets();if(!host.isConnected||this._generation!==generation)return;
       const paint = () => {
         const t = cur();
         host.innerHTML = '';
         const pre = el('<div class="p-sec"><div class="p-sec-title">预设风格</div><div class="p-actions"></div></div>');
-        Object.keys(PRESETS).forEach((name) => {
-          const b = el(`<button class="btn small"><span style="width:10px;height:10px;border-radius:50%;background:${PRESETS[name].colors.brand}"></span>${esc(name)}</button>`);
-          b.onclick = async () => { const old = JSON.parse(JSON.stringify(t)); await bus.doMeta({ label: `套用预设「${name}」`, apply: () => replaceAll(t, PRESETS[name]), revert: () => replaceAll(t, old) }); paint(); toast(`已套用「${name}」，点"应用到全站"让页面生效`, 'ok'); };
-          pre.querySelector('.p-actions').appendChild(b);
-        });
+        const overview=app.view()==='overview';
+        pre.querySelector('.p-sec-title').textContent=overview?'选择风格 · 添加到画布':'预设风格';
+        const list=[...Object.entries(PRESETS).map(([name,tokens])=>({name,tokens})),...personal];
+        for(const preset of list){
+          const row=el(`<div class="preset-option"><button class="preset-pick"><span class="preset-swatches">${Object.values(preset.tokens.colors).slice(0,4).map(v=>`<i style="background:${v}"></i>`).join('')}</span><b>${esc(preset.name)}</b><small>${preset.id?'我的预设':'官方预设'}</small></button>${preset.id?`<button class="icon-btn sm" data-remove aria-label="删除个人预设">${icon('trash',14)}</button>`:''}</div>`);
+          row.querySelector('.preset-pick').onclick=async()=>{
+            if(overview){await app.designBoards?.add(preset.tokens,preset.name);toast('已添加到总览画布','ok');return;}
+            const old=structuredClone(t);await bus.doMeta({label:`套用预设「${preset.name}」`,apply:()=>replaceAll(t,preset.tokens),revert:()=>replaceAll(t,old)});paint();toast('已载入规范，应用后页面生效','ok');
+          };
+          row.querySelector('[data-remove]')?.addEventListener('click',async()=>{personal=await app.api.extension('design-presets',{id:preset.id,action:'remove'},'PUT');paint();});
+          pre.querySelector('.p-actions').append(row);
+        }
         host.appendChild(pre);
+        const save=el(`<div class="p-sec"><button class="btn block">${icon('plus',15)}保存当前规范为我的预设</button></div>`);
+        save.querySelector('button').onclick=()=>savePreset(t);host.append(save);
+        if(overview){const ai=el('<div class="p-sec"><p class="hint">点击预设添加方案卡；从卡片可编辑规范、关联页面、选用或保存 AI 方案。</p><button class="btn block">让助手设计风格</button></div>');ai.querySelector('button').onclick=()=>app.agent.prefill('请为项目设计一套风格，发布可比较的设计规范卡。');host.append(ai);return;}
+
         const shapes = el(`<div class="p-sec"><div class="p-sec-title">按钮形状</div><div class="seg" data-shape style="width:100%">
           <button data-v="4px" style="flex:1">方角</button><button data-v="10px" style="flex:1">圆角</button><button data-v="999px" style="flex:1">胶囊</button></div>
           <button class="btn small block" data-ai style="margin-top:10px">${icon('sparkle', 14)}让助手出几套配色和按钮样式</button></div>`);
@@ -114,6 +139,8 @@ export function setupTokens(app) {
         host.appendChild(acts);
       };
       paint();
+      this._off=bus.on('presets',async()=>{await loadPresets();if(host.isConnected)paint();});
     },
+    onHide(){this._generation=null;this._off?.();},
   });
 }

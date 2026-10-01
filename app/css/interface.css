@@ -1,5 +1,32 @@
 /* Shared layout and the original green presentation, retained from the former
    mixed stylesheet. Visual variants must not redefine input or dialog sizing. */
+:root[data-style="original"] {
+  --bg:#f2f7f4; --bg-2:#e6efe9; --panel:#ffffff; --panel-2:#f7faf8;
+  --line:#d1dfd6; --line-2:#a9bfb1; --text:#182c22; --text-2:#3f584a; --dim:#586e60;
+  --accent:#24734c; --accent-2:#185c3a; --accent-soft:#e2f2e8; --on-accent:#fff;
+  --green:#24734c; --green-soft:#e2f2e8;
+  --shadow-1:0 1px 3px #133a2010; --shadow-2:0 8px 24px #133a2014; --shadow-3:0 24px 80px #133a2024;
+}
+:root[data-style="original"][data-theme="dark"] {
+  --bg:#111d17; --bg-2:#21372b; --panel:#1d2d24; --panel-2:#273e31;
+  --line:#3b5446; --line-2:#607d6c; --text:#f2f8f4; --text-2:#c7d9ce; --dim:#a4bdaf;
+  --accent:#8cddb0; --accent-2:#b1edcb; --accent-soft:#294b38; --on-accent:#102a1c;
+  --green:#8cddb0; --green-soft:#294b38;
+  --shadow-1:0 1px 3px #0002; --shadow-2:0 8px 24px #0003; --shadow-3:0 24px 80px #0006;
+}
+[data-style="original"] .home-bar { background:var(--panel);border-bottom:1px solid var(--line); }
+[data-style="original"] .entry { background:var(--panel); }
+[data-style="original"] .entry:hover { border-color:var(--accent);background:var(--accent-soft); }
+[data-style="original"] .hero-prompt { border-color:var(--line-2);box-shadow:0 12px 36px #133a200d; }
+[data-style="original"] .hero-prompt:focus-within { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft); }
+[data-style="original"] input::placeholder,[data-style="original"] textarea::placeholder { color:var(--dim);opacity:1; }
+[data-style="original"] .landing-cta,[data-style="original"] .hero-prompt [data-a="go"] { background:var(--accent);color:var(--on-accent);border-color:var(--accent); }
+[data-style="original"] .landing-cta::before,[data-style="original"] .hero-prompt [data-a="go"]::before { background:var(--panel); }
+[data-style="original"] .landing-cta:is(:hover,:focus-visible),[data-style="original"] .hero-prompt [data-a="go"]:is(:hover,:focus-visible) { color:var(--accent); }
+[data-style="original"] .pc-thumb.blank { background:var(--bg-2);color:var(--accent); }
+[data-style="original"] .landing-copy p { color:var(--text-2); }
+[data-style="original"] .sculpture-face { background:linear-gradient(140deg,var(--panel) 25%,var(--bg-2));box-shadow:28px 36px 60px #153e2524,inset 1px 1px 0 #ffffff55; }
+
 .home-bar { grid-template-columns: 1fr auto; }
 .home-bar-right { align-items: center; }
 .home-bar-right > .btn, .home-bar-right > .icon-btn {

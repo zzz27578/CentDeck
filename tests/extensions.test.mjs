@@ -16,8 +16,9 @@ try{
   assert.throws(()=>ext.install({...bundle,manifest:{...bundle.manifest,themes:[{id:'bad-theme',tokens:{'--accent':'url(https://evil.test)'}}]}}));
   ext.updatePlugin('official-inspector','configure',{showLocks:false});assert.equal(ext.plugins().find(p=>p.manifest.id==='official-inspector').settings.showLocks,false);
   assert.throws(()=>ext.updatePlugin('official-inspector','configure',{showLocks:'false'}));
-  ext.updatePlugin('official-inspector','disable');assert(!tools.list().some(t=>t.name==='plugin_official_inspector_summary'));
-  ext.updatePlugin('official-inspector','enable');assert(tools.list().some(t=>t.name==='plugin_official_inspector_summary'));
+  assert.throws(()=>ext.updatePlugin('official-inspector','disable'));assert(tools.list().some(t=>t.name==='plugin_official_inspector_summary'));
+  assert.throws(()=>ext.updateSkill({id:'platform-guide',enabled:false}));assert(ext.skills().filter(s=>s.source==='builtin').every(s=>s.enabled&&s.internal));
+  const saved=ext.designPresets({name:'My Style',tokens:{colors:{brand:'#123456'},radius:['4px']}});assert.equal(saved.length,1);assert.equal(ext.designPresets()[0].tokens.colors.brand,'#123456');ext.designPresets({action:'remove',id:saved[0].id});assert.equal(ext.designPresets().length,0);
   ext.updateSkill({id:'my-test',content:'---\nname: my-test\ndescription: test\n---\nRead first.',name:'Test'});assert(ext.skills().some(s=>s.id==='my-test'));
   ext.updateSkill({id:'my-test',enabled:false});assert(!ext.skills().find(s=>s.id==='my-test').enabled);
   const before=ext.mcpConfig();const modified=fs.statSync(path.join(store.CONFIG_DIR,'extensions.json')).mtimeMs;ext.mcpConfig();assert.equal(fs.statSync(path.join(store.CONFIG_DIR,'extensions.json')).mtimeMs,modified,'MCP config reads must not write');

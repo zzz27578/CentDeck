@@ -205,6 +205,7 @@ async function handle(req, res) {
   if(pathname==='/api/plugins/action'&&method==='POST'){const b=await readJsonBody(req);sendData(res,ext.updatePlugin(b.id,b.action,b.settings));return;}
   if(pathname==='/api/skills'){sendData(res,method==='PUT'?ext.updateSkill(await readJsonBody(req)):ext.skills());return;}
   if(pathname==='/api/preferences'){sendData(res,ext.preferences(method==='PUT'?await readJsonBody(req):null));return;}
+  if(pathname==='/api/design-presets'){sendData(res,ext.designPresets(method==='PUT'?await readJsonBody(req):null));return;}
   if(pathname==='/api/tools'&&method==='GET'){sendData(res,[...require('./tools').list(),...tasks.toolsFor({mode:'create',collaboration:'auto'}).filter(t=>!require('./tools').has(t.function.name)).map(t=>({name:t.function.name,description:t.function.description+'（内置 Agent 任务专用）',inputSchema:t.function.parameters,annotations:{readOnlyHint:t.function.name==='request_input'}}))]);return;}
   if(pathname==='/api/mcp/config'){const config=ext.mcpConfig(method==='PUT'?await readJsonBody(req):null);sendData(res,{...config,command:process.execPath,args:[path.join(ROOT,'server','mcp-stdio.js')],env:{CENTDECK_URL:`http://127.0.0.1:${req.socket.localPort}`},endpoint:`http://127.0.0.1:${req.socket.localPort}/mcp`});return;}
   if(pathname==='/api/ui/heartbeat'&&method==='POST'){sendData(res,require('./ui-bridge').heartbeat(await readJsonBody(req)));return;}
@@ -218,6 +219,7 @@ async function handle(req, res) {
   }
   const exportMatch=pathname.match(/^\/api\/projects\/([^/]+)\/export$/);
   if(exportMatch&&method==='GET'){const buffer=require('./export').exportProject(decodeURIComponent(exportMatch[1]));res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="centdeck-project.zip"','Content-Length':buffer.length});res.end(buffer);return;}
+  if(pathname==='/api/providers/discover'&&method==='POST'){sendData(res,await require('./providers').discoverDraft(await readJsonBody(req)));return;}
   const pm=pathname.match(/^\/api\/providers\/([\w-]+)\/models$/);
   if(pm&&method==='GET'){sendData(res,await providers.discover(pm[1]));return;}
   const tm=pathname.match(/^\/api\/projects\/([^/]+)\/tasks(?:\/([^/]+))?$/);

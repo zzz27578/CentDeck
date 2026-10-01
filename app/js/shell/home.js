@@ -2,7 +2,7 @@ import { mountCustomHome } from '../core/extensions.js';
 // 首页：描述想做的网站 → 空白项目 / 模板 / 导入；我的项目（搜索、排序、重命名、删除需输入名称确认）
 import { icon } from '../core/icons.js';
 import { el, esc, toast, openModal, promptDlg, showMenu } from '../core/ui.js';
-import { getViewport } from '../core/viewport.js';
+import { getViewport, setDevice } from '../core/viewport.js';
 import { mark, toggleTheme, styleSwitch, bindStyleSwitch } from '../core/brand.js';
 import { pixelField, mountPixelField } from '../core/pixel-field.js';
 import { pickFiles, filesFromDrop, runImport } from './importer.js';
@@ -79,12 +79,14 @@ function projectMenu(app, p, x, y, anchor, refresh) {
   ], x, y, anchor ? { anchor, align: 'right' } : {});
 }
 
-async function startFromPrompt(app, text) {
+async function startFromPrompt(app, text, target='web') {
   const name = text.replace(/\s+/g, ' ').trim().slice(0, 18) || '新网站';
   try {
     const proj = await app.api.createBlank(name);
+    proj.target=target;await app.api.saveProject(proj.id,proj);
+    setDevice(target==='app'?'mobile':'desktop');
     await app.openProject(proj.id);
-    app.agent.prefill(text, { skill: 'design-variants' });
+    app.agent.prefill(text+'\n\n设计目标：'+(target==='app'?'手机网页 / H5，优先 393px 手机尺寸，兼容桌面浏览。':'Web 网页，优先桌面布局并适配手机。'));
   } catch { /* 已提示 */ }
 }
 
@@ -106,7 +108,7 @@ export async function renderHome(app) {
         <div class="home-orbit">${mark(76)}</div><span class="home-eyebrow">YOUR NEXT POSSIBILITY</span><h1>好设计，始于一个想法</h1>
         <div class="hero-prompt">
           <textarea rows="2" aria-label="网站需求" placeholder="描述你想创建的网站…"></textarea>
-          <div class="prompt-actions"><span class="prompt-label">${icon('centdeck',18)}CentDeck</span><button class="btn primary" data-a="go">开始设计 <span>↗</span></button></div>
+          <div class="prompt-actions"><div class="target-switch" role="group" aria-label="构建目标"><button class="on" data-target="web" aria-pressed="true">${icon('monitor',17)}Web</button><button data-target="app" aria-pressed="false">${icon('phone',17)}App</button><i aria-hidden="true"></i></div><button class="btn primary" data-a="go">开始设计 <span>↗</span></button></div>
         </div>
         <div class="entry-row">
           <button class="entry" data-a="blank">${icon('plus', 18)}空白项目</button>
@@ -134,7 +136,9 @@ export async function renderHome(app) {
   mountPixelField(root);
   const $ = (s) => root.querySelector(s);
   const ta = $('.hero-prompt textarea');
-  const go = () => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } startFromPrompt(app, t); };
+  let target='web';
+  root.querySelectorAll('[data-target]').forEach(b=>b.onclick=()=>{target=b.dataset.target;root.querySelector('.target-switch').dataset.value=target;root.querySelectorAll('[data-target]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',String(x===b));});});
+  const go = () => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } startFromPrompt(app, t, target); };
   $('[data-a=go]').onclick = go;
   ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); go(); } });
   $('[data-a=blank]').onclick = async () => {

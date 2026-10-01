@@ -158,7 +158,7 @@ export function openContextMenu(ed, x, y, onElement) {
     { label: '选择外面一层', icon: 'parent', kbd: 'Shift+Enter', onClick: () => ed.selectParent() },
     '-',
     { label: '@ 引用到助手', icon: 'at', hint: '让 AI 准确知道你说的是这一块', onClick: () => app.agent.addRef({ kind: 'element', page: ed.page, selector: info.selector, line: info.line, title: `${(app.project().pages.find((p) => p.file === ed.page) || {}).title || ed.page} · ${ed.describe(info)}` }) },
-    { label: '贴便签（任务 / 长期规则）…', icon: 'sticky', onClick: () => app.notes && app.notes.addFor(info) },
+    { label: '添加元素长期规则…', icon: 'sticky', onClick: () => app.notes && app.notes.addFor(info) },
     { label: '记成草图标记…', icon: 'marks', onClick: () => app.sketch && app.sketch.markElement(info) },
     !info.generated ? { label: `在源码里看（第 ${info.line} 行）`, icon: 'code', onClick: () => app.openPanel('codeview') } : null,
     '-',

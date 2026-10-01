@@ -1,6 +1,6 @@
 export function particleSculpture() {
   return `<section class="noir-particles" aria-label="可交互粒子主视觉">
-    <button type="button" class="particle-surface" aria-label="粒子特效：单击打散，双击换形，拖动旋转；回车换形，空格打散">
+    <button type="button" class="particle-surface" aria-label="粒子特效：单击打散，双击换形，拖动轻推；回车换形，空格打散">
       <canvas aria-hidden="true"></canvas>
     </button>
   </section>`;
@@ -20,10 +20,6 @@ export function mountParticleSculpture(root) {
   const count = 4800;
   const tau = Math.PI * 2;
   const shapeCount = 4;
-  // Accumulate orientation, rather than multiplying elapsed time by the new
-  // shape's speed. Both dragging and automatic rotation survive every morph.
-  const speeds = [{ yaw: 0.24, roll: 0.07 }, { yaw: 0.14, roll: 0.34 }, { yaw: 1.1, roll: 0.035 }, { yaw: 0.20, roll: 0.38 }];
-  const motion = { yaw: 0, roll: 0, yawSpeed: speeds[0].yaw, rollSpeed: speeds[0].roll };
   const random = i => {
     const value = Math.sin(i * 127.1 + 311.7) * 43758.5453123;
     return value - Math.floor(value);
@@ -37,7 +33,7 @@ export function mountParticleSculpture(root) {
   const pointer = { x: -9999, y: -9999, active: false };
   let width = 0, height = 0, frame = 0, last = 0, time = 0, shape = 0;
   let active = false, visible = true, disposed = false, paused = reduced.matches;
-  const rotation = { x: -0.08, y: -0.14 }, targetRotation = { ...rotation };
+  const offset = { x: 0, y: 0 }, targetOffset = { ...offset };
   let drag = null, dragged = false, pressStarted = 0, wave = null, transitionStart = 0, transition = false;
   let lastTap = null;
   let from = null, targets = null;
@@ -71,33 +67,59 @@ export function mountParticleSculpture(root) {
         const arm = i % 4;
         const radius = Math.pow(r, 0.57) * 1.35;
         const a = arm * tau / 4 + radius * 3.0 + (s - 0.5) * (0.3 + radius * 0.18);
-        return { x: Math.cos(a) * radius, y: Math.sin(a) * radius * 0.64, z: Math.sin(a) * radius * 0.52 + (t - 0.5) * (0.13 + radius * 0.15) };
+        return { x: Math.cos(a) * radius, y: Math.sin(a) * radius, z: (t - 0.5) * 0.12 };
       }
       if (index === 2) {
-        const height = (r - 0.5) * 2.7;
-        const angle = height * 4.1 + (i % 2) * Math.PI;
-        const bridge = i % 7 === 0;
-        const radius = bridge ? (s - 0.5) * 1.26 : 0.63 + (s - 0.5) * 0.14;
-        const y = bridge ? Math.round(height * 7) / 7 : height;
-        const a = bridge ? y * 4.1 : angle;
-        return { x: Math.cos(a) * radius + y * 0.16, y, z: Math.sin(a) * radius + (t - 0.5) * 0.08 };
+        const bridge = i % 10 < 3;
+        const height = (r - 0.5) * 2.6;
+        const y = bridge ? Math.round(height * 10) / 10 : height;
+        const angle = y * 4.3 + (bridge ? 0 : (i % 2) * Math.PI);
+        const radius = bridge ? (s - 0.5) * 1.24 : 0.62 + (s - 0.5) * 0.09;
+        return { x: Math.cos(angle) * radius, y, z: Math.sin(angle) * radius + (t - 0.5) * 0.04 };
       }
-      const arm = i % 7;
-      const radius = Math.pow(r, 0.72) * 1.45;
-      const angle = arm * tau / 7 + radius * 0.62;
-      const spread = (1 - radius / 1.5) * 0.22;
-      return { x: Math.cos(angle) * radius + (s - 0.5) * spread, y: Math.sin(angle) * radius + (t - 0.5) * spread, z: Math.sin(radius * 3 + arm) * 0.35 * radius + (s - 0.5) * 0.12 };
+      // Three precise orbital rings with light travelling along their paths.
+      const ring = i % 3;
+      const angle = r * tau;
+      const radius = 1.19 + ring * 0.06 + (s - 0.5) * 0.055;
+      return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, z: (t - 0.5) * 0.045 };
     });
+  }
+  const forms = Array.from({ length: shapeCount }, (_, index) => positions(index));
+
+  // Animate geometry before morphing, keeping the camera square to the page.
+  // The logo sways in its plane, the galaxy turns clockwise, and DNA twists
+  // around a fixed vertical axis. No form inherits another form's rotation.
+  function pose(point, index, i) {
+    const { x, y, z } = point;
+    if (index === 0) {
+      const roll = Math.sin(time * 0.48) * 0.025;
+      return { x: x * Math.cos(roll) - y * Math.sin(roll) + Math.sin(time * 0.52) * 0.035,
+        y: x * Math.sin(roll) + y * Math.cos(roll) + Math.sin(time * 0.68) * 0.045, z };
+    }
+    if (index === 1) {
+      const angle = time * 0.30;
+      return { x: x * Math.cos(angle) - y * Math.sin(angle), y: x * Math.sin(angle) + y * Math.cos(angle), z };
+    }
+    if (index === 2) {
+      const phase = time * 0.58;
+      return { x: x * Math.cos(phase) + z * Math.sin(phase), y, z: -x * Math.sin(phase) + z * Math.cos(phase) };
+    }
+    const ring = i % 3, phase = time * (0.20 + ring * 0.055);
+    const along = x * Math.cos(phase) - y * Math.sin(phase);
+    const across = x * Math.sin(phase) + y * Math.cos(phase);
+    const angle = ring * Math.PI / 3 + Math.PI / 6;
+    return { x: along * Math.cos(angle) - across * 0.38 * Math.sin(angle),
+      y: along * Math.sin(angle) + across * 0.38 * Math.cos(angle), z: across * 0.8 + z };
   }
 
   function setShape(immediate = false) {
     from = particles.map(p => ({ x: p.x, y: p.y, z: p.z }));
-    targets = positions(shape);
+    targets = forms[shape];
     transitionStart = performance.now();
     transition = !immediate && !paused;
     host.dataset.shape = String(shape);
     host.classList.toggle('is-reforming', transition);
-    if (!transition) particles.forEach((p, i) => Object.assign(p, targets[i]));
+    if (!transition) particles.forEach((p, i) => Object.assign(p, pose(targets[i], shape, i)));
     pointer.active = false;
     wake();
   }
@@ -106,23 +128,12 @@ export function mountParticleSculpture(root) {
     if (!width || !height) return;
     const dt = last ? Math.min((now - last) / 16.667, 2.5) : 1;
     last = now;
-    if (!paused) {
-      time += dt / 60;
-      const blend = 1 - Math.pow(0.95, dt);
-      motion.yawSpeed += (speeds[shape].yaw - motion.yawSpeed) * blend;
-      motion.rollSpeed += (speeds[shape].roll - motion.rollSpeed) * blend;
-      motion.yaw += motion.yawSpeed * dt / 60;
-      motion.roll += motion.rollSpeed * dt / 60;
-    }
+    if (!paused) time += dt / 60;
     context.clearRect(0, 0, width, height);
     const scale = Math.min(width / 3.0, height / 3.0);
-    const centerX = width / 2, centerY = height / 2;
-    rotation.x += (targetRotation.x - rotation.x) * 0.09 * dt;
-    rotation.y += (targetRotation.y - rotation.y) * 0.09 * dt;
-    const yaw = rotation.y + motion.yaw;
-    const pitch = rotation.x + Math.sin(time * 0.24) * 0.12;
-    const cy = Math.cos(yaw), sy = Math.sin(yaw), cx = Math.cos(pitch), sx = Math.sin(pitch);
-    const cz = Math.cos(motion.roll), sz = Math.sin(motion.roll);
+    offset.x += (targetOffset.x - offset.x) * 0.09 * dt;
+    offset.y += (targetOffset.y - offset.y) * 0.09 * dt;
+    const centerX = width / 2 + offset.x * scale, centerY = height / 2 + offset.y * scale;
     const elapsed = now - transitionStart;
     let morphing = false;
 
@@ -139,23 +150,19 @@ export function mountParticleSculpture(root) {
     }
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
+      const target = pose(targets[i], shape, i);
       if (transition) {
         const progress = Math.min(1, Math.max(0, (elapsed - p.seed * 170) / 1450));
         const ease = progress * progress * (3 - 2 * progress);
         const scatter = Math.sin(progress * Math.PI) * 0.7;
-        p.x = from[i].x + (targets[i].x - from[i].x) * ease + Math.cos(p.seed * tau * 3) * scatter;
-        p.y = from[i].y + (targets[i].y - from[i].y) * ease + Math.sin(p.seed * tau * 3) * scatter;
-        p.z = from[i].z + (targets[i].z - from[i].z) * ease + (p.seed - 0.5) * scatter * 1.6;
+        p.x = from[i].x + (target.x - from[i].x) * ease + Math.cos(p.seed * tau * 3) * scatter;
+        p.y = from[i].y + (target.y - from[i].y) * ease + Math.sin(p.seed * tau * 3) * scatter;
+        p.z = from[i].z + (target.z - from[i].z) * ease + (p.seed - 0.5) * scatter * 1.6;
         if (progress < 1) morphing = true;
-      }
-      const breath = 1 + Math.sin(time * 0.65) * 0.014;
-      let x = (p.x * cz - p.y * sz) * breath;
-      let y = (p.x * sz + p.y * cz) * breath;
-      const z = p.z + (!paused ? Math.sin(time * 0.6 + p.seed * tau) * 0.02 : 0);
-      const rx = x * cy + z * sy, rz = -x * sy + z * cy;
-      const ry = y * cx - rz * sx, depth = y * sx + rz * cx;
-      const perspective = 4.8 / (4.8 + depth);
-      const tx = centerX + rx * scale * perspective, ty = centerY + ry * scale * perspective;
+      } else Object.assign(p, target);
+      // Orthographic projection keeps DNA's endpoints and axis stationary.
+      const depth = p.z, perspective = 4.8 / (4.8 + depth);
+      const tx = centerX + p.x * scale, ty = centerY + p.y * scale;
       let forceX = 0, forceY = 0, heat = 0;
       const px = tx - pointer.x, py = ty - pointer.y, distance = Math.hypot(px, py);
       if (pointer.active && !paused && !drag) {
@@ -241,15 +248,15 @@ export function mountParticleSculpture(root) {
       const x = event.clientX - drag.x, y = event.clientY - drag.y;
       dragged ||= Math.hypot(x, y) > 5;
       if (dragged) lastTap = null;
-      targetRotation.y = drag.ry + x * 0.007;
-      targetRotation.x = Math.max(-1.1, Math.min(1.1, drag.rx + y * 0.007));
+      targetOffset.x = Math.max(-0.12, Math.min(0.12, drag.ox + x * 0.001));
+      targetOffset.y = Math.max(-0.10, Math.min(0.10, drag.oy + y * 0.001));
     }
     wake();
   }, { signal, passive: true });
   surface.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     locate(event); dragged = false;pressStarted = performance.now();
-    drag = { x: event.clientX, y: event.clientY, rx: targetRotation.x, ry: targetRotation.y };
+    drag = { x: event.clientX, y: event.clientY, ox: targetOffset.x, oy: targetOffset.y };
     surface.setPointerCapture(event.pointerId); host.classList.add('is-dragging');
   }, { signal });
   const release = event => {
@@ -280,7 +287,7 @@ export function mountParticleSculpture(root) {
   }, { signal });
   reduced.addEventListener('change', event => {
     paused = event.matches;
-    if (paused) { transition = false;particles.forEach((p, i) => Object.assign(p, targets[i]));host.classList.remove('is-reforming'); }
+    if (paused) { transition = false;host.classList.remove('is-reforming'); }
     wake();
   }, { signal });
   document.addEventListener('visibilitychange', sync, { signal });

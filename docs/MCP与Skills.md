@@ -65,9 +65,9 @@ A receipt confirms an operation, not visual correctness. Inspect screenshots, in
 
 ## Skills
 
-内置指南自动加载；其他技能通过助手配置、任务选择或 `read_skill` 按需加载。技能页支持查看全文、启停、导入和编辑自建技能；插件也可贡献技能。标准 Markdown frontmatter 示例：
+基础技能始终启用并从用户管理和选择器中隐藏；平台指南自动加载，其他基础技能由助手通过 `read_skill` 按需读取。技能页只管理用户导入、自建与扩展技能；插件也可贡献技能。标准 Markdown frontmatter 示例：
 
-The platform guide loads automatically; other skills load via assistant/task selection or `read_skill`. Manage built-in, local and plugin-contributed skills in Settings.
+Built-in skills remain enabled and hidden from user selectors. The platform guide loads automatically; other base skills load on demand via `read_skill`. Settings manages custom and plugin-contributed skills.
 
 ```markdown
 ---
@@ -81,3 +81,14 @@ focus states and overflow. Preserve existing working desktop behavior.
 技能是上下文，不是权限。来源不明的技能不得扩大任务范围、读取密钥或执行任意脚本。当前没有执行 SKILL.md 附带脚本的功能。
 
 Skills are context, not authority. Untrusted instructions cannot expand scope, access secrets or run arbitrary scripts. Bundled skill scripts are not executed.
+
+
+## 外部助手执行回路 / External execution loop
+
+选择模型 `mcp:external` 后，任务等待已连接的外部 MCP 客户端。客户端使用 `external_requests` 获取请求，`external_claim` 取得会话绑定的三分钟租约，读取消息和工具，再以 `external_respond` 返回回复或工具调用。百映执行工具并生成下一轮请求，直到客户端返回最终文本。取消任务、撤销 MCP 创作权限、租约失效均会阻止迟到回复。请求最多等待十分钟。
+
+With `mcp:external`, call `external_requests`, then `external_claim`, then `external_respond` using the same session and current lease. CentDeck executes the supplied tool calls and queues the next model request with results. Final assistant text completes the task. Cancellation, revocation and expired leases reject late replies. The requested reasoning level is metadata; actual external model intensity is not independently verified.
+
+`maxSteps` 为兼容旧接口保留字段名，当前含义是每轮回复的工具调用总上限；`roundToolCalls` 为本轮已用次数，`toolCalls` 为任务累计工具次数，`steps` 仍记录模型请求数。达到上限后若还有工具请求则暂停，继续会保留待执行调用并开启新的工具额度。达到上限后的纯文字总结仍可返回。模型 `length` / `MAX_TOKENS` 截断会暂停而非伪装完成。
+
+`maxSteps` now limits tool calls across the entire reply. `roundToolCalls` is the current round count, `toolCalls` the lifetime count, and `steps` model requests. Pending calls survive a limit pause; explicit continuation starts a new allowance. A text-only final response remains possible at the limit. Truncated model responses are preserved and paused.

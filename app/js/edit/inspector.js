@@ -77,7 +77,7 @@ export function renderInspector(ed, info, clear) {
   q('[data-a=close]').onclick = () => ed.toggleInspector(false);
   const lockB = q('[data-a=lock]');
   if (lockB) lockB.onclick = () => app.setElementLock(ed.page, info.selector, !elLocked).then(() => renderInspector(ed, ed.selection));
-  q('[data-a=note]').onclick = () => app.notes && app.notes.addFor(info);
+  q('[data-a=note]').onclick = () => app.sketch.markElement(info);
   q('[data-a=mark]').onclick = () => app.sketch && app.sketch.markElement(info);
   q('[data-a=del]').onclick = () => ed.deleteSelection();
   if (info.generated) return;

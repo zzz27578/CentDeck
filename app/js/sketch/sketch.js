@@ -5,6 +5,7 @@ import { icon } from '../core/icons.js';
 import { bindKey } from '../core/keys.js';
 import { getViewport } from '../core/viewport.js';
 import { exportTaskSheet } from './tasksheet.js';
+import { nextColorNumber, migrateColorNumbers } from '../core/note-numbers.js';
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 import {COLORS,notePalette} from '../core/note-colors.js';
@@ -31,6 +32,7 @@ export function setupSketch(app) {
     const p = app.project();
     if (!p) return [];
     if (!Array.isArray(p.marks)) p.marks = [];
+    migrateColorNumbers(p, 'marks');
     let max = p.marks.reduce((m, x) => Math.max(m, x.no || 0), 0);
     p.marks.forEach((m) => {
       if (m.type === 'ghost' && m.box && m.pts) {
@@ -162,23 +164,24 @@ export function setupSketch(app) {
     closeCard();
     if (!htmlLayer) return;
     const [px, py] = pinPos(m);
-    cardEl = el(`<div class="sk-card" data-id="${m.id}" style="left:${px + 14}px;top:${py + 10}px">
+    cardEl = el(`<div class="sk-card" data-id="${m.id}" style="left:${px}px;top:${py}px">
       <div class="skc-head"><i style="background:${m.color}"></i><span>${esc(TYPE_NAME[m.type] || '标记')}</span>${m.meta ? `<small>${esc(m.meta)}</small>` : ''}</div>
       <textarea class="ipt" rows="3" aria-label="便签内容" placeholder="添加批注…">${esc(m.text || '')}</textarea>
       <div class="skc-acts">
         ${notePalette(m.color)}
         <span class="grow"></span>
-        <button class="icon-btn sm ${m.done ? 'on' : ''}" data-a="done" data-tip="${m.done ? '标为未完成' : '打勾完成'}">${icon('check', 15)}</button>
+        <button class="note-confirm" data-a="done" aria-label="保存并收起便签">${icon('check', 15)}确认</button>
         <button class="icon-btn sm" data-a="del" data-tip="删除" data-kbd="Del">${icon('trash', 15)}</button>
       </div></div>`);
     htmlLayer.appendChild(cardEl);
     const ta = cardEl.querySelector('textarea');
-    const save = () => { const v = ta.value.trim(); if (v !== (m.text || '')) update(m, { text: v }, '写标记要求', ed); };
-    ta.addEventListener('blur', save);
-    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ta.blur(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ta.value = m.text || ''; ta.blur(); select(ed, null); } });
+    let saving=false;
+    const confirm = async () => { if(saving)return;saving=true;const text=ta.value.trim();selId=null;closeCard();if(text!==m.text||m.done)await update(m, {text, done:false}, '保存便签', ed);select(ed, null); };
+    ta.addEventListener('blur', confirm);
+    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); confirm(); } if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); confirm(); } });
     cardEl.querySelectorAll('button').forEach(b=>b.onpointerdown=e=>e.preventDefault());
     cardEl.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => update(m, { color: b.dataset.c, text:ta.value }, '换标记颜色', ed); });
-    cardEl.querySelector('[data-a=done]').onclick = () => update(m, { done: !m.done, text:ta.value }, m.done ? '标记改为未完成' : '标记打勾完成', ed);
+    cardEl.querySelector('[data-a=done]').onclick = confirm;
     cardEl.querySelector('[data-a=del]').onclick = () => remove([m], ed);
     const n = nodes.get(m.id);
     if (n && n.off) cardEl.style.translate = n.pin.style.translate;
@@ -195,7 +198,7 @@ export function setupSketch(app) {
   async function add(m, ed, focus) {
     const list = marks();
     m.id = m.id || uid('mk');
-    m.no = list.reduce((mx, x) => Math.max(mx, x.no || 0), 0) + 1;
+    m.no = nextColorNumber(list, m.color);
     m.page = m.page || ed.page;
     m.createdAt = new Date().toISOString();
     m.vp = { w: getViewport().w, h: getViewport().h };
@@ -205,6 +208,7 @@ export function setupSketch(app) {
     return m;
   }
   async function update(m, patch, label, ed) {
+    if (patch.color && patch.color !== m.color) patch.no = nextColorNumber(marks(), patch.color, m);
     const old = {};
     Object.keys(patch).forEach((k) => { old[k] = m[k]; });
     await bus.doMeta({ label, apply: () => Object.assign(m, patch), revert: () => Object.assign(m, old) });
@@ -445,8 +449,7 @@ export function setupSketch(app) {
     showMenu([
       { title: TYPE_NAME[m.type] || '标记' },
       { label: '写要求', icon: 'edit', onClick: () => select(ed, m.id, true) },
-      { label: `@ 引用 #${m.no} 到助手`, icon: 'at', onClick: () => app.agent.addRef({ kind: 'mark', no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'}` }) },
-      { label: m.done ? '标为未完成' : '打勾完成', icon: 'check', onClick: () => update(m, { done: !m.done }, '标记打勾', ed) },
+      { label: `@ 引用 #${m.no} 到助手`, icon: 'at', onClick: () => app.agent.addRef({ kind: 'mark', id:m.id, color:m.color, no: m.no, page: m.page, title: `${TYPE_NAME[m.type] || '标记'}` }) },
       '-',
       { label: '删除', icon: 'trash', kbd: 'Del', danger: true, onClick: () => remove([m], ed) },
     ], e.clientX, e.clientY);
@@ -547,8 +550,8 @@ export function setupSketch(app) {
           ms.forEach((m) => {
             const row = el(`<div class="list-row ${m.done ? 'done' : ''}"><span class="sk-dot" style="background:${m.color || '#e5484d'}">${m.no}</span>
               <div class="grow"><div class="t1">${esc(m.text || '（还没写要求）')}</div><div class="t2">${esc(TYPE_NAME[m.type] || m.type)}${m.meta ? ' · ' + esc(m.meta) : ''}</div></div>
-              <input type="checkbox" ${m.done ? 'checked' : ''} data-tip="打勾完成"></div>`);
-            row.querySelector('input').onclick = (e) => { e.stopPropagation(); update(m, { done: e.target.checked }, '标记打勾', app.view() === 'edit' ? app.editor : null); };
+              <button class="icon-btn sm" aria-label="删除标记" data-tip="删除">${icon('trash',14)}</button></div>`);
+            row.querySelector('button').onclick = (e) => { e.stopPropagation(); remove([m], app.view() === 'edit' ? app.editor : null); };
             row.onclick = async () => {
               if (app.view() !== 'edit' || app.state.page !== m.page) await app.openPage(m.page);
               setTimeout(() => app.sketch.focusMark(m), 120);

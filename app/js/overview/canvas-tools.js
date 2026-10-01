@@ -169,5 +169,5 @@ export function createCanvasTools(app, c) {
 
   const inOv = () => app.state.view === 'overview';
   OV_TOOLS.forEach((t) => bindKey(t.kbd, { id: 'ov.tool.' + t.id, label: t.label, group: '总览', when: inOv, run: () => setTool(t.id) }));
-  return { mount, unmount() { cancelGesture(); stickies.unmount(); strip = inkLayer = null; }, setTool, down, context, clearInk, repaint: paintInk, get tool() { return tool; } };
+  return { mount, syncNotes:stickies.sync, unmount() { cancelGesture(); stickies.unmount(); strip = inkLayer = null; }, setTool, down, context, clearInk, repaint: paintInk, get tool() { return tool; } };
 }

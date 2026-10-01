@@ -93,7 +93,10 @@ function saveSettings(body) {
     ])
       if (p[k] != null) cur[k] = p[k];
     cur.name = String(cur.name || p.id).slice(0, 80);
-    cur.protocol = "openai";
+    if(p.protocol!=null&&!['openai','gemini'].includes(p.protocol))throw new ApiError(400,'不支持的接口格式');
+    cur.protocol = p.protocol || cur.protocol || 'openai';
+    cur.format = p.format || cur.protocol;
+    if(p.modelCapabilities){cur.modelCapabilities={};for(const [name,c] of Object.entries(p.modelCapabilities).slice(0,500)){cur.modelCapabilities[name]={text:true,vision:!!c.vision,audio:!!c.audio,tools:c.tools!==false};}}
     if (p.baseUrl != null) cur.baseUrl = baseUrl(p.baseUrl);
     if (!cur.baseUrl) throw new ApiError(400, "请填写接口地址");
     if (p.apiKey === null) delete cur.apiKey;
@@ -122,17 +125,22 @@ function saveSettings(body) {
 function resolve(model) {
   const r = raw();
   model = model === "auto" ? r.defaultModel || r.roles?.expert : model;
+  if (model === "mcp:external") {
+    const c = require('./extensions').mcpConfig();
+    if (!c.enabled || c.mode !== 'create') throw new ApiError(400, '请先在 MCP 设置中启用创作模式并连接外部助手');
+    return {provider:{id:'mcp', vision:false, tools:true}, model:'external'};
+  }
   const split = String(model || "").indexOf(":");
   const id = String(model || "").slice(0, split),
     name = String(model || "").slice(split + 1);
   const p = listRaw().find((p) => p.id === id);
   if (!p || !p.enabled || !name || !p.models.includes(name))
     throw new ApiError(400, "请在 Agent 工作台配置并选择模型");
-  if (p.protocol !== "openai")
-    throw new ApiError(400, "请将此提供商配置为 OpenAI 兼容 /v1 接口");
+  if (!['openai','gemini'].includes(p.protocol))
+    throw new ApiError(400, "请选择受支持的接口格式");
   if (!p.noKey && !p.apiKey)
     throw new ApiError(400, "此提供商尚未配置 API Key");
-  return { provider: p, model: name };
+  return { provider: {...p,...p.modelCapabilities?.[name]}, model: name };
 }
 async function call(p, endpoint, body, signal) {
   const controller = AbortSignal.timeout(180000);
@@ -143,7 +151,7 @@ async function call(p, endpoint, body, signal) {
       method: body ? "POST" : "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(p.apiKey ? { Authorization: "Bearer " + p.apiKey } : {}),
+        ...(p.apiKey ? (p.protocol==='gemini'?{'x-goog-api-key':p.apiKey}:{ Authorization: "Bearer " + p.apiKey }) : {}),
       },
       body: body ? JSON.stringify(body) : undefined,
       signal: signals,
@@ -184,8 +192,21 @@ async function call(p, endpoint, body, signal) {
 async function discover(id) {
   const p = listRaw().find((x) => x.id === id);
   if (!p) throw new ApiError(404, "提供商不存在");
+  return discoverProvider(p);
+}
+async function discoverDraft(draft) {
+  const saved=listRaw().find(p=>p.id===draft.id)||{};
+  const p={...saved,...draft,apiKey:draft.apiKey?.trim()||saved.apiKey};
+  if(!['openai','gemini'].includes(p.protocol||'openai'))throw new ApiError(400,'不支持的接口格式');
+  return discoverProvider(p);
+}
+async function discoverProvider(p) {
   const start = Date.now();
   const j = await call(p, "models");
+  if(p.protocol==='gemini'){
+    if(!Array.isArray(j.models))throw new ApiError(502,'接口没有返回 models 列表');
+    return {models:j.models.filter(m=>m.supportedGenerationMethods?.includes('generateContent')).map(m=>m.name.replace(/^models\//,'')).sort(),latency:Date.now()-start};
+  }
   if (!Array.isArray(j.data))
     throw new ApiError(502, "接口没有返回 data 模型列表");
   return {
@@ -202,8 +223,11 @@ async function complete(
   think,
   signal,
   maxTokens = 8192,
+  context = {},
 ) {
   const { provider: p, model } = resolve(selected);
+  if (p.id === 'mcp') return require('./external-agent').enqueue({messages,tools:tools || [],think:require('./reasoning').normalizeThink(think),maxTokens,context}, signal);
+  if(p.protocol==='gemini')return require('./gemini').complete({p,model,messages,tools,think,signal,maxTokens,call});
   const b = {
     model,
     messages,
@@ -215,6 +239,6 @@ async function complete(
   const j = await call(p, "chat/completions", b, signal);
   if (!j.choices?.[0]?.message)
     throw new ApiError(502, "模型响应缺少 choices.message");
-  return { message: j.choices[0].message, usage: j.usage || null };
+  return { message: j.choices[0].message, usage: j.usage || null, finishReason:j.choices[0].finish_reason };
 }
-module.exports = { getSettings, saveSettings, resolve, discover, complete };
+module.exports = { getSettings, saveSettings, resolve, discover, discoverDraft, complete };

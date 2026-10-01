@@ -18,7 +18,7 @@ export async function exportTaskSheet(app) {
   for (const pg of proj.pages) {
     const ms = list.filter((m) => m.page === pg.file);
     for (const m of ms) {
-      L.push(`## #${m.no} ${typeOf(m)} · ${pg.title}（\`${pg.file}\`）`, '');
+      L.push(`## ${m.color} #${m.no} ${typeOf(m)} · ${pg.title}（\`${pg.file}\`）`, '');
       const src = m.anchor && m.anchor.selector ? await srcOf(m.page) : '';
       if (src) {
         const info = parse(src).bySelector(m.anchor.selector);
@@ -29,6 +29,7 @@ export async function exportTaskSheet(app) {
           L.push('- 相关代码：', '```html', ...lines.slice(from, to).map((l, k) => `${from + k + 1}: ${l}`), '```');
         }
       }
+      L.push(`- 标记 ID：${m.id}`);
       if (m.meta) L.push(`- 位置：${m.meta}`);
       const vp = m.vp ? `（按 ${m.vp.w}×${m.vp.h} 的屏幕估算）` : '';
       if (m.intent === 'move' && m.pts) L.push(`- 意图：把这个元素挪到箭头指的位置，向右 ${Math.round(m.pts[1][0] - m.pts[0][0])}px、向下 ${Math.round(m.pts[1][1] - m.pts[0][1])}px${vp}；请用合适的排版方式实现，不要用绝对定位硬塞`);

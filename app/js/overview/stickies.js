@@ -1,58 +1,61 @@
 import { el, esc, uid, showMenu } from '../core/ui.js';
 import { icon } from '../core/icons.js';
-import {notePalette,COLORS} from '../core/note-colors.js';
+import { notePalette, COLORS } from '../core/note-colors.js';
+import { nextColorNumber, migrateColorNumbers } from '../core/note-numbers.js';
 
 export function createStickies(app, c) {
-  let layer, cleanup = () => {};
-  const notes = () => app.project().canvasNotes || (app.project().canvasNotes = []);
-  const edit = (n, props, label) => {
-    const before = Object.fromEntries(Object.keys(props).map(k => [k, n[k]]));
-    return app.bus.doMeta({ label, apply: () => Object.assign(n, props), revert: () => Object.assign(n, before) }).then(paint);
+  let layer, editor, selected, cleanup = () => {};
+  function notes() { const p=app.project();p.canvasNotes ||= [];migrateColorNumbers(p,'canvasNotes');return p.canvasNotes; }
+  function position(n) { const p=c.cards().find(p=>!p.popup&&p.file===n.page);return p&&n.offset?{x:p.x+n.offset.x,y:p.y+n.offset.y}:n; }
+  function anchor(pt) {
+    const distance=p=>Math.hypot(Math.max(p.x-pt.x,0,pt.x-p.x-p.w),Math.max(p.y-pt.y,0,pt.y-p.y-p.h));
+    const p=c.cards().filter(p=>!p.popup).sort((a,b)=>distance(a)-distance(b)).find(p=>distance(p)*(c.cam?.().z||1)<100);
+    return p?{page:p.file,offset:{x:pt.x-p.x,y:pt.y-p.y}}:{page:null,offset:null};
+  }
+  async function edit(n,patch,label) { const old=Object.fromEntries(Object.keys(patch).map(k=>[k,n[k]]));await app.bus.doMeta({label,apply:()=>Object.assign(n,patch),revert:()=>Object.assign(n,old)});paint(); }
+  async function finish() {
+    if(!editor)return;
+    const n=selected,text=editor.querySelector('textarea').value.trim();editor.remove();editor=null;selected=null;
+    if(n&&notes().includes(n)&&text!==n.text)await edit(n,{text},'编辑画布便签');
+  }
+  async function remove(n) {
+    if(selected===n){editor?.remove();editor=null;selected=null;}
+    const list=notes(),i=list.indexOf(n);await app.bus.doMeta({label:'删除画布便签',apply:()=>list.splice(list.indexOf(n),1),revert:()=>list.splice(i,0,n)});paint();
+  }
+  async function open(n) {
+    await finish();selected=n;
+    editor=el(`<section class="ov-note-editor" style="--note-color:${n.color}"><header><b>便签 #${n.no}</b><button class="icon-btn sm" aria-label="删除便签" data-delete>${icon('trash',15)}</button></header><textarea class="ipt" rows="4" aria-label="便签内容" placeholder="添加批注…"></textarea><footer>${notePalette(n.color)}<button class="note-confirm" data-confirm>${icon('check',15)}确认</button></footer></section>`);
+    c.world.append(editor);const ta=editor.querySelector('textarea');ta.value=n.text;
+    editor.onpointerdown=e=>e.stopPropagation();editor.querySelectorAll('button').forEach(b=>b.onpointerdown=e=>e.preventDefault());
+    editor.querySelector('[data-confirm]').onclick=finish;editor.querySelector('[data-delete]').onclick=()=>remove(n);
+    editor.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{const color=b.dataset.c,text=ta.value,no=color===n.color?n.no:nextColorNumber(notes(),color,n);editor.remove();editor=null;selected=null;await edit(n,{color,no,text},'便签换色');await open(n);});
+    ta.onkeydown=e=>{if((e.key==='Enter'&&!e.shiftKey&&!e.isComposing)||e.key==='Escape'){e.preventDefault();e.stopPropagation();finish();}};sync();ta.focus();
+  }
+  function sync() {
+    layer?.querySelectorAll('[data-id]').forEach(node=>{const n=notes().find(n=>n.id===node.dataset.id);if(!n)return;const p=position(n);node.style.left=p.x+'px';node.style.top=p.y+'px';});
+    if(editor&&selected){const p=position(selected);editor.style.left=p.x+'px';editor.style.top=p.y+'px';}
+  }
+  function paint() {
+    if(!layer?.isConnected)return;layer.innerHTML='';
+    if(selected&&!notes().includes(selected)){editor?.remove();editor=null;selected=null;}
+    notes().forEach(n=>{
+      const node=el(`<button class="ov-note-pin" data-id="${esc(n.id)}" style="--note-color:${n.color}" aria-label="编辑便签 #${n.no}"><b>${n.no}</b><span>${esc(n.text||'添加批注')}</span></button>`);
+      node.onclick=()=>open(n);
+      node.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showMenu([{label:'编辑便签',icon:'edit',onClick:()=>open(n)},{label:'引用到助手',icon:'at',onClick:()=>app.agent.addRef({kind:'canvas-note',id:n.id,no:n.no,color:n.color,text:n.text})},{label:'删除便签',icon:'trash',danger:true,onClick:()=>remove(n)}],e.clientX,e.clientY);};
+      node.onpointerdown=e=>{
+        if(e.button)return;e.stopPropagation();const start=c.toWorld(e.clientX,e.clientY),old=position(n);let next=null;
+        const move=ev=>{const p=c.toWorld(ev.clientX,ev.clientY);if(Math.hypot(ev.clientX-e.clientX,ev.clientY-e.clientY)<4&&!next)return;next={x:old.x+p.x-start.x,y:old.y+p.y-start.y};node.style.left=next.x+'px';node.style.top=next.y+'px';};
+        const end=()=>{cleanup();if(next){node.onclick=null;edit(n,{...next,...anchor(next)},'移动画布便签');}};
+        const cancel=()=>{cleanup();sync();};cleanup=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',cancel);};
+        window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);window.addEventListener('pointercancel',cancel);
+      };layer.append(node);
+    });sync();
+  }
+  const outside=e=>{if(editor&&!editor.contains(e.target)&&!e.target.closest('.ov-note-pin'))finish();};
+  return {
+    mount(){layer=el('<div class="ov-stickies"></div>');c.world.append(layer);document.addEventListener('pointerdown',outside,true);paint();},paint,sync,
+    async add(pt,color){const list=notes();color=COLORS.includes(color)?color:COLORS[0];const n={id:uid('note'),no:nextColorNumber(list,color),color,text:'',...pt,...anchor(pt)};await app.bus.doMeta({label:'添加画布便签',apply:()=>list.push(n),revert:()=>list.splice(list.indexOf(n),1)});paint();await open(n);},
+    erase(target){const n=notes().find(n=>n.id===target.closest('.ov-note-pin')?.dataset.id);if(n)remove(n);return !!n;},
+    unmount(){finish();cleanup();document.removeEventListener('pointerdown',outside,true);layer=null;}
   };
-  function remove(n) {
-    const list = notes(), i = list.indexOf(n);
-    return app.bus.doMeta({ label: '删除画布便签', apply: () => { const at = list.indexOf(n); if (at >= 0) list.splice(at, 1); }, revert: () => list.splice(i, 0, n) }).then(()=>paint(true));
-  }
-  function paint(force=false) {
-    if (!layer?.isConnected) return;
-    // 输入过程中保留焦点和选区；离焦时再更新。
-    if (!force && layer.contains(document.activeElement) && document.activeElement.matches('textarea')) return;
-    layer.innerHTML = '';
-    notes().forEach(n => {
-      const node = el(`<section class="ov-sticky" data-id="${esc(n.id)}"><header><b>#${n.no}</b><span>便签</span><button aria-label="引用便签到助手" data-ref>${icon('at', 14)}</button><button aria-label="删除便签" data-del>${icon('close', 14)}</button></header><textarea aria-label="便签内容" placeholder="添加批注…" rows="4"></textarea>${notePalette(n.color)}</section>`);
-      node.style.cssText = `left:${n.x}px;top:${n.y}px;--note-color:${n.color};`;
-      const ta = node.querySelector('textarea'); ta.value = n.text;
-      let original = n.text;
-      ta.onfocus = () => { original = n.text; };
-      ta.oninput = () => { n.text = ta.value; app.bus.saveMeta(); };
-      ta.onblur = () => { if (original !== ta.value) { const next = ta.value; n.text = original; edit(n, {text: next}, '编辑画布便签'); } };
-      node.querySelectorAll('button').forEach(b=>b.onpointerdown=e=>e.preventDefault());
-      node.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{node.style.setProperty('--note-color',b.dataset.c);node.querySelectorAll('[data-c]').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b);});edit(n,{color:b.dataset.c},'便签换色');});
-      node.querySelector('[data-del]').onclick = () => remove(n);
-      node.querySelector('[data-ref]').onclick = () => app.agent.addRef({ kind: 'canvas-note', id: n.id, no: n.no, title: `便签 #${n.no}`, text: n.text, color: n.color });
-      node.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); showMenu([{ label: '删除便签', icon: 'trash', onClick: () => remove(n) }], e.clientX, e.clientY); };
-      node.querySelector('header').onpointerdown = e => {
-        if (e.button || e.target.closest('button,input')) return;
-        e.preventDefault(); e.stopPropagation(); const start = c.toWorld(e.clientX, e.clientY), old = { x: n.x, y: n.y }; let next = old;
-        const move = ev => { const p = c.toWorld(ev.clientX, ev.clientY); next = { x: old.x + p.x - start.x, y: old.y + p.y - start.y }; node.style.left = next.x + 'px'; node.style.top = next.y + 'px'; };
-        const up = () => { cleanup(); if (next !== old) edit(n, next, '移动画布便签'); };
-        cleanup = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancel); };
-        const cancel = () => { cleanup(); paint(); };
-        window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', cancel);
-      };
-      layer.appendChild(node);
-    });
-  }
-  async function add(pt, color) {
-    const p = app.project();
-    p.nextCanvasNote = Math.max(p.nextCanvasNote || 1, ...notes().map(n => n.no + 1));
-    const n = { id: uid('note'), no: p.nextCanvasNote++, text: '', x: pt.x, y: pt.y, color:COLORS.includes(color)?color:COLORS[0] };
-    const list = notes();
-    await app.bus.doMeta({ label: '添加画布便签', apply: () => list.push(n), revert: () => { const i = list.indexOf(n); if (i >= 0) list.splice(i, 1); } });
-    paint();
-    layer?.querySelector(`[data-id="${n.id}"] textarea`)?.focus();
-  }
-  return { mount() { layer = el('<div class="ov-stickies"></div>'); c.world.appendChild(layer); paint(); }, paint, add,
-    erase(target) { const n = notes().find(n => n.id === target.closest('.ov-sticky')?.dataset.id); if (n) remove(n); return !!n; },
-    unmount() { cleanup(); layer = null; } };
 }

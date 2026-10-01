@@ -21,13 +21,13 @@ CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页�
 ### 你可以做什么
 
 - **创建真实前端**：自然语言创建项目、自定义 OpenAI 兼容 API、手动填写或发现模型，使用自己的提供商与密钥。
-- **灵活的 Agent 工作台**：自定义助手、角色、职责、提示词、Skills、模型和六档思考强度；计划/创建模式、范围限制、步骤与 token 预算、反问、停止、继续和一层多 Agent 协作。
+- **灵活的 Agent 工作台**：自定义助手、角色、职责、提示词、Skills、模型和六档思考强度；计划/创建模式、范围限制、每轮工具调用上限、反问、停止、继续和一层多 Agent 协作。
 - **可视化精修**：页面总览、DOM 与源码映射、文字与属性修改、拖动、缩放、三灯判定、锁定、撤销和历史。动态生成或无法可靠定位的元素会说明限制。
-- **草图指挥**：画笔、箭头、框选、便签、参考图、全局编号、@ 引用和可复制任务单。
+- **草图指挥**：画笔、箭头、框选、便签、参考图、按颜色独立编号、@ 引用和可复制任务单。
 - **电脑与手机**：分别预览和修改；真实页面放映、跳转与弹窗，手机修改可写入独立媒体查询。
-- **Skills 与工具**：内置平台操作规范自动给 Agent 使用，其他技能按需加载；查看、启停、导入和编辑 SKILL.md；真实工具注册表。
+- **Skills 与工具**：内置平台操作规范自动给 Agent 使用，其他技能按需加载；基础技能始终启用；查看、启停、导入和编辑自建 SKILL.md；按来源折叠的工具注册表。
 - **MCP 接管**：标准 stdio 适配器和本机 JSON-RPC HTTP 端点；外部 AI 可读写项目、操作已登录页面、添加草图，或启动内置 Agent。面向 Codex、Claude Code、DeepSeek Harness 等支持 MCP 的客户端。
-- **插件管理**：导入 JSON 包、前端文件夹、HTML 风格或 HTTPS 下载链接；查看权限、启停、设置、导出与卸载。官方“风格画廊”默认启用，关闭即恢复绿色并隐藏风格切换；官方“项目速览”演示面板 + Skills + 工具。
+- **插件管理**：导入 JSON 包、前端文件夹、HTML 风格或 HTTPS 下载链接；查看权限、启停、设置、导出与卸载。官方“风格画廊”默认启用，关闭即恢复绿色并隐藏风格切换；“项目速览”作为内部工具保留，不再出现在用户插件列表。
 - **带走你的项目**：源码、图片和项目说明都在普通文件夹里，可用 Git 管理；编辑器“更多 → 导出项目 ZIP”打包交付。
 
 ### 开始使用
@@ -39,7 +39,9 @@ CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页�
 5. 首页可描述需求、创建空白项目、使用模板或导入已有 HTML/文件夹。
 6. 首页或编辑器顶部的“设置”可直接进入管理。先在“模型提供商”填写 API 地址、密钥和模型，再进入助手的创建模式。
 
-模型接口使用 `/v1` 基础地址，并需要支持 `chat/completions`。创建任务需要工具调用；图片引用需要相应视觉能力。思考等级 `low / medium / high / xhigh / max / ultra` 按原值作为 `reasoning_effort` 发送，上游必须支持所选参数；不支持时明确报错，不擅自降档。费用由你的模型提供商计算。
+模型格式可选 OpenAI Compatible（含 DeepSeek 与第三方中转站，`/v1` + `chat/completions`）或 Google Gemini 原生（`/v1beta` + `generateContent`）。图像、音频输入和工具调用按模型设置。创建任务需要工具调用；图片引用需要相应视觉能力。思考等级 `low / medium / high / xhigh / max / ultra` 在 OpenAI Compatible 中按原值作为 `reasoning_effort` 发送，上游必须支持所选参数；不支持时明确报错，不擅自降档。Gemini 原生格式按原生 thinking 参数处理；不支持的档位明确报错，不自动降档。费用由你的模型提供商计算。
+
+首页可选择 Web 或 App（手机网页 / H5）。总览与编辑共享设计规范入口，内置六种风格，个人预设可跨项目复用；总览卡片支持拖动、删除、撤销与保存 AI 方案。便签按颜色独立编号，删除后复用空号，确认仅保存并收起。每轮工具上限累计一次回复中的所有工具调用，达到上限暂停；模型输出截断也会保留结果并允许继续。
 
 ### 插件、Skills、MCP 各管什么
 
@@ -53,7 +55,7 @@ v1 插件支持设计变量、自定义主页、隔离面板、技能和受管�
 
 ### 一个实际案例
 
-**余白 YUBAI**：用 MCP 读取版本并提交的双页品牌工作室网站，包含响应式布局、作品分类、咨询弹窗、本地表单摘要和案例跳转。完整源码位于 [examples/yubai](examples/yubai)，可直接导入百映。表单是本地演示，不发送真实咨询。
+**余白 YUBAI**：用 MCP 读取版本并提交的三页品牌工作室网站，包含响应式布局、作品分类、咨询弹窗、本地表单摘要和案例跳转。完整源码位于 [examples/yubai](examples/yubai)，可直接导入百映。表单是本地演示，不发送真实咨询。
 
 ![余白前端案例](docs/screenshots/yubai-desktop.png)
 
@@ -70,7 +72,7 @@ v1 插件支持设计变量、自定义主页、隔离面板、技能和受管�
 
 基础引擎、接口、Agent 调度、六档思考参数、停止与迟到结果、版本冲突、锁定、多文件提交和扩展/MCP 回归均有测试。已实际通过 MCP 控制浏览器、添加/撤销草图、调用内置 Agent 隔离测试提供商并核对任务结果。交付案例已检查桌面、393px 手机、筛选、弹窗、表单与跳转。
 
-**真实模型验收取决于可用提供商。** 本次本机已有接口在模型发现时返回 401，因此不能将隔离测试提供商的成功当作真实模型联网生成成功；也未测试其它 AI 客户端。详细记录见 [收尾验收](docs/收尾验收.md)。
+**真实模型验收取决于可用提供商。** 本次本机已有接口在模型发现时返回 401，因此不能将隔离测试提供商的成功当作真实模型联网生成成功；也未测试其它 AI 客户端。详细记录见 [收尾验收](docs/收尾验收.md) 和 [本次修复与截断对话核查](docs/界面修复与收尾核查_2026-10-01.md)。
 
 ```sh
 node --experimental-vm-modules tests/frontend-syntax.test.mjs
@@ -82,6 +84,10 @@ node tests/engine.test.mjs
 node tests/scan.test.mjs
 node tests/token-source.test.mjs
 node tests/workspace-state.test.mjs
+node tests/note-numbers.test.mjs
+node tests/providers.test.mjs
+node tests/external-agent.test.mjs
+node tests/external-runtime.test.mjs
 ```
 
 ## English
@@ -97,7 +103,7 @@ Double-click `CentDeck.bat`, open the browser and start building. Node.js 22+ is
 - **Visual editing**: overview canvas, source mapping, text/property editing, drag/resize, writeback confidence, locks, undo and history. Unsupported dynamic elements are reported rather than silently rewritten.
 - **Sketch feedback**: drawings, arrows, boxes, notes, reference images, numbered marks and precise agent references.
 - **MCP integration**: a standard stdio bridge and local JSON-RPC HTTP endpoint. External agents can inspect/edit projects, operate the signed-in browser and invoke built-in agents. Intended for MCP-capable clients including Codex, Claude Code and DeepSeek Harness.
-- **Plugin framework**: import bundles or frontend files, download via HTTPS, inspect permissions, enable/disable and export. Official Style Gallery controls the home style picker; disabling it restores original green. Project Inspector demonstrates a sandbox panel, skill and managed tool.
+- **Plugin framework**: import bundles or frontend files, download via HTTPS, inspect permissions, enable/disable and export. Official Style Gallery controls the home style picker; disabling it restores original green. Project Inspector remains an internal tool, hidden from user plugin management. Built-in skills are always available and hidden from manual selectors.
 - **Portable output**: real HTML/CSS/JS, desktop/mobile previews, a presentation view and project ZIP export.
 
 ### Quick start
@@ -107,6 +113,8 @@ Double-click `CentDeck.bat`, open the browser and start building. Node.js 22+ is
 3. Sign in with `centdeck / centdeck` and change the initial password.
 4. Open Settings directly from the home/editor toolbar. Configure a provider and model before using an agent.
 5. Create a project, import a frontend folder or start from a template. Choose **Create** when you want the agent to write files.
+
+Choose Web or mobile H5 on the home screen. The overview has shared design settings, six built-in presets and reusable personal presets. Notes use independent color numbering and reusable gaps. Tool limits count all calls in a reply, pause safely and allow continuation. Truncated model output is preserved as a paused task. Native Gemini and OpenAI-compatible formats support per-model input/tool capabilities.
 
 The default address is `http://localhost:8420`. Exit with `exit`, `q` or Ctrl+C in the terminal. Reasoning levels are transmitted unchanged as `reasoning_effort`; unsupported provider values produce an error. API costs are paid to your provider.
 

@@ -44,10 +44,10 @@ export function createSession(app, mgr, opts) {
   };
   const root = el(`<div class="ag">
     <div class="ag-head" data-drag>
-      <span class="ag-avatar"></span><b class="ag-name"></b>
+      <span class="ag-avatar"></span><button class="ag-switch" data-a="switch" aria-label="切换助手"><b class="ag-name"></b>${icon("chevDown",13)}</button>
       <button class="ag-role" data-a="role" data-tip="这个助手负责什么（多助手协作用）"></button>
       <span class="grow"></span>
-      <button class="icon-btn sm" data-a="manage" data-tip="管理所有助手">${icon("layers", 15)}</button><button class="icon-btn sm" data-a="fold" data-tip="折叠窗口">${icon("minus", 15)}</button><button class="icon-btn sm" data-a="new" data-tip="再开一个助手窗口">${icon("plus", 15)}</button>
+      <button class="icon-btn sm" data-a="manage" data-tip="管理所有助手">${icon("layers", 15)}</button><button class="icon-btn sm" data-a="fold" data-tip="折叠窗口">${icon("minus", 15)}</button><button class="icon-btn sm" data-a="new" aria-label="选择助手并在悬浮窗打开" data-tip="选择助手并在悬浮窗打开">${icon("plus", 15)}</button>
       <button class="icon-btn sm" data-a="dock" data-tip="停靠到右侧 / 弹出成悬浮窗"></button>
       <button class="icon-btn sm" data-a="settings" data-tip="模型与接口设置">${icon("settings", 15)}</button>
       <button class="icon-btn sm" data-a="clear" data-tip="清空这段对话">${icon("refresh", 14)}</button>
@@ -56,7 +56,7 @@ export function createSession(app, mgr, opts) {
     <button class="ag-summary" data-a="fold"><i></i><span>空闲</span></button><div class="ag-msgs"></div><div class="ag-task" hidden></div>
     <div class="agent-composer">
       <div class="comp-controls"><div class="seg" data-mode><button data-mode-v="plan" class="on">计划</button><button data-mode-v="create">创建</button></div><select aria-label="协作方式" data-collab><option value="off">独立执行</option><option value="confirm">协作前确认</option><option value="auto">自动协作</option></select><select aria-label="修改范围" data-scope><option value="all">全站</option><option value="page">当前页</option></select></div>
-      <div class="comp-variants" hidden><label>方案版数 <select aria-label="方案版数"><option value="1">1 版</option><option value="2">2 版</option><option value="3">3 版</option><option value="4">4 版</option></select></label></div><div class="comp-chips"></div>
+      <div class="comp-chips"></div>
       <textarea rows="3" aria-label="给助手的任务" placeholder="描述你的设计…"></textarea>
       <div class="comp-bar">
         <button class="icon-btn sm" data-a="plus" data-tip="上传文件、引用页面或元素">${icon("plus", 18)}</button>
@@ -85,7 +85,6 @@ export function createSession(app, mgr, opts) {
     grow();
     mgr.saveConversation(s);
   });
-  q(".comp-variants select").onchange = () => mgr.saveConversation(s);
   q(".ag-head").ondblclick = (e) => {
     if (!e.target.closest("button")) mgr.fold(s);
   };
@@ -132,7 +131,7 @@ export function createSession(app, mgr, opts) {
       const sk = r.kind === "skill" ? mgr.skill(s.skill) : null;
       const lb = sk ? { icon: sk.icon, text: "技能：" + sk.name } : refLabel(r);
       const chip = el(
-        `<span class="comp-chip ${sk ? "skill" : "ctx"}" title="${esc(lb.text)}">${r.url ? `<img src="${r.url}" alt="">` : icon(lb.icon, 13)}<span>${esc(lb.text)}</span>${lb.color ? `<i class="cc-dot" style="background:${lb.color}"></i>` : ""}<button data-tip="移除">${icon("close", 11)}</button></span>`,
+        `<span class="comp-chip ${sk ? "skill" : "ctx"}" title="${esc(lb.text)}">${r.url && r.media!=='audio' ? `<img src="${r.url}" alt="">` : icon(lb.icon, 13)}<span>${esc(lb.text)}</span>${lb.color ? `<i class="cc-dot" style="background:${lb.color}"></i>` : ""}<button data-tip="移除">${icon("close", 11)}</button></span>`,
       );
       chip.querySelector("button").onclick = () => {
         if (sk) s.skill = null;
@@ -152,10 +151,11 @@ export function createSession(app, mgr, opts) {
     q(".ag-avatar").innerHTML = avatar(s, 25);
     q(".ag-avatar").style.color = s.color;
     root.style.setProperty("--assistant-color", s.color);
-    q(".comp-variants").hidden = !!app.project()?.pages.length;
-    q(".ag-summary span").textContent = s.task
-      ? taskStatus(s.task) + " · " + s.task.goal.slice(0, 60)
-      : "空闲";
+    const status=s.task?.status||'idle';root.dataset.status=status;
+    const label=status==='completed'&&s.task.commits?.length?'待验收':s.task?taskStatus(s.task):'空闲';
+    q('.ag-summary span').textContent=label+' · '+(s.task?.output||s.task?.goal||'随时准备开始').slice(0,100);
+    q('.ag-summary i').setAttribute('aria-label',label);
+    q('[data-a=skill]').hidden=!mgr.skills().length;
     q("[data-a=role]").textContent = s.role;
     const dk = q("[data-a=dock]");
     dk.innerHTML = icon(mgr.isDocked(s) ? "undock" : "dock", 15);
@@ -194,8 +194,6 @@ export function createSession(app, mgr, opts) {
       return;
     }
     let text = ta.value.trim();
-    if (text && !app.project()?.pages.length)
-      text += `\n\n请出 ${q(".comp-variants select").value} 版方案。`;
     if (!text && !s.refs.length) return;
     const refs = describeRefs(app, s.refs);
     const skillIds = [...new Set([...s.skills, ...(s.skill ? [s.skill] : [])])];
@@ -275,7 +273,8 @@ export function createSession(app, mgr, opts) {
     if (a === "close") mgr.close(s);
     if (a === "manage") mgr.manage();
     if (a === "fold") mgr.fold(s);
-    if (a === "new") mgr.newWindow();
+    if (a === "new") mgr.pickSession(b,true);
+    if (a === "switch") mgr.pickSession(b);
     if (a === "dock") mgr.toggleDock(s);
     if (a === "settings") app.openSettings();
     if (a === "clear") {
@@ -411,9 +410,9 @@ export function createSession(app, mgr, opts) {
       toast("一次最多 4 个参考文件", "err");
       return;
     }
-    if (/^image\/(png|jpeg|webp)$/.test(f.type)) {
+    if (/^image\/(png|jpeg|webp)$/.test(f.type) || /^audio\/(mpeg|mp3|wav|x-wav)$/.test(f.type)) {
       if (f.size > 4 * 1024 * 1024) {
-        toast("图片请控制在 4 MB 以内", "err");
+        toast("图片或音频请控制在 4 MB 以内", "err");
         return;
       }
       const data = await new Promise((resolve, reject) => {
@@ -422,7 +421,7 @@ export function createSession(app, mgr, opts) {
         r.onerror = reject;
         r.readAsDataURL(f);
       });
-      addRef({ kind: "file", name: f.name, size: f.size, url: data });
+      addRef({ kind: "file", name: f.name, size: f.size, url: data, media:f.type.startsWith('audio/')?'audio':'image' });
     } else if (/\.(txt|md|html?|css|js|json)$/i.test(f.name) && f.size < 128000)
       addRef({
         kind: "file",
@@ -430,7 +429,7 @@ export function createSession(app, mgr, opts) {
         size: f.size,
         text: await f.text(),
       });
-    else toast("支持 PNG、JPG、WebP 图片或 128 KB 内的文本文件", "err");
+    else toast("支持 PNG、JPG、WebP、MP3、WAV 或 128 KB 内的文本文件", "err");
   }
   fileIpt.onchange = async () => {
     for (const f of fileIpt.files) await addFile(f);
@@ -482,7 +481,7 @@ export function createSession(app, mgr, opts) {
         box = q(".ag-task");
       box.hidden = !t;
       if (!t) return;
-      box.innerHTML = `<button data-tasks><span class="task-state ${t.status}">${taskStatus(t)}</span><span>${t.steps} 步 · ${t.usage == null ? "用量未提供" : t.usage + " tokens"}</span>${icon("chevRight", 14)}</button>${t.error ? `<p>${esc(t.error)}</p>` : ""}${t.question ? `<button class="task-question-button">${esc(t.question.question)}</button>` : ""}`;
+      box.innerHTML = `<button data-tasks><span class="task-state ${t.status}">${taskStatus(t)}</span><span>${t.roundToolCalls||0}/${t.maxSteps} 次工具 · ${t.usage == null ? "用量未提供" : t.usage + " tokens"}</span>${icon("chevRight", 14)}</button>${t.error ? `<p>${esc(t.error)}</p>` : ""}${t.question ? `<button class="task-question-button">${esc(t.question.question)}</button>` : ""}`;
       box
         .querySelectorAll("button")
         .forEach((b) => (b.onclick = () => app.openSettings("tasks")));
@@ -506,7 +505,6 @@ export function createSession(app, mgr, opts) {
         draft: ta.value,
         mode: s.mode,
         collaboration: q("[data-collab]").value,
-        count: +q(".comp-variants select").value,
       };
     },
     restore(data = {}) {
@@ -520,9 +518,6 @@ export function createSession(app, mgr, opts) {
         .forEach((b) => b.classList.toggle("on", b.dataset.modeV === s.mode));
       s.task = null;
       ta.value = data.draft || "";
-      q(".comp-variants select").value = [1, 2, 3, 4].includes(data.count)
-        ? data.count
-        : 1;
       paintChips();
       paintMsgs();
       paintPickers();

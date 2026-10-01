@@ -12,7 +12,7 @@ export function createStyleCard(app, c) {
   }
   function ensure() {
     const p = app.project();
-    if (!p.designGroups?.length && p.pages.length) {
+    if (!p.designGroupsInitialized && !p.designGroups?.length && p.pages.length) {
       const first = c.cards().find((x) => !x.popup);
       p.designGroups = [
         {
@@ -30,6 +30,7 @@ export function createStyleCard(app, c) {
           y: first?.y || 0,
         },
       ];
+      p.designGroupsInitialized=true;
       app.bus.saveMeta();
     }
     for (const [i, g] of groups().entries()) {
@@ -131,7 +132,7 @@ export function createStyleCard(app, c) {
       colors = t.colors || {},
       known = Object.keys(colors).length;
     const node = el(
-      `<section class="ov-style-card design-board" data-group="${esc(g.id)}"><header>${icon("palette", 40)}<b>${esc(g.name)}</b><button data-menu aria-label="方案操作">${icon("more", 36)}</button></header><div class="design-board-grid"><div class="board-colors">${Object.entries(
+      `<section class="ov-style-card design-board" data-group="${esc(g.id)}"><header>${icon("palette", 40)}<b>${esc(g.name)}</b><button data-menu aria-label="方案操作">${icon("more", 26)}</button><button data-delete aria-label="删除风格卡片">${icon("trash",24)}</button></header><div class="design-board-grid"><div class="board-colors">${Object.entries(
         colors,
       )
         .slice(0, 4)
@@ -146,6 +147,8 @@ export function createStyleCard(app, c) {
     node.style.cssText = `left:${g.x}px;top:${g.y}px;`;
     c.world.appendChild(node);
     nodes.push({ node, g });
+    node.querySelector("[data-delete]").onclick = () => remove(g);
+    node.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showMenu([{label:"保存为我的预设",icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},{label:"删除风格卡片",icon:"trash",danger:true,onClick:()=>remove(g)}],e.clientX,e.clientY);};
     node.querySelector("[data-edit]").onclick = () => edit(g);
     node.querySelector("[data-apply]").onclick = () =>
       app.tokens.applyToSite({ tokens: g.tokens, files: g.pages });
@@ -172,6 +175,8 @@ export function createStyleCard(app, c) {
       showMenu(
         [
           { label: "关联页面", icon: "layers", onClick: () => assign(g) },
+          {label:"保存为我的预设",icon:"plus",onClick:()=>app.tokens.savePreset(g.tokens,g.name)},
+          {label:"删除风格卡片",icon:"trash",danger:true,onClick:()=>remove(g)},
           ...Object.keys(PRESETS).map((name) => ({
             label: name,
             icon: "palette",
@@ -187,8 +192,8 @@ export function createStyleCard(app, c) {
         0,
         { anchor: e.currentTarget },
       );
-    node.querySelector("header").onpointerdown = (e) => {
-      if (e.button || e.target.closest("button")) return;
+    node.onpointerdown = (e) => {
+      if (e.button || e.target.closest("button,input,textarea,select,a")) return;
       e.preventDefault();
       e.stopPropagation();
       const start = c.toWorld(e.clientX, e.clientY),
@@ -320,7 +325,11 @@ export function createStyleCard(app, c) {
         ),
       );
   }
-  async function show() {
+  async function remove(g) {
+    const p=app.project(),old={designGroups:p.designGroups.slice(),selectedDesignGroup:p.selectedDesignGroup,selectedPages:p.selectedPages,designGroupsInitialized:p.designGroupsInitialized};
+    await app.bus.doMeta({label:'删除设计规范卡片',apply:()=>{p.designGroups=p.designGroups.filter(x=>x.id!==g.id);p.designGroupsInitialized=true;if(p.selectedDesignGroup===g.id){p.selectedDesignGroup=null;p.selectedPages=[];}},revert:()=>Object.assign(p,old)});refresh();
+  }
+  async function show(tokens=PRESETS.科技蓝,name='新风格方案') {
     const p = app.project(),
       point = c.toWorld(
         c.host.getBoundingClientRect().left + 80,
@@ -328,9 +337,9 @@ export function createStyleCard(app, c) {
       ),
       g = {
         id: uid("style"),
-        name: "新风格方案",
+        name,
         pages: [],
-        tokens: structuredClone(PRESETS.科技蓝),
+        tokens: structuredClone(tokens),
         ...point,
       };
     if (!p.designGroups) p.designGroups = [];
