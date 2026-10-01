@@ -123,7 +123,7 @@ export function createSession(app, mgr, opts) {
     const host = q(".comp-chips");
     host.innerHTML = "";
     const all = [
-      ...(s.skill ? [{ kind: "skill", id: "skill" }] : []),
+      ...(mgr.skill(s.skill) ? [{ kind: "skill", id: "skill" }] : []),
       ...s.refs,
     ];
     host.hidden = !all.length;
@@ -497,6 +497,7 @@ export function createSession(app, mgr, opts) {
     addRef,
     focus,
     paintPickers,
+    paintChips,
     conversation() {
       return {
         msgs: s.msgs.slice(-100),

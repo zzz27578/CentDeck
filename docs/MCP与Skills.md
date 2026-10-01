@@ -65,6 +65,8 @@ A receipt confirms an operation, not visual correctness. Inspect screenshots, in
 
 ## Skills
 
+用户管理接口只返回自定义/扩展技能；AI 使用 `list_skills`、`read_skill` 或 `centdeck://skills/<id>`，仍能读取全部基础技能。基础技能不能被用户停用、删除或覆盖。技能之间以 `read_skill` 的 ID 引用，不依赖宿主相对文件路径。规范核查见 [Skills 规范核查](Skills规范核查_2026-10-01.md)。
+
 基础技能始终启用并从用户管理和选择器中隐藏；平台指南自动加载，其他基础技能由助手通过 `read_skill` 按需读取。技能页只管理用户导入、自建与扩展技能；插件也可贡献技能。标准 Markdown frontmatter 示例：
 
 Built-in skills remain enabled and hidden from user selectors. The platform guide loads automatically; other base skills load on demand via `read_skill`. Settings manages custom and plugin-contributed skills.

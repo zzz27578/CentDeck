@@ -243,6 +243,17 @@ try {
     ]);
     assert.equal((await req("GET", "/api/assistants"))[0].role, profile.role);
   });
+  await test('用户技能接口隐藏基础技能，禁止停用；自建技能仍可管理',async()=>{
+    assert.deepEqual(await req('GET','/api/skills'),[]);
+    assert.deepEqual((await req('GET','/api/extensions')).skills,[]);
+    await req('PUT','/api/skills',{id:'platform-guide',enabled:false},403);
+    await req('PUT','/api/skills',{id:'page-edit',action:'remove'},403);
+    await req('PUT','/api/skills',{id:'official-inspector--review',enabled:false},403);
+    const custom=await req('PUT','/api/skills',{id:'my-skill',name:'My skill',content:'---\nname: my-skill\ndescription: Custom style preferences\n---\nKeep spacing consistent.'});
+    assert.deepEqual(custom.map(s=>s.id),['my-skill']);
+    const disabled=await req('PUT','/api/skills',{id:'my-skill',enabled:false});assert.equal(disabled[0].enabled,false);
+    await req('PUT','/api/skills',{id:'my-skill',action:'remove'});
+  });
   project = await req("POST", "/api/import", {
     name: "runtime-test",
     files: [

@@ -1,5 +1,6 @@
 import { el, esc, toast, confirmDlg, openModal, promptDlg } from '../core/ui.js';
 import { refreshAppearance, mountPluginFrame } from '../core/extensions.js';
+import { userSkills } from '../core/skill-catalog.js';
 const intro=(title,text)=>`<div class="extension-intro"><h2>${title}</h2><p>${text}</p></div>`;
 function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function pick(multiple=false,directory=false,accept=''){return new Promise(resolve=>{const input=document.createElement('input');input.type='file';input.multiple=multiple;input.accept=accept;if(directory)input.webkitdirectory=true;input.onchange=()=>resolve([...input.files]);input.oncancel=()=>resolve([]);input.click();});}
@@ -37,7 +38,7 @@ export async function renderExtensions(app,content,tab){
     content.querySelector('[data-folder]').onclick=protect(()=>importFrontend(true));content.querySelector('[data-html]').onclick=protect(()=>importFrontend(false));
   }
   if(tab==='skills'){
-    const skills=(await request('skills')).filter(s=>!s.internal);
+    const skills=userSkills(await request('skills'));
     content.innerHTML=intro('让助手更懂百映','管理你创建和导入的技能。基础技能由平台自动启用，助手按任务需要使用。')+'<div class="extension-toolbar"><button class="btn primary" data-import>导入 SKILL.md</button><button class="btn" data-new>新建技能</button></div><div class="extension-grid"></div>';
     const edit=(skill)=>{
       const body=el(`<form class="extension-form"><label>技能编号<input name="id" required pattern="[a-z][a-z0-9-]{1,79}" value="${esc(skill?.id||'my-skill')}"></label><label>显示名称<input name="name" required value="${esc(skill?.name||'我的技能')}"></label><label>说明<input name="desc" value="${esc(skill?.desc||'')}"></label><label>SKILL.md<textarea name="content" rows="12">${esc(skill?.content||'---\nname: my-skill\ndescription: When to use this skill\n---\n\n先读取当前项目，再根据要求进行修改。')}</textarea></label><button class="btn primary">保存技能</button></form>`);
@@ -45,6 +46,7 @@ export async function renderExtensions(app,content,tab){
     };
     content.querySelector('[data-new]').onclick=()=>edit(null);
     content.querySelector('[data-import]').onclick=protect(async()=>{const [file]=await pick(false,false,'.md');if(!file)return;const text=await file.text();const id=text.match(/^name:\s*(.+)$/m)?.[1]?.trim().replace(/['"]/g,'')||'skill-'+Date.now().toString(36);edit({id,name:id,content:text});});
+    if(!skills.length)content.querySelector('.extension-grid').innerHTML='<div class="empty">还没有自定义技能。可以新建或导入 SKILL.md。</div>';
     for(const s of skills){const card=el(`<article class="extension-card"><div class="extension-card-top"><span class="extension-badge">${s.source==='local'?'我的技能':'扩展技能'}</span><label class="extension-toggle"><input type="checkbox" ${s.enabled?'checked':''} role="switch" aria-label="启用 ${esc(s.name)}"><i class="switch-track" aria-hidden="true"></i><span>启用</span></label></div><h2>${esc(s.name)}</h2><p>${esc(s.desc)}</p><footer><button class="btn" data-read>阅读规范</button>${s.source==='local'?'<button class="btn ghost" data-edit>编辑</button><button class="btn ghost danger" data-remove>删除</button>':''}</footer></article>`);
       card.querySelector('input').onchange=protect(async e=>{await request('skills',{id:s.id,enabled:e.target.checked},'PUT');app.bus.emit('skills');toast('后续任务将使用新的技能配置','ok');});
       card.querySelector('[data-read]').onclick=()=>openModal({title:s.name,body:el(`<pre class="extension-source">${esc(s.content)}</pre>`),width:800});

@@ -171,6 +171,7 @@ export async function openStudio(app, section = "assistants") {
     const form = content.querySelector("form"),
       ipt = form.querySelector("[type=file]");
     watchForm(form);
+    form.querySelector('fieldset').hidden=!mgr.skills().length;
     form.querySelector(".upload-avatar").onclick = () => ipt.click();
     ipt.onchange = async () => {
       const f = ipt.files[0];

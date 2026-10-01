@@ -198,12 +198,12 @@ async function handle(req, res) {
   if(pathname.startsWith('/api/'))auth.requireSession(req);
   const ext=require('./extensions');
   if(pathname==='/api/extensions') {
-    if(method==='GET')sendData(res,{plugins:ext.plugins(),skills:ext.skills(),preferences:ext.preferences()});
+    if(method==='GET')sendData(res,{plugins:ext.plugins(),skills:ext.userSkills(),preferences:ext.preferences()});
     else if(method==='POST')sendData(res,ext.install(await readJsonBody(req)));
     else throw new ApiError(405,'不支持的方法');return;
   }
   if(pathname==='/api/plugins/action'&&method==='POST'){const b=await readJsonBody(req);sendData(res,ext.updatePlugin(b.id,b.action,b.settings));return;}
-  if(pathname==='/api/skills'){sendData(res,method==='PUT'?ext.updateSkill(await readJsonBody(req)):ext.skills());return;}
+  if(pathname==='/api/skills'){sendData(res,method==='PUT'?ext.updateSkill(await readJsonBody(req)):ext.userSkills());return;}
   if(pathname==='/api/preferences'){sendData(res,ext.preferences(method==='PUT'?await readJsonBody(req):null));return;}
   if(pathname==='/api/design-presets'){sendData(res,ext.designPresets(method==='PUT'?await readJsonBody(req):null));return;}
   if(pathname==='/api/tools'&&method==='GET'){sendData(res,[...require('./tools').list(),...tasks.toolsFor({mode:'create',collaboration:'auto'}).filter(t=>!require('./tools').has(t.function.name)).map(t=>({name:t.function.name,description:t.function.description+'（内置 Agent 任务专用）',inputSchema:t.function.parameters,annotations:{readOnlyHint:t.function.name==='request_input'}}))]);return;}

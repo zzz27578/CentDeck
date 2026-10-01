@@ -28,7 +28,7 @@
       {
         "id": "review",
         "name": "项目交付巡检",
-        "desc": "配合项目速览检查页面、标记和锁定状态",
+        "desc": "交付前核对页面、草图、锁定与实际提交，区分文件保存和浏览器验收。",
         "file": "SKILL.md"
       }
     ],
@@ -42,6 +42,6 @@
   },
   "files": {
     "index.html": "<!doctype html><html lang='zh-CN'><meta charset='utf-8'><style>body{font:16px/1.8 system-ui;padding:30px;color:#253827;background:#f1f5eb}button{padding:12px 20px;border:0;border-radius:10px;background:#536e43;color:white}pre{white-space:pre-wrap}</style><h1>项目速览</h1><p>读取页面与草图统计，检查交付前是否还有待办。</p><button id='refresh'>读取当前项目</button><pre id='result'>请先在工作台打开项目。</pre><script>document.getElementById('refresh').onclick=()=>parent.postMessage({type:'centdeck-plugin',action:'project_summary',requestId:'summary'},'*');addEventListener('message',e=>{if(e.source===parent&&e.data.type==='centdeck-result')document.getElementById('result').textContent=JSON.stringify(e.data.result,null,2)});</script></html>",
-    "SKILL.md": "---\nname: review\ndescription: Review a CentDeck project before delivery\n---\nUse project_context and plugin_official_inspector_summary to count pages, open marks and locks. Read each changed page, check mobile layout in the browser with ui_action. Report actual evidence; do not equate a successful file save with visual acceptance. Never clear marks or locks to make a report appear complete."
+    "SKILL.md": "---\nname: review\ndescription: 百映交付前巡检页面、标记、锁定和提交记录；统计只作线索，不代替源码与实际浏览器验证。\n---\n\n# 项目交付巡检\n\n未加载平台规范时先 read_skill({\"id\":\"platform-guide\"})。读取 project_context 获取 pages、marks、canvasNotes、notes、locks、designGroups 和 tasks。若 plugin_official_inspector_summary 在实际工具清单中，可读取页面数、未完成编辑标记数和锁定摘要；它不统计所有总览便签，也不代表验收结果。\n\n逐个核对用户本次要求与实际提交文件，读取受影响的 HTML/CSS/JS，检查资源相对路径、页面间链接、交互绑定和手机样式。标记用稳定 ID 识别，显示时同时给颜色、编号和页面；不要因不同颜色同号而混淆。\n\n内置任务只有 ui_state，不能调用 ui_action 或自行截图。只有外部 MCP 清单提供 ui_action 时才按 ui_state 返回的 clientId/控件 ID 操作；回执仍不是截图或布局验证。没有实际浏览器能力时明确列出待验证的桌面、手机和交互项目。\n\n以证据区分已提交、已做源码检查、已浏览器验证、未完成。任务摘要、工具成功回执和页面数量不能单独证明目标完成；不能为清空待办而删除标记、解除锁定或改任务状态。\n"
   }
 }

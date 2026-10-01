@@ -5,6 +5,7 @@ import { el, esc, showMenu, toast } from "../core/ui.js";
 import { icon } from '../core/icons.js';
 import { createSession } from "./session.js";
 import { openAssistantManager } from "./manager.js";
+import { userSkills, selectedUserSkill } from '../core/skill-catalog.js';
 
 export function createAgent(app) {
   let dockHost = null,
@@ -20,8 +21,11 @@ export function createAgent(app) {
   const sessions = [];
   let closePicker=()=>{};
 
-  const loadSkills = () => fetch('/api/skills').then(r=>r.json()).then(r=>{skills=r.data.filter(s=>s.enabled);}).catch(()=>{});
-  loadSkills();
+  const loadSkills = () => app.api.extension('skills').then(catalog=>{
+    skills=userSkills(catalog,true);
+    sessions.forEach(s=>{s.paintPickers();s.paintChips();});
+  }).catch(()=>{});
+  const skillsReady=loadSkills();
   app.bus.on('skills',loadSkills);
   const loadSettings = () =>
     app.api
@@ -335,9 +339,8 @@ export function createAgent(app) {
       p.assistantChats[s.id] = s.conversation();
       app.bus.saveMeta();
     },
-    skills: () => skills.filter(s=>!s.internal),
-    skill: (id) =>
-      skills.find((k) => k.id === id) || { id, name: id, icon: "book" },
+    skills: () => skills,
+    skill: (id) => selectedUserSkill(skills,id),
     modelLabel(id) {
       if (id === 'mcp:external' || (id === 'auto' && settings?.defaultModel === 'mcp:external')) return '外部 MCP 助手';
       if (id === "auto")
@@ -423,9 +426,8 @@ export function createAgent(app) {
     p.catch(() => toast("助手配置保存失败，请在管理页重试", "err"));
     return p;
   }
-  const ready = app.api
-    .getAssistants()
-    .then((list) => {
+  const ready = Promise.all([app.api.getAssistants(),skillsReady])
+    .then(([list]) => {
       list.forEach(newSession);
       docked = sessions[0] || null;
     })

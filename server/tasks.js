@@ -165,7 +165,7 @@ function start(id, b, parent = null) {
   const catalog = require('./extensions').skills().filter(s => s.enabled);
   const selectedSkills = new Set(['platform-guide', ...skills]);
   for (const skill of catalog) if(selectedSkills.has(skill.id)) skillsText += '\n' + skill.content;
-  skillsText += '\n按需使用 list_skills / read_skill 获取其他技能。';
+  skillsText += '\n可按任务需要调用 read_skill 加载的技能（基础技能自动可用，不要求用户选择）：\n' + JSON.stringify(catalog.filter(s=>!selectedSkills.has(s.id)).map(({id,name,desc})=>({id,name,description:desc})));
   t.skills = catalog.filter(s => selectedSkills.has(s.id)).map(s => s.id);
   t.messages = [
     {

@@ -66,11 +66,13 @@ function updatePlugin(pid, action, settings) {
 }
 function skills() {
   const s=state();
-  const core=read(path.join(ROOT,'app/skills/index.json'),[]).map(x=>({...x,source:'builtin',content:fs.readFileSync(path.join(ROOT,'app/skills',x.file),'utf8')}));
-  const custom=Object.values(s.skills).filter(x=>x.content).map(x=>({...x,source:'local'}));
-  const packaged=plugins().filter(p=>p.enabled).flatMap(p=>(p.manifest.skills||[]).map(x=>({...x,id:p.manifest.id+'--'+x.id,content:p.files[x.file],source:p.manifest.name})));
-  return [...core,...custom,...packaged].map(x=>({...x,internal:x.source==='builtin'||x.id.startsWith('official-inspector--'),enabled:x.source==='builtin'||x.id.startsWith('official-inspector--')||s.skills[x.id]?.enabled!==false,desc:x.desc||x.description||'',icon:x.icon||'book'}));
+  const core=read(path.join(ROOT,'app/skills/index.json'),[]).map(x=>({...x,source:'builtin',official:true,content:fs.readFileSync(path.join(ROOT,'app/skills',x.file),'utf8')}));
+  const packaged=plugins().filter(p=>p.enabled).flatMap(p=>(p.manifest.skills||[]).map(x=>({...x,id:p.manifest.id+'--'+x.id,content:p.files[x.file],source:p.manifest.name,official:p.official===true})));
+  const reserved=new Set([...core,...packaged].map(x=>x.id));
+  const custom=Object.values(s.skills).filter(x=>x.content&&!reserved.has(x.id)).map(x=>({...x,source:'local',official:false}));
+  return [...core,...custom,...packaged].map(x=>({...x,internal:x.official,enabled:x.official||s.skills[x.id]?.enabled!==false,desc:x.desc||x.description||'',icon:x.icon||'book'}));
 }
+function userSkills(){return skills().filter(s=>!s.internal);}
 function updateSkill(b) {
   const s=state(); id(b.id);
   if(skills().some(x=>x.id===b.id&&x.internal))throw new ApiError(403,'基础技能由平台自动启用，无需手动管理');
@@ -80,7 +82,7 @@ function updateSkill(b) {
     if(typeof b.content!=='string'||b.content.length>60000||!/^---\r?\n[\s\S]*?\r?\n---/.test(b.content)) throw new ApiError(400,'需要标准 SKILL.md（含 YAML frontmatter），最多 60000 字');
     s.skills[b.id]={id:b.id,name:String(b.name||b.id).slice(0,100),desc:String(b.desc||'').slice(0,300),content:b.content,enabled:b.enabled!==false};
   } else { if(!skills().some(x=>x.id===b.id)) throw new ApiError(404,'技能不存在'); s.skills[b.id]={...s.skills[b.id],enabled:!!b.enabled}; }
-  save(s); return skills();
+  save(s); return userSkills();
 }
 function preferences(b) {
   const s=state();
@@ -109,4 +111,4 @@ function mcpConfig(b) {
   if(b) { if('enabled' in b)s.mcp.enabled=!!b.enabled; if('mode' in b)s.mcp.mode=b.mode==='create'?'create':'plan'; }
   if(dirty)save(s); return s.mcp;
 }
-module.exports={state,plugins,official,install,updatePlugin,skills,updateSkill,preferences,designPresets,mcpConfig,validate};
+module.exports={state,plugins,official,install,updatePlugin,skills,userSkills,updateSkill,preferences,designPresets,mcpConfig,validate};
