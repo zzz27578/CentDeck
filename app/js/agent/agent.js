@@ -7,7 +7,7 @@ import { createSession } from "./session.js";
 import { avatar } from './studio.js';
 import { openAssistantManager } from "./manager.js";
 import { userSkills, selectedUserSkill } from '../core/skill-catalog.js';
-import { conversations, tasksForConversation, commitFingerprint } from './conversations.js';
+import { conversations, conversationRecords, tasksForConversation, commitFingerprint, hasMessages } from './conversations.js';
 
 export function createAgent(app) {
   let dockHost = null,
@@ -54,11 +54,11 @@ export function createAgent(app) {
   function createConversation(s,data={}){
     const p=app.project();if(!p)return null;
     const c={id:uid('chat'),assistantId:s.id,title:'新对话',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),msgs:[],refs:[],mode:s.mode,...data};
-    conversations(p).push(c);app.bus.saveMeta();return c;
+    conversations(p);if(hasMessages(c))p.conversations.push(c);else p.conversationDrafts[c.id]=c;app.bus.saveMeta();return c;
   }
   function restoreConversation(s,c){
     const p=app.project();if(!p){s.restore();return;}
-    const list=conversations(p);
+    const list=conversationRecords(p);
     c ||= list.find(x=>x.id===s.conversationId&&x.assistantId===s.id)
       ||list.find(x=>x.id===p.activeConversations[s.id]&&x.assistantId===s.id)
       ||list.find(x=>x.assistantId===s.id)||createConversation(s);
@@ -314,7 +314,13 @@ export function createAgent(app) {
       const c=createConversation(s,data);if(!c)return;
       restoreConversation(s,c);mgr.saveConversation(s);s.focus();return c;
     },
-    conversationList:()=>conversations(app.project()),
+    conversationList:()=>conversations(app.project()).filter(hasMessages),
+    conversationRecord:id=>conversationRecords(app.project()).find(c=>c.id===id),
+    modelCapacity(id){
+      const selected=id==='auto'?settings?.defaultModel:id;
+      if(!selected)return 0;const split=selected.indexOf(':');
+      return settings?.providers.find(p=>p.id===selected.slice(0,split))?.modelCapabilities?.[selected.slice(split+1)]?.contextWindow||0;
+    },
     async renameConversation(c){
       const title=await promptDlg({title:'重命名对话',label:'对话名称',value:c.title});
       if(title?.trim()){c.title=title.trim().slice(0,80);c.named=true;app.bus.saveMeta();windows().forEach(w=>w.paintPickers());}
@@ -330,11 +336,11 @@ export function createAgent(app) {
     pickConversation(anchor,s){
       if(pickerAnchor===anchor){closePicker();return;}closePicker();
       pickerAnchor=anchor;anchor.setAttribute('aria-expanded','true');
-      const menu=el(`<div class="assistant-picker conversation-picker" role="dialog" aria-label="项目对话"><header><b>项目对话</b><button class="btn small" data-create>${icon('plus',14)}新对话</button></header><div class="conversation-list"></div><p>每段对话独立保存上下文，可同时打开多个窗口。</p></div>`);
+      const menu=el(`<div class="assistant-picker conversation-picker" role="dialog" aria-label="项目对话"><header><b>项目对话</b><button class="btn small" data-create>${icon('plus',14)}新对话</button></header><details class="picker-project" open><summary>${esc(app.project().name)}</summary><div class="conversation-list"></div></details><button class="btn block" data-all-history>${icon('history',14)}全部项目的对话历史</button></div>`);
       const list=menu.querySelector('.conversation-list');
-      for(const c of [...conversations(app.project())].sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
+      for(const c of [...mgr.conversationList()].sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))){
         const a=sessions.find(x=>x.id===c.assistantId);
-        const row=el(`<div class="conversation-row ${c.id===s.conversationId?'on':''}"><button data-open><b>${esc(c.title)}</b><small>${esc(a?.name||'已删除的助手')} · ${new Date(c.updatedAt).toLocaleDateString('zh-CN')}</small></button><button class="icon-btn sm" data-more aria-label="管理 ${esc(c.title)}">${icon('more',16)}</button></div>`);
+        const row=el(`<div class="conversation-row ${c.id===s.conversationId?'on':''}"><button data-open><b>${esc(c.title)}</b><small>${esc(a?.name||'已删除的助手')} · ${new Date(c.updatedAt).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}</small></button><button class="icon-btn sm" data-more aria-label="管理 ${esc(c.title)}">${icon('more',16)}</button></div>`);
         row.querySelector('[data-open]').onclick=()=>{closePicker();openConversation(c,s);};
         row.querySelector('[data-more]').onclick=e=>showMenu([
           {label:'在独立窗口打开',icon:'undock',onClick:()=>{closePicker();openConversation(c,null,true);}},
@@ -343,6 +349,7 @@ export function createAgent(app) {
         ],0,0,{anchor:e.currentTarget});list.append(row);
       }
       menu.querySelector('[data-create]').onclick=()=>{closePicker();mgr.newConversation(s);};
+      menu.querySelector('[data-all-history]').onclick=()=>{closePicker();app.openSettings('history');};
       document.body.append(menu);const r=anchor.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(innerWidth-340,r.left))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,r.bottom+8))+'px';
       const outside=e=>{if(!menu.contains(e.target)&&!anchor.contains(e.target)&&!e.target.closest('.menu'))closePicker();};
       const key=e=>{if(e.key==='Escape'){closePicker();anchor.focus();}};
@@ -375,7 +382,8 @@ export function createAgent(app) {
       const menu=el(`<div class="assistant-picker" role="dialog" aria-label="选择助手"><header>${floating?'在悬浮窗打开':'选择助手'}</header><div class="assistant-picker-list"></div><button class="btn block" data-manage>${icon('plus',15)}新建或管理助手</button></div>`);
       const choose=(s,float)=>{closePicker();if(float){mgr.newWindow(s);return;}else{if(docked&&docked!==s){docked.root.remove();docked=null;}dock(s);}mgr.setActive(s);};
       for(const s of sessions){
-        const row=el(`<div class="assistant-picker-row"><i class="picker-avatar">${avatar(s,28)}</i><span><b>${esc(s.name)}</b><small>${esc(s.role)}</small></span><button class="btn small" data-switch>${s===docked?'当前':'切换'}</button><button class="icon-btn" data-float aria-label="在悬浮窗打开 ${esc(s.name)}">${icon('plus',17)}</button></div>`);
+        const current=s.id===target()?.id;
+        const row=el(`<div class="assistant-picker-row ${current?'current':''}"><i class="picker-avatar">${avatar(s,28)}</i><span><b>${esc(s.name)}</b><small>${esc(s.role)}</small></span><button class="btn small ${current?'current-assistant':''}" data-switch>${current?'当前助手':'切换'}</button><button class="icon-btn" data-float aria-label="在悬浮窗打开 ${esc(s.name)}">${icon('plus',17)}</button></div>`);
         row.querySelector('[data-switch]').onclick=()=>choose(s,false);row.querySelector('[data-float]').onclick=()=>choose(s,true);menu.querySelector('.assistant-picker-list').append(row);
       }
       menu.querySelector('[data-manage]').onclick=()=>{closePicker();mgr.manage();};document.body.append(menu);
@@ -429,9 +437,10 @@ export function createAgent(app) {
     saveConversation(s) {
       const p = app.project();
       if (!p) return;
-      const c=conversations(p).find(c=>c.id===s.conversationId);
+      const c=conversationRecords(p).find(c=>c.id===s.conversationId);
       if(!c)return;
       Object.assign(c,s.conversation(),{updatedAt:new Date().toISOString()});
+      conversations(p);
       if(!c.named&&c.msgs?.some(m=>m.role==='user'))c.title=c.msgs.find(m=>m.role==='user').text.slice(0,32);
       app.bus.saveMeta();
     },

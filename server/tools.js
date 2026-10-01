@@ -28,7 +28,7 @@ async function execute(name,a,c){
   if(name==='ui_action'){c.guard?.();return ui.send({...a,projectId:a.projectId||c.project});}
   if(name.startsWith('plugin_')) {const p=store.getProject(c.project);return {name:p.name,pages:p.pages.length,openMarks:(p.marks||[]).filter(x=>!x.done).length,locks:p.locks};}
   if(name==='project_context'){
-    const {assistantChats,conversations,activeConversations,...project}=store.getProject(c.project);
+    const {assistantChats,conversations,conversationDrafts,activeConversations,...project}=store.getProject(c.project);
     const tasks=require('./tasks').list(c.project).slice(-30).map(({id,parent,assistantId,name,goal,status,commits})=>({id,parent,assistantId,name,goal,status,commits}));
     return {project,tasks};
   }

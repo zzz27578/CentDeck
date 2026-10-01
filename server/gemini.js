@@ -35,12 +35,12 @@ async function complete({p,model,messages,tools,think,signal,maxTokens,call}) {
     if(budget+512>maxTokens)throw new ApiError(400,`Gemini ${level} 原生思考预算需要至少 ${budget+512} 个输出 token，当前可用 ${maxTokens}；请选择较低档位或兼容接口，未自动降档`);
     generationConfig.thinkingConfig={thinkingBudget:budget};
   }
-  const body={contents,systemInstruction:{parts:[{text:system.join('\n')}]},generationConfig};
+  const body={contents,systemInstruction:{parts:[{text:system.join('\n')}]},generationConfig:{...p.bodyParams,...generationConfig}};
   if(tools?.length&&p.tools!==false)body.tools=[{functionDeclarations:tools.map(t=>({name:t.function.name,description:t.function.description,parametersJsonSchema:t.function.parameters}))}];
   const j=await call(p,'models/'+encodeURIComponent(model.replace(/^models\//,''))+':generateContent',body,signal);
   const candidate=j.candidates?.[0], parts=candidate?.content?.parts;
   if(!parts?.length)throw new ApiError(502,'Gemini 未返回内容：'+(j.promptFeedback?.blockReason||candidate?.finishReason||'empty'));
   const tool_calls=parts.filter(x=>x.functionCall).map((x,i)=>({id:'gemini-'+Date.now()+'-'+i,type:'function',function:{name:x.functionCall.name,arguments:JSON.stringify(x.functionCall.args||{})}}));
-  return {message:{role:'assistant',content:parts.filter(x=>x.text&&!x.thought).map(x=>x.text).join('\n'),...(tool_calls.length?{tool_calls}:{}),geminiParts:parts},usage:j.usageMetadata?{total_tokens:j.usageMetadata.totalTokenCount}:null,finishReason:candidate.finishReason==='MAX_TOKENS'?'length':candidate.finishReason};
+  return {message:{role:'assistant',content:parts.filter(x=>x.text&&!x.thought).map(x=>x.text).join('\n'),...(tool_calls.length?{tool_calls}:{}),geminiParts:parts},usage:j.usageMetadata?{total_tokens:j.usageMetadata.totalTokenCount,prompt_tokens:j.usageMetadata.promptTokenCount,completion_tokens:j.usageMetadata.candidatesTokenCount}:null,finishReason:candidate.finishReason==='MAX_TOKENS'?'length':candidate.finishReason};
 }
 module.exports={complete};

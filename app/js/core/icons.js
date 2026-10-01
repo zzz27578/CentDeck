@@ -57,6 +57,8 @@ const P = {
   keyboard: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
   reset: '<path d="M4 12a8 8 0 108-8 8.2 8.2 0 00-5.6 2.3L4 8.5"/><path d="M4 4v4.5h4.5"/>',
   upload: '<path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/>',
+  download: '<path d="M12 3v13m-5-5 5 5 5-5M4 18v3h16v-3"/>',
+  plug: '<path d="M8 3v5m8-5v5M5 8h14v3a7 7 0 01-14 0V8Zm7 10v4"/>',
   file: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M4 4l16 16"/><path d="M9.9 5.8A9.5 9.5 0 0112 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 01-3.3 4.1M6.3 7.6A17 17 0 002.5 12S6 18.5 12 18.5a9 9 0 004-.9"/>',

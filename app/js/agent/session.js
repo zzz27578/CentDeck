@@ -4,7 +4,7 @@ import { el, esc, uid, showMenu, toast } from "../core/ui.js";
 import { avatar, taskStatus } from "./studio.js";
 import { refLabel, refKey, mentionItems, describeRefs } from "./refs.js";
 import { readAttachment, ATTACHMENT_ACCEPT, MAX_ATTACHMENTS } from './attachments.js';
-import { historyFor, tasksForConversation, isBusy, HISTORY_LIMIT } from './conversations.js';
+import { historyFor, tasksForConversation, isBusy, tokenEstimate, tokenLabel } from './conversations.js';
 
 import { THINK, normalizeThink } from "../core/reasoning.js";
 export { THINK };
@@ -47,7 +47,7 @@ export function createSession(app, mgr, opts) {
       <button class="icon-btn sm" data-a="close" data-tip="收起" data-kbd="Ctrl+K">${icon("close", 14)}</button>
     </div>
     <button class="ag-summary" data-a="fold"><i></i><span>空闲</span></button>
-    <div class="ag-conversations"><button data-a="conversations" aria-label="打开项目对话列表">${icon('history',16)}<span>新对话</span>${icon('chevDown',12)}</button><button data-a="new-chat" aria-label="开始新对话">${icon('plus',14)}新对话</button></div>
+    <div class="ag-conversations"><button data-a="conversations" aria-label="打开项目对话列表">${icon('history',16)}<span>新对话</span>${icon('chevDown',12)}</button><div class="context-meter"><button class="context-ring" aria-label="上下文用量" aria-expanded="false" data-a="context"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7"/><circle class="context-used" cx="10" cy="10" r="7" pathLength="100"/></svg></button><div class="context-popover"><b>上下文用量</b><strong data-usage></strong><p data-context-detail></p><button data-a="compact">${icon('layers',14)}压缩上下文 <kbd>/compact</kbd></button><p class="context-result" role="status"></p></div></div><button data-a="new-chat" aria-label="开始新对话">${icon('plus',14)}新对话</button></div>
     <div class="ag-msgs" role="log" aria-label="聊天记录"></div>
     <div class="agent-composer">
       <div class="comp-controls"><div class="seg" data-mode><button data-mode-v="plan" class="on">计划</button><button data-mode-v="create">创建</button></div><select aria-label="协作方式" data-collab><option value="off">独立执行</option><option value="confirm">协作前确认</option><option value="auto">自动协作</option></select><select aria-label="修改范围" data-scope><option value="all">全站</option><option value="page">当前页</option></select></div>
@@ -62,7 +62,6 @@ export function createSession(app, mgr, opts) {
         <span class="grow"></span>
         <button class="comp-send" data-a="send" data-tip="发送" data-kbd="Enter">${icon("send", 17)}</button>
       </div>
-      <details class="chat-context"><summary>上下文 <span></span></summary><div></div></details>
       <input type="file" multiple hidden>
     </div></div>`);
   s.root = root;
@@ -80,6 +79,7 @@ export function createSession(app, mgr, opts) {
   };
   ta.addEventListener("input", () => {
     grow();
+    paintContext();
     mgr.saveConversation(s);
   });
   q(".ag-head").ondblclick = (e) => {
@@ -150,6 +150,7 @@ export function createSession(app, mgr, opts) {
       };
       host.appendChild(chip);
     });
+    paintContext();
   }
   function paintPickers() {
     q("[data-a=model] span").textContent = mgr.modelLabel(s.model);
@@ -176,9 +177,29 @@ export function createSession(app, mgr, opts) {
     paintContext();
   }
   function paintContext(){
-    const history=historyFor(s.msgs),c=s.task?.context;
-    q('.chat-context summary span').textContent=`${history.length} 条消息${c?' · 约 '+c.estimatedInputTokens.toLocaleString()+' tokens':''}`;
-    q('.chat-context > div').textContent=`模型：${mgr.modelLabel(s.model)}\n下次回复携带最近 ${history.length} 条消息（最多 ${HISTORY_LIMIT} 条），新对话从空历史开始。${c?'\n上次请求输入估算：'+c.estimatedInputTokens+' tokens，包含当时的系统规范、消息、工具定义和工具结果；不是模型容量占比。':''}\n当前引用：${describeRefs(app,s.refs).join('；')||'无'}\n范围：${q('[data-scope]').value==='page'?(app.state.page||'全站'):'全站'} · ${s.mode==='create'?'创建':'计划'}`;
+    const c=s.task?.context,capacity=mgr.modelCapacity(s.model),compact=!!s.compaction;
+    const estimate=tokenEstimate(historyFor(s.msgs,s.compaction))+tokenEstimate(ta.value||'')+(c?.overheadTokens||0);
+    const actual=!compact&&!ta.value&&c?.inputTokens!=null&&c?.outputTokens!=null;
+    const used=!s.msgs.length&&!ta.value?0:actual?c.inputTokens+c.outputTokens:!compact&&!ta.value&&c?(c.inputTokens??c.estimatedInputTokens)+(c.outputTokens??tokenEstimate(s.task.output||'')):estimate;
+    q('[data-usage]').textContent=`${actual?'':'约 '}${tokenLabel(used)}${capacity?' / '+tokenLabel(capacity):''} tokens`;
+    q('[data-context-detail]').textContent=`${capacity?Math.min(100,Math.round(used/capacity*100))+'% 已使用':'模型容量未配置'} · ${actual?'上次请求实际用量':'估算用量'}${compact?' · 已压缩':''}\n压缩保留聊天原文，用摘要替代后续请求中的较早消息。`;
+    q('.context-used').style.strokeDasharray=`${capacity?Math.min(100,used/capacity*100):0} 100`;
+    q('.context-ring').dataset.unknown=String(!capacity);
+    q('.context-ring').setAttribute('aria-label','上下文用量：'+q('[data-usage]').textContent);
+    q('[data-a=compact]').disabled=isBusy(s.task)||!!s.compacting||s.msgs.length<2;
+  }
+  async function compactContext(){
+    if(s.compacting||isBusy(s.task)||s.msgs.length<2)return;
+    const conversationId=s.conversationId,projectId=app.project().id;
+    const prefix=s.msgs.length>2?s.msgs.slice(0,-2):s.msgs.slice(),through=prefix.at(-1).id;
+    s.compacting=true;paintContext();q('.context-meter').classList.add('open');q('.context-result').classList.remove('error-text');q('.context-result').textContent='正在压缩…';
+    try{
+      const result=await app.api.compactChat({model:s.model,think:s.think,history:historyFor(prefix,s.compaction)});
+      if(s.conversationId!==conversationId||app.project()?.id!==projectId||!prefix.every((m,i)=>s.msgs[i]?.id===m.id&&s.msgs[i]?.text===m.text))return;
+      if(!result.reduced){q('.context-result').textContent='当前上下文已足够精简，无需压缩。';return;}
+      s.compaction={summary:result.summary,throughMessageId:through,at:new Date().toISOString()};
+      mgr.saveConversation(s);q('.context-result').textContent=`已压缩：${tokenLabel(result.beforeTokens)} → ${tokenLabel(result.afterTokens)} tokens`;
+    }catch(e){if(s.conversationId===conversationId){q('.context-result').classList.add('error-text');q('.context-result').textContent=e.message;}}finally{s.compacting=false;paintContext();}
   }
   function paintMsgs() {
     const host = q(".ag-msgs");
@@ -200,7 +221,7 @@ export function createSession(app, mgr, opts) {
         b.querySelector('[data-copy]').onclick=async()=>{try{await navigator.clipboard.writeText(m.text||'');toast('已复制','ok');}catch{toast('复制失败，请选择文字复制','err');}};
         b.querySelector('[data-edit]')?.addEventListener('click',()=>{
           if(isBusy(s.task)||b.querySelector('.msg-edit'))return;
-          const edit=el('<form class="msg-edit"><textarea aria-label="编辑消息" rows="4"></textarea><small>将在新对话分支中重发，保留当前记录及已保存的页面。</small><div><button type="button" data-cancel>取消</button><button type="submit" class="btn primary small">保存并发送</button></div></form>');
+          const edit=el('<form class="msg-edit"><textarea aria-label="编辑消息" rows="4"></textarea><small>在当前对话中重新发送，并替换这条消息之后的回复。已保存的网页修改会保留。</small><div><button type="button" data-cancel>取消</button><button type="submit" class="btn primary small">保存并发送</button></div></form>');
           edit.querySelector('textarea').value=m.request?.text||m.text;
           edit.querySelector('[data-cancel]').onclick=()=>{edit.remove();b.classList.remove('is-editing');};
           edit.onsubmit=e=>{e.preventDefault();const text=edit.querySelector('textarea').value.trim();if(text)replay(s.msgs.indexOf(m),text);};
@@ -232,11 +253,12 @@ export function createSession(app, mgr, opts) {
   }
   function paintResponse(){
     const t=s.task,host=q('.ag-msgs'),busy=isBusy(t)||sending;
-    const key=JSON.stringify([t?.id,t?.status,t?.phase,t?.error,t?.question,t?.events?.at(-1),sending]);
+    const key=JSON.stringify([t?.id,t?.status,t?.phase,t?.error,t?.question,t?.events?.at(-1),sending,s.sendError]);
     const sendButton=q('[data-a=send]');
     sendButton.innerHTML=icon(busy?'rect':'send',17);sendButton.setAttribute('aria-label',busy?'停止回复':'发送');sendButton.setAttribute('data-tip',busy?'停止回复':'发送');
     if(key===responseKey){const row=host.querySelector('.ag-response');if(row&&host.lastElementChild!==row)host.append(row);return;}responseKey=key;
     host.querySelector('.ag-response')?.remove();
+    if(s.sendError){const box=el(`<section class="ag-response"><p class="response-error">${esc(s.sendError)}</p><button class="icon-btn" data-retry-send aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button></section>`);box.querySelector('button').onclick=send;host.append(box);return;}
     if(!t&&!sending||t?.status==='completed')return;
     const label=sending?'正在发送':t.status==='queued'?'等待回复':t.status==='running'?(t.model==='mcp:external'&&t.phase==='thinking'?'等待外部助手接管':{thinking:'正在思考',output:'正在输出',tool:'正在使用工具'}[t.phase]||'正在思考'):taskStatus(t);
     const replying=mgr.sessions().find(a=>a.id===(t?.assistantId||s.recipient))||s;
@@ -245,8 +267,9 @@ export function createSession(app, mgr, opts) {
     const button=(label,fn)=>{const b=el(`<button class="btn small">${label}</button>`);b.onclick=fn;actions.append(b);};
     if(t&&!['completed','cancelled','failed','conflict','paused'].includes(t.status))button('停止回复',()=>taskAction('cancel'));
     if(t&&['paused','failed','conflict','cancelled'].includes(t.status)&&!t.question){
-      button('继续回复',()=>taskAction('resume'));
-      button('重新尝试',()=>{const i=s.msgs.findLastIndex(m=>m.role==='user'&&m.taskId===t.id);if(i>=0)replay(i);});
+      if(['paused','cancelled'].includes(t.status)&&!t.error)button('继续回复',()=>taskAction('resume'));
+      const retry=el(`<button class="icon-btn" aria-label="重新尝试" data-tip="重新尝试">${icon('refresh',16)}</button>`);
+      retry.onclick=()=>{if(t.status==='paused'&&(t.truncated||t.limitReached)){taskAction('resume');return;}const i=s.msgs.findLastIndex(m=>m.role==='user'&&m.taskId===t.id);if(i>=0)replay(i);};actions.append(retry);
     }
     if(t?.question){
       const box=row.querySelector('.response-question');
@@ -259,8 +282,11 @@ export function createSession(app, mgr, opts) {
   async function replay(index,text){
     if(isBusy(s.task)||sending)return;
     const m=s.msgs[index],request=m.request||{};
-    const prefix=structuredClone(s.msgs.slice(0,index)).map(({taskId,...m})=>m);
-    mgr.newConversation(s,{msgs:prefix,title:'重新编辑的对话'});
+    const c=mgr.conversationRecord(s.conversationId),conversationId=s.conversationId;
+    const previous={msgs:s.msgs,task:s.task,compaction:s.compaction,ignoredTaskIds:[...c.ignoredTaskIds||[]]};
+    c.revisions ||= [];c.revisions.push({at:new Date().toISOString(),msgs:structuredClone(s.msgs.slice(index))});
+    c.ignoredTaskIds=[...new Set([...c.ignoredTaskIds||[],...s.msgs.slice(index).map(m=>m.taskId).filter(Boolean)])];
+    s.msgs=s.msgs.slice(0,index);s.task=null;s.compaction=null;responseKey='';
     s.mode=request.mode||s.mode;s.model=request.model||s.model;s.think=request.think||s.think;
     s.recipient=request.assistantId&&request.assistantId!==s.id?request.assistantId:null;
     s.refs=structuredClone(request.refs||[]);s.skill=request.skill||null;
@@ -268,12 +294,16 @@ export function createSession(app, mgr, opts) {
     q('[data-scope]').value=Array.isArray(request.scope)?'page':'all';
     q('[data-collab]').value=request.collaboration||'off';
     root.querySelectorAll('[data-mode-v]').forEach(b=>b.classList.toggle('on',b.dataset.modeV===s.mode));
-    ta.value=text??request.text??m.text;paintChips();paintPickers();await send();
+    ta.value=text??request.text??m.text;paintChips();paintPickers();mgr.saveConversation(s);
+    const accepted=await send();
+    if(!accepted&&s.conversationId===conversationId){Object.assign(s,{msgs:previous.msgs,task:previous.task,compaction:previous.compaction});c.ignoredTaskIds=previous.ignoredTaskIds;c.revisions.pop();s.retrySend=()=>replay(index,text);mgr.saveConversation(s);paintMsgs();}
   }
   async function send() {
     if(sending)return;
+    if(s.retrySend){const retry=s.retrySend;s.retrySend=null;return retry();}
     if(isBusy(s.task)){await taskAction('cancel');return;}
     let text = ta.value.trim();
+    if(text==='/compact'){ta.value='';grow();await compactContext();return;}
     if (!text && !s.refs.length) return;
     if(s.task?.question&&['waiting_user','waiting_authorization'].includes(s.task.status)){
       if(text&&await taskAction('answer',{answer:text})){ta.value='';grow();mgr.saveConversation(s);}return;
@@ -291,8 +321,8 @@ export function createSession(app, mgr, opts) {
       refs: structuredClone(s.refs),mode:s.mode,skill:s.skill,scope:s.replayScope||(q('[data-scope]').value==='page'&&app.state.page?[app.state.page]:'all'),collaboration:q('[data-collab]').value,
     };
     const projectId=app.project().id,conversationId=s.conversationId;
-    const history=historyFor(s.msgs);
-    sending=true;paintResponse();
+    const history=historyFor(s.msgs,s.compaction);
+    s.sendError=null;sending=true;paintResponse();
     q("[data-a=send]").disabled = true;
     try {
       if ((await app.bus.flushMeta()) === false) return;
@@ -320,8 +350,8 @@ export function createSession(app, mgr, opts) {
       };
       const same=app.project()?.id===projectId&&s.conversationId===conversationId;
       if(!same){
-        if(app.project()?.id===projectId){const c=mgr.conversationList().find(c=>c.id===conversationId);if(c){c.msgs.push(message);app.bus.saveMeta();}}
-        return;
+        if(app.project()?.id===projectId){const c=mgr.conversationRecord(conversationId);if(c){c.msgs.push(message);app.bus.saveMeta();}}
+        return true;
       }
       // SSE can beat the POST response; preserve the newer status and put the prompt before its answer.
       s.task=s.task?.id===task.id?s.task:task;
@@ -334,7 +364,8 @@ export function createSession(app, mgr, opts) {
       paintMsgs();
       paintPickers();
       mgr.saveConversation(s);
-    } catch { /* The API displays the error; the draft remains available. */
+      return true;
+    } catch(e) {s.sendError=e.message;return false;
     } finally {
       sending=false;paintMsgs();
       s.replayScope=null;
@@ -346,6 +377,7 @@ export function createSession(app, mgr, opts) {
   }
 
   root.addEventListener("click", (e) => {
+    if(!e.target.closest('.context-meter')){q('.context-meter').classList.remove('open');q('[data-a=context]').setAttribute('aria-expanded','false');}
     const mode = e.target.closest("[data-mode-v]");
     if (mode) {
       (async () => {
@@ -372,6 +404,8 @@ export function createSession(app, mgr, opts) {
     if (a === "new") mgr.newWindow(s);
     if (a === 'conversations') mgr.pickConversation(b,s);
     if (a === 'new-chat') mgr.newConversation(s);
+    if(a==='compact')compactContext();
+    if(a==='context'){const opened=q('.context-meter').classList.toggle('open');b.setAttribute('aria-expanded',String(opened));}
     if (a === "switch") mgr.pickSession(b);
     if (a === "dock") mgr.toggleDock(s);
     if (a === "settings") app.openSettings();
@@ -533,7 +567,7 @@ export function createSession(app, mgr, opts) {
 
   Object.assign(s, {
     syncTasks(tasks) {
-      const own = tasksForConversation(tasks,mgr.conversationList().find(c=>c.id===s.conversationId));
+      const own = tasksForConversation(tasks,mgr.conversationRecord(s.conversationId));
       s.task = own.at(-1) || null;
       let changed = false;
       for (const t of own) {
@@ -568,6 +602,7 @@ export function createSession(app, mgr, opts) {
         refs: s.refs.filter((r) => r.kind !== "file"),
         skill: s.skill,
         model:s.model,
+        compaction:s.compaction,
         recipient:s.recipient,
         scope:q('[data-scope]').value,
         draft: ta.value,
@@ -577,6 +612,7 @@ export function createSession(app, mgr, opts) {
     },
     restore(data = {}) {
       s.conversationId=data.id||null;
+      s.compaction=data.compaction||null;s.sendError=null;s.retrySend=null;
       responseKey='';q('.ag-msgs').innerHTML='';
       s.msgs = Array.isArray(data.msgs) ? data.msgs : [];
       s.refs = Array.isArray(data.refs) ? data.refs : [];

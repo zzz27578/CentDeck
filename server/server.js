@@ -220,6 +220,21 @@ async function handle(req, res) {
   const exportMatch=pathname.match(/^\/api\/projects\/([^/]+)\/export$/);
   if(exportMatch&&method==='GET'){const buffer=require('./export').exportProject(decodeURIComponent(exportMatch[1]));res.writeHead(200,{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="centdeck-project.zip"','Content-Length':buffer.length});res.end(buffer);return;}
   if(pathname==='/api/providers/discover'&&method==='POST'){sendData(res,await require('./providers').discoverDraft(await readJsonBody(req)));return;}
+  if(pathname==='/api/providers/test'&&method==='POST'){sendData(res,await providers.testModel(await readJsonBody(req)));return;}
+  if(pathname==='/api/chat/compact'&&method==='POST'){sendData(res,await require('./conversation-context').compact(await readJsonBody(req)));return;}
+  if(pathname==='/api/conversations'&&method==='GET'){
+    const {conversations,hasMessages,tasksForConversation}=await import('../app/js/agent/conversations.js');
+    sendData(res,store.listProjects().map(summary=>{
+      const p=store.getProject(summary.id);
+      const records=conversations(p),runs=tasks.list(p.id);
+      for(const c of records)for(const t of tasksForConversation(runs,c))if(t.output){
+        const message=c.msgs.find(m=>m.role==='assistant'&&m.taskId===t.id);
+        if(message)message.text=t.output;else c.msgs.push({role:'assistant',taskId:t.id,text:t.output});
+        if(t.updatedAt>c.updatedAt)c.updatedAt=t.updatedAt;
+      }
+      return {id:p.id,name:p.name,conversations:conversations(p).filter(hasMessages).map(c=>({id:c.id,assistantId:c.assistantId,title:c.title,updatedAt:c.updatedAt,preview:c.msgs.at(-1)?.text?.slice(0,180)||'',search:c.msgs.map(m=>m.text||'').join(' ').slice(0,30000)}))};
+    }));return;
+  }
   const pm=pathname.match(/^\/api\/providers\/([\w-]+)\/models$/);
   if(pm&&method==='GET'){sendData(res,await providers.discover(pm[1]));return;}
   const tm=pathname.match(/^\/api\/projects\/([^/]+)\/tasks(?:\/([^/]+))?$/);

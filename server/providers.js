@@ -69,6 +69,24 @@ function baseUrl(value) {
     throw new ApiError(400, "接口地址格式不正确");
   return u.href.replace(/\/$/, "");
 }
+function params(value){
+  if(value==null)return {};
+  if(typeof value!=='object'||Array.isArray(value)||JSON.stringify(value).length>16000)throw new ApiError(400,'请求体参数必须是 16 KB 内的 JSON 对象');
+  const reserved=['model','messages','contents','systemInstruction','tools','tool_choice','stream','stream_options','__proto__','constructor','prototype'];
+  if(Object.keys(value).some(k=>reserved.includes(k)))throw new ApiError(400,'自定义参数不能覆盖消息、模型、工具或流式控制字段');
+  return value;
+}
+function headers(value){
+  if(value==null)return {};
+  if(typeof value!=='object'||Array.isArray(value)||Object.keys(value).length>20)throw new ApiError(400,'请求头必须是最多 20 项的 JSON 对象');
+  for(const [k,v]of Object.entries(value))if(!/^[\w-]+$/.test(k)||typeof v!=='string'||v.length>2048||/[\r\n]/.test(v)||/^(authorization|cookie|host|content-length|content-type|proxy-authorization)$/i.test(k)||/api.?key|access.?token/i.test(k))throw new ApiError(400,'请求头格式不正确；认证信息请使用 API Key 字段');
+  return value;
+}
+function capability(c={}){
+  const contextWindow=Number(c.contextWindow||0);
+  if(!Number.isInteger(contextWindow)||contextWindow<0||contextWindow>10000000)throw new ApiError(400,'上下文窗口应为 0–10000000 的整数');
+  return {text:c.text!==false,vision:!!c.vision,audio:!!c.audio,tools:c.tools!==false,contextWindow,bodyParams:params(c.bodyParams)};
+}
 function saveSettings(body) {
   const r = raw();
   r.providers = r.providers || {};
@@ -96,7 +114,9 @@ function saveSettings(body) {
     if(p.protocol!=null&&!['openai','gemini'].includes(p.protocol))throw new ApiError(400,'不支持的接口格式');
     cur.protocol = p.protocol || cur.protocol || 'openai';
     cur.format = p.format || cur.protocol;
-    if(p.modelCapabilities){cur.modelCapabilities={};for(const [name,c] of Object.entries(p.modelCapabilities).slice(0,500)){cur.modelCapabilities[name]={text:true,vision:!!c.vision,audio:!!c.audio,tools:c.tools!==false};}}
+    if(p.modelCapabilities){cur.modelCapabilities=Object.create(null);for(const [name,c] of Object.entries(p.modelCapabilities).slice(0,500))cur.modelCapabilities[name]=capability(c);}
+    if(p.timeoutSeconds!=null){const n=Number(p.timeoutSeconds);if(!Number.isInteger(n)||n<5||n>600)throw new ApiError(400,'超时时间应为 5–600 秒');cur.timeoutSeconds=n;}
+    if(p.customHeaders!=null)cur.customHeaders=headers(p.customHeaders);
     if (p.baseUrl != null) cur.baseUrl = baseUrl(p.baseUrl);
     if (!cur.baseUrl) throw new ApiError(400, "请填写接口地址");
     if (p.apiKey === null) delete cur.apiKey;
@@ -143,13 +163,14 @@ function resolve(model) {
   return { provider: {...p,...p.modelCapabilities?.[name]}, model: name };
 }
 async function call(p, endpoint, body, signal, onProgress) {
-  const controller = AbortSignal.timeout(180000);
+  const controller = AbortSignal.timeout((p.timeoutSeconds||180)*1000);
   const signals = signal ? AbortSignal.any([controller, signal]) : controller;
   let res;
   try {
     res = await fetch(baseUrl(p.baseUrl) + "/" + endpoint, {
       method: body ? "POST" : "GET",
       headers: {
+        ...headers(p.customHeaders),
         "Content-Type": "application/json",
         ...(p.apiKey ? (p.protocol==='gemini'?{'x-goog-api-key':p.apiKey}:{ Authorization: "Bearer " + p.apiKey }) : {}),
       },
@@ -206,7 +227,8 @@ async function discoverProvider(p) {
   const j = await call(p, "models");
   if(p.protocol==='gemini'){
     if(!Array.isArray(j.models))throw new ApiError(502,'接口没有返回 models 列表');
-    return {models:j.models.filter(m=>m.supportedGenerationMethods?.includes('generateContent')).map(m=>m.name.replace(/^models\//,'')).sort(),latency:Date.now()-start};
+    const models=j.models.filter(m=>m.supportedGenerationMethods?.includes('generateContent'));
+    return {models:models.map(m=>m.name.replace(/^models\//,'')).sort(),metadata:Object.fromEntries(models.map(m=>[m.name.replace(/^models\//,''),{contextWindow:Number(m.inputTokenLimit)||0}])),latency:Date.now()-start};
   }
   if (!Array.isArray(j.data))
     throw new ApiError(502, "接口没有返回 data 模型列表");
@@ -215,6 +237,7 @@ async function discoverProvider(p) {
       ...new Set(j.data.map((x) => x.id).filter((x) => typeof x === "string")),
     ].sort(),
     latency: Date.now() - start,
+    metadata:Object.fromEntries(j.data.filter(m=>typeof m.id==='string').map(m=>[m.id,{contextWindow:Number(m.context_window||m.context_length||m.max_input_tokens)||0}])),
   };
 }
 async function complete(
@@ -230,17 +253,41 @@ async function complete(
   if (p.id === 'mcp') {const {onProgress,...externalContext}=context;return require('./external-agent').enqueue({messages,tools:tools || [],think:require('./reasoning').normalizeThink(think),maxTokens,context:externalContext}, signal);}
   if(p.protocol==='gemini')return require('./gemini').complete({p,model,messages,tools,think,signal,maxTokens,call});
   const b = {
+    ...params(p.bodyParams),
     model,
     messages,
     stream: !!context.onProgress,
-    max_tokens: Math.max(1, Math.min(16384, maxTokens)),
+    max_tokens: Math.max(1, Math.min(16384, maxTokens,Number(p.bodyParams?.max_tokens)||Infinity)),
   };
   if (tools?.length && p.tools !== false) b.tools = tools;
+  if(p.bodyParams?.max_completion_tokens!=null){b.max_completion_tokens=Math.max(1,Math.min(maxTokens,Number(p.bodyParams.max_completion_tokens)||maxTokens));delete b.max_tokens;}
   if(context.onProgress)b.stream_options={include_usage:true};
-  b.reasoning_effort = require("./reasoning").normalizeThink(think);
+  b.reasoning_effort = p.bodyParams?.reasoning_effort || require("./reasoning").normalizeThink(think);
   const j = await call(p, "chat/completions", b, signal, context.onProgress);
   if (!j.choices?.[0]?.message)
     throw new ApiError(502, "模型响应缺少 choices.message");
   return { message: j.choices[0].message, usage: j.usage || null, finishReason:j.choices[0].finish_reason };
 }
-module.exports = { getSettings, saveSettings, resolve, discover, discoverDraft, complete };
+const testing=new Set();
+async function testModel(b){
+  const draft=b.provider||{},model=String(b.model||'').trim();
+  if(!model||model.length>250)throw new ApiError(400,'请指定一个模型 ID');
+  const saved=listRaw().find(p=>p.id===draft.id)||{};
+  const p={...saved,...draft,apiKey:draft.apiKey?.trim()||saved.apiKey};
+  p.baseUrl=baseUrl(p.baseUrl);p.customHeaders=headers(p.customHeaders);
+  p.timeoutSeconds=Math.min(600,Math.max(5,Number(p.timeoutSeconds)||120));
+  if(!['openai','gemini'].includes(p.protocol||'openai'))throw new ApiError(400,'不支持的接口格式');
+  if(!p.noKey&&!p.apiKey)throw new ApiError(400,'请填写 API Key');
+  const key=p.id+'|'+model;if(testing.has(key))throw new ApiError(409,'该模型正在测试，请等待结果');
+  testing.add(key);const started=Date.now();
+  try{
+    // Exactly one inference HTTP request: no discovery, tools, retry or fallback.
+    const j=p.protocol==='gemini'
+      ?await call(p,'models/'+encodeURIComponent(model.replace(/^models\//,''))+':generateContent',{contents:[{role:'user',parts:[{text:'Reply OK.'}]}],generationConfig:{maxOutputTokens:64}})
+      :await call(p,'chat/completions',{model,messages:[{role:'user',content:'Reply OK.'}],max_tokens:64,stream:false});
+    const reply=p.protocol==='gemini'?j.candidates?.[0]?.content?.parts?.filter(x=>x.text&&!x.thought).map(x=>x.text).join(''):j.choices?.[0]?.message?.content;
+    if(!j.choices?.length&&!j.candidates?.length)throw new ApiError(502,'接口没有返回模型响应');
+    return {ok:true,requests:1,latencyMs:Date.now()-started,reply:String(reply||'接口已响应，未返回可见文本').slice(0,160)};
+  }finally{testing.delete(key);}
+}
+module.exports = { getSettings, saveSettings, resolve, discover, discoverDraft, complete, testModel };

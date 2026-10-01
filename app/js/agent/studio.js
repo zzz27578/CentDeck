@@ -1,3 +1,5 @@
+import { mountProviders } from './provider-panel.js';
+import { mountHistory } from './history-panel.js';
 import { renderExtensions } from './extensions-page.js';
 import { THINK, normalizeThink } from "../core/reasoning.js";
 import { el, esc, uid, toast, confirmDlg } from "../core/ui.js";
@@ -265,89 +267,9 @@ export async function openStudio(app, section = "assistants") {
   }
   function providers() {
     dirty=false;
-    content.innerHTML = `<div class="studio-toolbar"><label class="default-model">默认模型<select>${modelOptions(settings.defaultModel)}</select></label><button class="btn primary" data-new>${icon("plus", 16)}添加提供商</button></div><div class="provider-list"></div>`;
-    const sel = content.querySelector("select");
-    sel.value = settings.defaultModel || "auto";
-    sel.onchange = async () => {
-      settings = await app.api.saveSettings({
-        providers: [],
-        defaultModel: sel.value === "auto" ? "" : sel.value,
-      });
-      app.bus.emit("settings");
-    };
-    content.querySelector("[data-new]").onclick = () => editProvider(null);
-    if (!settings.providers.length)
-      content.querySelector(".provider-list").innerHTML =
-        '<div class="studio-empty">' +
-        mark(74) +
-        "<h2>连接一个模型，开始创作。</h2></div>";
-    for (const p of settings.providers) {
-      const row = el(
-        `<button class="provider-row"><span class="provider-symbol">${icon("layers", 24)}</span><span><b>${esc(p.name)}</b><small>${esc(p.baseUrl || "")}</small></span><span class="provider-count">${p.models.length} 个模型</span><span class="status-dot ${p.enabled ? "active" : ""}"></span>${icon("chevRight", 18)}</button>`,
-      );
-      row.onclick = () => editProvider(p);
-      content.querySelector(".provider-list").appendChild(row);
-    }
+    off=mountProviders(app,content,{settings,onDirty:value=>{dirty=value;},canLeave,onSaved:value=>{settings=value;}});
   }
-  function editProvider(existing) {
-    const p={id:uid('provider'),name:'自定义提供商',baseUrl:'',enabled:true,noKey:false,models:[],protocol:'openai',modelCapabilities:{},...structuredClone(existing||{})};
-    let discovered=p.models.slice();
-    const formats=[{id:'openai',name:'OpenAI Compatible',icon:'code',url:'https://api.openai.com/v1'},{id:'gemini',name:'Google Gemini · 原生',icon:'sparkle',url:'https://generativelanguage.googleapis.com/v1beta'},{id:'deepseek',name:'DeepSeek · OpenAI Compatible',icon:'brain',url:'https://api.deepseek.com/v1'}];
-    content.innerHTML=`<button class="text-back">${icon('back',17)}返回所有提供商</button><form class="studio-form provider-editor" autocomplete="off">
-      <section class="provider-section"><header><span class="provider-step">01</span><div><h2>连接设置</h2><p>选择接口格式，填入服务地址和密钥。</p></div></header>
-      <div class="provider-fields"><label>连接名称<input name="name" autocomplete="off" required maxlength="80" value="${esc(p.name)}"></label><div class="protocol-selector"><span data-protocol-icon></span><label>接口格式<select name="format">${formats.map(x=>`<option value="${x.id}" ${(p.format||p.protocol)===x.id?'selected':''}>${x.name}</option>`).join('')}</select></label></div></div>
-      <label>API 地址<input name="baseUrl" type="url" autocomplete="off" spellcheck="false" required placeholder="https://api.example.com/v1" value="${esc(p.baseUrl)}"></label>
-      <label for="provider-credential">API Key</label><div class="credential-field" data-private><input id="provider-credential" name="connectionCredential" type="text" class="credential-masked" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore aria-label="API Key" placeholder="${p.hasKey?'已保存 '+esc(p.keyHint)+'，留空保留':'粘贴 API Key'}"><button type="button" class="icon-btn" data-reveal aria-label="显示本次输入的 API Key" aria-pressed="false">${icon('eye',18)}</button></div>
-      <p class="form-hint">第三方或中转接口通常选择 OpenAI Compatible。已保存的密钥不回传到此表单。</p>
-      <div class="provider-options">${[['enabled','启用连接',p.enabled],['noKey','无需密钥',p.noKey]].map(([name,label,on])=>`<label class="extension-toggle"><input type="checkbox" role="switch" name="${name}" ${on?'checked':''}><i class="switch-track" aria-hidden="true"></i><span>${label}</span></label>`).join('')}</div></section>
-      <section class="provider-section"><header><span class="provider-step">02</span><div><h2>可用模型</h2><p>选中要使用的模型，按实际支持情况设置能力。</p></div><button class="btn small" type="button" data-fetch>${icon('refresh',15)}获取模型</button></header>
-      <div class="model-tools"><input class="model-search" placeholder="搜索模型" aria-label="搜索模型"><div class="model-add"><input placeholder="手动输入模型 ID" aria-label="模型 ID"><button type="button" class="btn small" data-add>添加</button></div></div><div class="model-checklist"></div><p class="provider-result" role="status"></p></section>
-      <div class="studio-form-actions"><button class="btn primary" type="submit">保存连接</button>${existing?'<button type="button" class="btn ghost" data-clear>清除密钥</button><button type="button" class="btn ghost danger" data-delete>删除连接</button>':''}</div></form>`;
-    const form=content.querySelector('form');watchForm(form);
-    content.querySelector('.text-back').onclick=async()=>{if(await canLeave())providers();};
-    const format=()=>formats.find(x=>x.id===form.elements.format.value)||formats[0];
-    const updateFormat=()=>{form.querySelector('[data-protocol-icon]').innerHTML=`<img src="/app/assets/providers/${format().id}.svg" alt="${format().name}" width="28" height="28">`;};updateFormat();
-    form.elements.format.onchange=()=>{const old=form.elements.baseUrl.value;if(!old||formats.some(x=>x.url===old))form.elements.baseUrl.value=format().url;updateFormat();};
-    const credential=form.elements.connectionCredential,reveal=form.querySelector('[data-reveal]');
-    reveal.onclick=()=>{const visible=credential.classList.toggle('credential-visible');credential.classList.toggle('credential-masked',!visible);reveal.setAttribute('aria-pressed',String(visible));reveal.setAttribute('aria-label',visible?'隐藏 API Key':'显示本次输入的 API Key');};
-    const collect=()=>{const f=new FormData(form);for(const k of ['name','baseUrl','format'])p[k]=String(f.get(k)||'');p.apiKey=credential.value;p.protocol=p.format==='gemini'?'gemini':'openai';for(const k of ['enabled','noKey'])p[k]=f.has(k);return p;};
-    const paint=()=>{
-      const search=form.querySelector('.model-search').value.toLowerCase(),list=form.querySelector('.model-checklist');list.innerHTML='';
-      for(const m of discovered.filter(m=>m.toLowerCase().includes(search))){
-        const cap=p.modelCapabilities[m]||{text:true,vision:!!p.vision,audio:false,tools:p.tools!==false};
-        const row=el(`<article class="model-capability"><label class="model-enable"><input type="checkbox" data-model ${p.models.includes(m)?'checked':''}><b>${esc(m)}</b></label><div class="capability-options"><span class="capability fixed">${icon('text',15)}文本</span>${[['vision','图像','image'],['audio','音频','volume'],['tools','工具调用','code']].map(([id,name,glyph])=>`<label class="capability"><input type="checkbox" data-cap="${id}" ${cap[id]?'checked':''}><span>${icon(glyph,15)}${name}</span></label>`).join('')}</div></article>`);
-        row.querySelector('[data-model]').onchange=e=>{p.models=e.target.checked?[...new Set([...p.models,m])]:p.models.filter(x=>x!==m);markDirty();};
-        row.querySelectorAll('[data-cap]').forEach(input=>input.onchange=()=>{p.modelCapabilities[m]={...cap,...p.modelCapabilities[m],[input.dataset.cap]:input.checked};markDirty();});list.append(row);
-      }
-    };paint();
-    form.querySelector('.model-search').oninput=paint;
-    form.querySelector('[data-add]').onclick=()=>{const input=form.querySelector('.model-add input'),m=input.value.trim();if(!m)return;p.models=[...new Set([...p.models,m])];discovered=[...new Set([...discovered,m])];input.value='';markDirty();paint();};
-    form.querySelector('[data-fetch]').onclick=async e=>{if(!form.reportValidity())return;const btn=e.currentTarget;btn.disabled=true;try{const result=await app.api.extension('providers/discover',collect(),'POST');discovered=[...new Set([...p.models,...result.models])];paint();form.querySelector('.provider-result').textContent=`连接成功 · ${result.models.length} 个模型 · 配置尚未保存`;}catch(error){form.querySelector('.provider-result').textContent=error.message;}finally{btn.disabled=false;}};
-    form.onsubmit=async e=>{e.preventDefault();const btn=form.querySelector('[type=submit]');btn.disabled=true;try{settings=await app.api.saveSettings({providers:[collect()]});dirty=false;app.bus.emit('settings');toast('提供商已保存','ok');providers();}finally{btn.disabled=false;}};
-    form.querySelector('[data-clear]')?.addEventListener('click',async()=>{if(!await confirmDlg({title:'清除密钥',body:'清除此提供商保存的密钥？',danger:true}))return;settings=await app.api.saveSettings({providers:[{id:p.id,apiKey:null}]});p.hasKey=false;p.keyHint='';credential.value='';credential.placeholder='输入 API Key';app.bus.emit('settings');});
-    form.querySelector('[data-delete]')?.addEventListener('click',async()=>{if(!await confirmDlg({title:'删除提供商',body:`删除「${esc(p.name)}」及其本地密钥？`,danger:true}))return;settings=await app.api.saveSettings({providers:[{id:p.id,deleted:true}]});dirty=false;app.bus.emit('settings');providers();});
-  }
-  function chatHistory() {
-    if(!app.project()){content.innerHTML='<div class="studio-empty"><h2>打开项目后查看对话历史</h2><p>每个项目分别保存自己的聊天记录。</p></div>';return;}
-    content.innerHTML='<div class="history-toolbar"><input class="ipt" aria-label="搜索对话历史" placeholder="搜索标题、助手或消息"><button class="btn primary" data-new-chat>新对话</button></div><div class="history-list"></div>';
-    content.querySelector('[data-new-chat]').onclick=async()=>{await close();app.agent.newWindow();};
-    const paint=()=>{
-      const query=content.querySelector('input').value.toLowerCase(),list=content.querySelector('.history-list');list.innerHTML='';
-      const records=[...mgr.conversationList()].sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)));
-      for(const c of records){
-        const a=mgr.sessions().find(a=>a.id===c.assistantId)||{name:'已删除的助手'};
-        if(![c.title,a.name,...(c.msgs||[]).map(m=>m.text)].join(' ').toLowerCase().includes(query))continue;
-        const row=el(`<article class="history-card"><span class="history-avatar">${avatar(a,32)}</span><div><h2>${esc(c.title)}</h2><p>${esc(c.msgs?.at(-1)?.text?.slice(0,100)||c.draft||'还没有消息')}</p><small>${esc(a.name)} · ${c.msgs?.length||0} 条消息 · ${new Date(c.updatedAt).toLocaleString('zh-CN')}</small></div><footer><button class="btn small" data-open>继续对话</button><button class="icon-btn" data-float aria-label="独立窗口打开">${icon('undock',16)}</button><button class="icon-btn" data-rename aria-label="重命名对话">${icon('edit',16)}</button><button class="icon-btn danger" data-delete aria-label="删除对话">${icon('trash',16)}</button></footer></article>`);
-        row.querySelector('[data-open]').onclick=async()=>{await close();mgr.openConversation(c);};
-        row.querySelector('[data-float]').onclick=async()=>{await close();mgr.openConversation(c,true);};
-        row.querySelector('[data-rename]').onclick=async()=>{await mgr.renameConversation(c);paint();};
-        row.querySelector('[data-delete]').onclick=async()=>{await mgr.deleteConversation(c);paint();};
-        list.append(row);
-      }
-      if(!list.children.length)list.innerHTML='<div class="studio-empty"><h2>暂无匹配的对话</h2></div>';
-    };
-    content.querySelector('input').oninput=paint;paint();
-  }
+  function chatHistory() { off=mountHistory(app,content,close); }
   async function general() {
     const info = await app.api.system();
     if (current !== "general") return;
