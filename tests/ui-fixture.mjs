@@ -114,7 +114,7 @@ store.saveSettings({
   ],
   defaultModel: "qa-local:design-local",
 });
-const a = store.createProject({ template: "admin", name: "海川 · 运营工作台" }),
+const a = store.createProject({ template: "qichuan", name: "栖川 · 旅宿工作台" }),
   b = store.createProject({ template: "site", name: "云帆 · 品牌官网" });
 store.createProject({ blank: true, name: "未命名的灵感" });
 const srv = spawn(process.execPath, ["server/server.js"], {

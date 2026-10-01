@@ -1,0 +1,20 @@
+{
+  "id": "gewu",
+  "name": "格物 · 日常器物",
+  "type": "site",
+  "description": "陶土色与奶油白的生活方式品牌站。三页内容，包含品类筛选、选品清单与材质故事。",
+  "pages": [
+    {
+      "file": "index.html",
+      "title": "格物 · 日常之美"
+    },
+    {
+      "file": "collection.html",
+      "title": "器物集合"
+    },
+    {
+      "file": "story.html",
+      "title": "材质与时间"
+    }
+  ]
+}

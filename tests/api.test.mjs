@@ -10,7 +10,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG = fs.mkdtempSync(path.join(os.tmpdir(), 'centdeck-api-test-'));
 fs.writeFileSync(path.join(CONFIG,'account.json'),JSON.stringify({username:'test',password:'test-only-centdeck',mustChange:false}));
 let PORT = 8490;
-const srv = spawn(process.execPath, ['server/server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), CENTDECK_NO_OPEN: '1', CENTDECK_CONFIG_DIR: CONFIG }, stdio: ['ignore', 'pipe', 'pipe'] });
+const srv = spawn(process.execPath, ['server/server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), CENTDECK_NO_OPEN: '1', CENTDECK_CONFIG_DIR: CONFIG, CENTDECK_PROJECTS_DIR:path.join(CONFIG,'projects') }, stdio: ['ignore', 'pipe', 'pipe'] });
 await new Promise((resolve, reject) => {
   const timeout = setTimeout(() => { srv.kill(); reject(new Error('测试服务启动超时')); }, 10000);
   srv.stdout.on('data', chunk => { const match = String(chunk).match(/http:\/\/localhost:(\d+)/); if (match) { PORT = +match[1]; clearTimeout(timeout); resolve(); } });
@@ -36,8 +36,8 @@ try {
   ok(blank.pages.length === 0 && blank.kind === 'blank', '空白项目没有页面');
   let proj = await call('POST', `/api/projects/${blank.id}/pages`, { title: 'Home' });
   ok(proj.pages.length === 1 && proj.pages[0].file === 'pages/home.html', '新建页面');
-  proj = await call('POST', `/api/projects/${blank.id}/reset`, {});
-  ok(proj.pages.length === 0, '空白项目一键还原后回到没有页面');
+  const removed=await fetch(`http://localhost:${PORT}/api/projects/${blank.id}/reset`,{method:'POST',headers:{'X-CentDeck':'1',Cookie:cookie}});
+  ok(removed.status===404&&(await call('GET',`/api/projects/${blank.id}`)).pages.length===1,'已移除的一键还原接口不能清空页面');
 
   const imp = await call('POST', '/api/import', { name: 'api-test 导入', files: [
     { path: 'my-site/index.html', dataBase64: b64('<!doctype html><title>我的首页</title><link rel="stylesheet" href="css/a.css"><h1>Hi</h1>') },

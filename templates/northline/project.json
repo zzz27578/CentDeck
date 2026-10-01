@@ -1,0 +1,20 @@
+{
+  "id": "northline",
+  "name": "NORTHLINE · Architecture Studio",
+  "type": "site",
+  "description": "全英文建筑事务所站点。三页完整内容，包含项目分类、项目详情与咨询简报，黑白配色搭配酸柠黄。",
+  "pages": [
+    {
+      "file": "index.html",
+      "title": "NORTHLINE — Architecture for everyday life"
+    },
+    {
+      "file": "work.html",
+      "title": "Selected work"
+    },
+    {
+      "file": "practice.html",
+      "title": "The practice"
+    }
+  ]
+}

@@ -27,7 +27,7 @@ CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页�
 - **电脑与手机**：分别预览和修改；真实页面放映、跳转与弹窗，手机修改可写入独立媒体查询。
 - **Skills 与工具**：内置平台操作规范自动给 Agent 使用，其他技能按需加载；基础技能始终启用；查看、启停、导入和编辑自建 SKILL.md；按来源折叠的工具注册表。
 - **MCP 接管**：标准 stdio 适配器和本机 JSON-RPC HTTP 端点；外部 AI 可读写项目、操作已登录页面、添加草图，或启动内置 Agent。面向 Codex、Claude Code、DeepSeek Harness 等支持 MCP 的客户端。
-- **插件管理**：导入 JSON 包、前端文件夹、HTML 风格或 HTTPS 下载链接；查看权限、启停、设置、导出与卸载。官方“风格画廊”默认启用，关闭即恢复绿色并隐藏风格切换；“项目速览”作为内部工具保留，不再出现在用户插件列表。
+- **插件管理**：导入 JSON 包、前端文件夹、HTML 风格或 HTTPS 下载链接；查看权限、启停、设置、导出与卸载。默认使用黑白蓝，官方“风格画廊”提供绿色及扩展风格；关闭后回到默认黑白蓝。“项目速览”作为内部工具保留，不出现在用户插件列表。
 - **带走你的项目**：源码、图片和项目说明都在普通文件夹里，可用 Git 管理；编辑器“更多 → 导出项目 ZIP”打包交付。
 
 ### 开始使用
@@ -53,7 +53,18 @@ CentDeck（百映）是面向 **AI 前端开发、vibe coding、可视化网页�
 
 v1 插件支持设计变量、自定义主页、隔离面板、技能和受管项目摘要工具。自定义主页使用沙箱；同包 CSS/普通 JS 可内联，网络与任意宿主脚本不开放。框架适配器、任意第三方服务端工具和专业时间轴不属于当前已实现扩展点。HTTPS 下载受浏览器 CORS 限制，无法直接下载时可先下载 JSON 再本地导入。
 
-### 一个实际案例
+### 从模板开始
+
+新增三套完整模板，每套三页，随包提供原创 SVG 插画，无需在线图片或字体：
+
+| 栖川 · 山野旅宿 | 格物 · 日常器物 | NORTHLINE · Architecture |
+|---|---|---|
+| ![栖川模板](docs/screenshots/templates/qichuan-desktop.png) | ![格物模板](docs/screenshots/templates/gewu-desktop.png) | ![英文建筑模板](docs/screenshots/templates/northline-desktop.png) |
+| 中文 · 房型、行程摘要、旅行手记 | 中文 · 分类、选品袋、材质故事 | English · Project filters, details and inquiry brief |
+
+在首页选择模板即可新建自己的项目。行程与咨询工具只生成本地摘要，选品袋不会提交订单。全项目“一键还原”功能已移除，精细修改可使用撤销与页面版本历史。
+
+### 余白交付案例
 
 **余白 YUBAI**：用 MCP 读取版本并提交的三页品牌工作室网站，包含响应式布局、作品分类、咨询弹窗、本地表单摘要和案例跳转。完整源码位于 [examples/yubai](examples/yubai)，可直接导入百映。表单是本地演示，不发送真实咨询。
 
@@ -81,6 +92,7 @@ node tests/extensions.test.mjs
 node tests/mcp-transport.test.mjs
 node tests/api.test.mjs
 node tests/engine.test.mjs
+node tests/templates-release.test.mjs
 node tests/scan.test.mjs
 node tests/token-source.test.mjs
 node tests/workspace-state.test.mjs
@@ -109,7 +121,7 @@ Double-click `CentDeck.bat`, open the browser and start building. Node.js 22+ is
 - **Visual editing**: overview canvas, source mapping, text/property editing, drag/resize, writeback confidence, locks, undo and history. Unsupported dynamic elements are reported rather than silently rewritten.
 - **Sketch feedback**: drawings, arrows, boxes, notes, reference images, numbered marks and precise agent references.
 - **MCP integration**: a standard stdio bridge and local JSON-RPC HTTP endpoint. External agents can inspect/edit projects, operate the signed-in browser and invoke built-in agents. Intended for MCP-capable clients including Codex, Claude Code and DeepSeek Harness.
-- **Plugin framework**: import bundles or frontend files, download via HTTPS, inspect permissions, enable/disable and export. Official Style Gallery controls the home style picker; disabling it restores original green. Project Inspector remains an internal tool, hidden from user plugin management. Built-in skills are always available and hidden from manual selectors.
+- **Plugin framework**: import bundles or frontend files, download via HTTPS, inspect permissions, enable/disable and export. Black, white and blue is the default style; Style Gallery adds green and extension styles. Disabling the gallery returns to the default. Project Inspector remains an internal tool, hidden from user plugin management. Built-in skills are always available and hidden from manual selectors.
 - **Portable output**: real HTML/CSS/JS, desktop/mobile previews, a presentation view and project ZIP export.
 
 ### Quick start

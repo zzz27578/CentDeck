@@ -1,6 +1,6 @@
 // 工作台外壳：顶栏（项目/页面/视图切换/保存状态/撤销/助手）、左侧栏+抽屉面板、右侧属性栏、状态栏
 import { icon } from '../core/icons.js';
-import { el, esc, showMenu, toast, confirmDlg, closeMenu, menuOpen, anyModalOpen, closeTopModal, segSync } from '../core/ui.js';
+import { el, esc, showMenu, toast, closeMenu, menuOpen, anyModalOpen, closeTopModal, segSync } from '../core/ui.js';
 import { getDevice, setDevice } from '../core/viewport.js';
 import { bindKey, showKeyHelp } from '../core/keys.js';
 import { mark, toggleTheme } from '../core/brand.js';
@@ -92,8 +92,6 @@ export function buildShell(app) {
     {label:'亮色 / 暗色',icon:'palette',onClick:toggleTheme},
     {label:'设置',icon:'settings',onClick:()=>app.openSettings('general')},
     { label: '快捷键一览', icon: 'keyboard', kbd: '?', onClick: showKeyHelp },
-    '-',
-    { label: '一键还原到模板初始状态', icon: 'reset', danger: true, onClick: () => resetProject(app) },
   ], 0, 0, { anchor: e.currentTarget, align: 'right' });
   $('#tb-page').onclick = (e) => {
     const cur = app.state.page;
@@ -179,22 +177,6 @@ export function buildShell(app) {
   app.setHint = (html) => { refs.hint.innerHTML = html || ''; };
   app.setStatusRight = (html) => { refs.statusRight.innerHTML = html || ''; };
   app.setCrumbs = (node) => { refs.crumbs.innerHTML = ''; if (node) refs.crumbs.appendChild(node); };
-}
-
-async function resetProject(app) {
-  const ok = await confirmDlg({
-    title: '一键还原', danger: true, okLabel: '全部还原',
-    body: '把<b>所有页面</b>恢复到刚创建时的样子，并清空全部修改、历史版本、草图标记、便签和锁定。<br><b>此操作不能撤销。</b>',
-  });
-  if (!ok) return;
-  try {
-    const proj = await app.api.resetProject(app.project().id);
-    app.state.project = proj;
-    app.bus.clearStacks();
-    app.bus.emit('project', proj);
-    await app.reloadView();
-    toast('已还原到初始状态', 'ok');
-  } catch { /* api 已提示 */ }
 }
 
 // 全局快捷键（只在工作台里生效）

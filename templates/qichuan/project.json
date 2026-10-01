@@ -1,0 +1,5 @@
+{
+  "id":"qichuan","name":"栖川 · 山野旅宿","type":"site",
+  "description":"松林、山谷与慢生活。三页旅宿品牌站，包含房型选择、行程摘要和旅行手记，适配手机。",
+  "pages":[{"file":"index.html","title":"栖川 · 山野之间"},{"file":"stays.html","title":"住进山里"},{"file":"journal.html","title":"山间手记"}]
+}

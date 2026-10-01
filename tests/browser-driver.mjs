@@ -10,6 +10,6 @@ export async function browser(profile){
   const call=(method,params)=>send(method,params,sessionId);
   await call('Runtime.enable');await call('Page.enable');await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result?.value;}
-  const until=async(expression)=>{for(let i=0;i<120;i++){if(await evaluate(expression))return;await new Promise(r=>setTimeout(r,50));}throw Error('Browser condition timed out: '+expression+'\n'+errors.join('\n'));};
+  const until=async(expression)=>{for(let i=0;i<120;i++){try{if(await evaluate(expression))return;}catch(error){if(!/navigated or closed|Cannot find context|Execution context was destroyed/.test(error.message))throw error;}await new Promise(r=>setTimeout(r,50));}throw Error('Browser condition timed out: '+expression+'\n'+errors.join('\n'));};
   return {call,evaluate,until,errors,async close(){try{await send('Browser.close');}catch{}if(child.exitCode===null)child.kill();for(const p of pending.values())clearTimeout(p.timer);}};
 }

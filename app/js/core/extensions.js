@@ -3,12 +3,12 @@ let appearance={plugins:[],styleEnabled:true};
 const applied=new Set();
 export async function refreshAppearance(){
   const r=await fetch('/api/appearance');const payload=await r.json();if(!payload.ok)throw Error(payload.error);appearance=payload.data;
-  applyStyle(localStorage.getItem('cd.style')||'original');
+  applyStyle(localStorage.getItem('cd.style')||'noir');
   document.querySelectorAll('button[data-style]').forEach(b=>b.hidden=!appearance.styleEnabled);
   dispatchEvent(new CustomEvent('centdeck-appearance'));
   return appearance;
 }
-export function styles(){return [{id:'original',name:'原版绿色'},...(appearance.styleEnabled?appearance.plugins.flatMap(p=>(p.manifest.themes||[]).map(t=>({...t,plugin:p}))):[])];}
+export function styles(){return [{id:'noir',name:'黑白蓝'},...(appearance.styleEnabled?[{id:'original',name:'原版绿色'},...appearance.plugins.flatMap(p=>(p.manifest.themes||[]).filter(t=>!['noir','original'].includes(t.id)).map(t=>({...t,plugin:p})))]:[])];}
 export function styleEnabled(){return appearance.styleEnabled;}
 export function applyStyle(id){
   const selected=styles().find(t=>t.id===id)||styles()[0];

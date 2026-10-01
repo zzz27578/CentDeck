@@ -175,11 +175,10 @@ function createBlankProject(body) {
   const name = String((body && body.name) || '').trim() || '未命名项目';
   const id = newProjectId(name);
   const dir = path.join(PROJECTS_DIR, id);
-  fs.mkdirSync(path.join(dir, '.centdeck', 'pristine'), { recursive: true });
+  fs.mkdirSync(path.join(dir, '.centdeck'), { recursive: true });
   const proj = baseProject(id, name, { kind: 'blank' });
   writeJson(path.join(dir, 'project.json'), proj);
   require('./project-guides').ensure(dir);
-  writeJson(path.join(dir, '.centdeck', 'pristine', 'project.json'), { pages: [] });
   return proj;
 }
 
@@ -200,8 +199,6 @@ function createProject(body) {
   const dir = path.join(PROJECTS_DIR, id);
   const excludeMeta = (nm) => nm === '.centdeck';
   copyDir(tDir, dir, excludeMeta);
-  // 原始快照：完整复制模板，供一键还原使用
-  copyDir(tDir, path.join(dir, '.centdeck', 'pristine'), excludeMeta);
 
   const proj = baseProject(id, name, {
     kind: 'template', template, type: tMeta.type || '', description: tMeta.description || '',
@@ -345,34 +342,6 @@ function restoreHistory(id, hid) {
   return meta;
 }
 
-// ---------- 一键还原 ----------
-
-function resetProject(id) {
-  const dir = projectDir(id);
-  const pristine = path.join(dir, '.centdeck', 'pristine');
-  if (!fs.existsSync(pristine)) {
-    throw new ApiError(404, '原始快照缺失，无法一键还原');
-  }
-  // 除元数据外全部清掉，再从原始快照复制回来（模板、空白、导入三种项目通用）
-  const projPath = path.join(dir, 'project.json');
-  const proj = readJson(projPath, '项目缺少 project.json');
-  const pristineMetaPath = path.join(pristine, 'project.json');
-  const pristineMeta = fs.existsSync(pristineMetaPath) ? readJson(pristineMetaPath, '原始快照信息损坏') : { pages: proj.pages };
-  for (const name of fs.readdirSync(dir)) {
-    if (name !== '.centdeck' && name !== 'project.json') fs.rmSync(path.join(dir, name), { recursive: true, force: true });
-  }
-  copyDir(pristine, dir, (nm) => nm === 'project.json');
-  proj.pages = Array.isArray(pristineMeta.pages) ? pristineMeta.pages : [];
-  proj.marks = [];
-  proj.notes = [];
-  proj.locks = { pages: [], elements: [] };
-  delete proj.canvas;
-  writeJson(projPath, proj);
-  // 删除全部历史
-  fs.rmSync(path.join(dir, '.centdeck', 'history'), { recursive: true, force: true });
-  return getProject(id);
-}
-
 // ---------- 素材 ----------
 
 function listAssets(id) {
@@ -458,7 +427,6 @@ function importProject(body) {
   const proj = baseProject(id, name, { kind: 'import', pages, description: `导入的网页（${items.length} 个文件）` });
   writeJson(path.join(dir, 'project.json'), proj);
   require('./project-guides').ensure(dir);
-  copyDir(dir, path.join(dir, '.centdeck', 'pristine'), (nm) => nm === '.centdeck');
   return proj;
 }
 
@@ -580,7 +548,6 @@ module.exports = {
   writeProjectFile,
   listHistory,
   restoreHistory,
-  resetProject,
   listAssets,
   saveAsset,
 };

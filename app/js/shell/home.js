@@ -104,7 +104,7 @@ export async function renderHome(app) {
 
         <div class="home-bar-right">
           <button class="btn ghost" data-a="settings" aria-label="Agent 工作台">${icon('centdeck', 18)}<span>Agent 工作台</span></button>
-          ${styleSwitch()}<button class="icon-btn" data-a="theme" aria-label="切换亮暗模式">◐</button><button class="btn" data-a="preferences" aria-label="设置">${icon('settings',18)}设置</button><button class="btn ghost" data-a="plugins">插件</button>
+          ${styleSwitch()}<button class="icon-btn" data-a="theme" aria-label="切换亮暗模式">◐</button><button class="btn" data-a="preferences" aria-label="设置">${icon('settings',18)}设置</button>
         </div>
       </header>
       ${pixelField()}
@@ -154,7 +154,6 @@ export async function renderHome(app) {
   ], 0, 0, { anchor: e.currentTarget, minWidth: 280 });
   $('[data-a=settings]').onclick = () => app.openSettings();
   $('[data-a=theme]').onclick = toggleTheme;
-  $('[data-a=plugins]').onclick = () => app.openSettings('plugins');
   $('[data-a=preferences]').onclick = () => app.openSettings('general');
 
   // 拖文件进来就导入

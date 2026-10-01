@@ -207,7 +207,7 @@ async function handle(req, res) {
   if(pathname==='/api/preferences'){sendData(res,ext.preferences(method==='PUT'?await readJsonBody(req):null));return;}
   if(pathname==='/api/design-presets'){sendData(res,ext.designPresets(method==='PUT'?await readJsonBody(req):null));return;}
   if(pathname==='/api/tools'&&method==='GET'){sendData(res,[...require('./tools').list(),...tasks.toolsFor({mode:'create',collaboration:'auto'}).filter(t=>!require('./tools').has(t.function.name)).map(t=>({name:t.function.name,description:t.function.description+'（内置 Agent 任务专用）',inputSchema:t.function.parameters,annotations:{readOnlyHint:t.function.name==='request_input'}}))]);return;}
-  if(pathname==='/api/mcp/config'){const config=ext.mcpConfig(method==='PUT'?await readJsonBody(req):null);sendData(res,{...config,command:process.execPath,args:[path.join(ROOT,'server','mcp-stdio.js')],env:{CENTDECK_URL:`http://127.0.0.1:${req.socket.localPort}`},endpoint:`http://127.0.0.1:${req.socket.localPort}/mcp`});return;}
+  if(pathname==='/api/mcp/config'){const config=ext.mcpConfig(method==='PUT'?await readJsonBody(req):null);sendData(res,{...config,command:process.execPath,args:[path.join(ROOT,'server','mcp-stdio.js')],env:{CENTDECK_URL:`http://127.0.0.1:${req.socket.localPort}`,...(process.env.CENTDECK_CONFIG_DIR?{CENTDECK_CONFIG_DIR:store.CONFIG_DIR}:{})},endpoint:`http://127.0.0.1:${req.socket.localPort}/mcp`});return;}
   if(pathname==='/api/ui/heartbeat'&&method==='POST'){sendData(res,require('./ui-bridge').heartbeat(await readJsonBody(req)));return;}
   if(pathname==='/api/ui/result'&&method==='POST'){sendData(res,require('./ui-bridge').complete(await readJsonBody(req)));return;}
 
@@ -342,13 +342,6 @@ async function handle(req, res) {
   if (m) {
     if (method !== 'POST') throw new ApiError(405, '历史恢复只支持 POST');
     sendData(res, store.restoreHistory(decodeURIComponent(m[1]), decodeURIComponent(m[2])));
-    return;
-  }
-
-  m = pathname.match(/^\/api\/projects\/([^/]+)\/reset$/);
-  if (m) {
-    if (method !== 'POST') throw new ApiError(405, '一键还原只支持 POST');
-    sendData(res, store.resetProject(decodeURIComponent(m[1])));
     return;
   }
 

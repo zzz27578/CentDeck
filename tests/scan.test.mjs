@@ -5,10 +5,11 @@ import { scanPage } from '../app/js/overview/scan.js';
 let pass = 0, fail = 0;
 const ok = (c, n) => { if (c) pass++; else { fail++; console.log('  ✗', n); } };
 const load = (t) => {
-  const meta = JSON.parse(fs.readFileSync(`templates/${t}/project.json`, 'utf8'));
+  const directory=t==='admin'?'tests/fixtures/legacy-admin':`templates/${t}`;
+  const meta = JSON.parse(fs.readFileSync(`${directory}/project.json`, 'utf8'));
   const set = new Set(meta.pages.map((p) => p.file));
   const out = {};
-  meta.pages.forEach((p) => { out[p.file.replace('pages/', '')] = scanPage(p.file, fs.readFileSync(`templates/${t}/${p.file}`, 'utf8'), set); });
+  meta.pages.forEach((p) => { out[p.file.replace('pages/', '')] = scanPage(p.file, fs.readFileSync(`${directory}/${p.file}`, 'utf8'), set); });
   return out;
 };
 const site = load('site');

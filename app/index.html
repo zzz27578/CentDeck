@@ -7,7 +7,7 @@
 <link rel="icon" href="/app/assets/centdeck.svg" type="image/svg+xml">
 <script>
   const savedStyle = localStorage.getItem('cd.style');
-  const activeStyle = savedStyle || 'original';
+  const activeStyle = savedStyle || 'noir';
   document.documentElement.dataset.style = activeStyle;
   if (savedStyle && savedStyle !== activeStyle) localStorage.setItem('cd.style', activeStyle);
   document.documentElement.dataset.theme = localStorage.getItem('cd.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
