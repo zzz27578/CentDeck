@@ -9,6 +9,7 @@ import { bindKey, isSpaceDown } from '../core/keys.js';
 import { getViewport } from '../core/viewport.js';
 import { instrument, parse } from '../engine/parse.js';
 import { withBase } from '../engine/frame.js';
+import { renderSafePreview } from '../engine/preview.js';
 import { scanPage } from './scan.js';
 import { createCanvasTools } from './canvas-tools.js';
 import { onViewportChange } from '../core/viewport.js';
@@ -137,8 +138,8 @@ export function createOverview(app) {
     f.className = 'ov-tile';
     f.tabIndex = -1;
     f.style.cssText = `width:${VW}px;height:${VH}px;top:${y}px`;
-    f.srcdoc = tileSrc(p, y, openLoc);
     if (onload) f.onload = () => onload(f);
+    renderSafePreview(f,tileSrc(p,y,openLoc),base(p.file),{width:VW,height:VH,scroll:{x:0,y},openLoc}).catch(error=>console.warn('Preview:',error.message));
     return f;
   }
   function buildCard(p) {
@@ -208,43 +209,11 @@ export function createOverview(app) {
         if (r.width || r.height) p.rects[loc] = { x: r.left + w.scrollX, y: r.top + w.scrollY, w: r.width, h: r.height };
       });
       if (p.expanded) buildTiles(p);
-      if (p.scan.popups.some((x) => !x.triggers.length)) probe(p);
     } catch (e) { console.warn(e); }
     placeCard(p);
     drawLinks();
   }
   // 探测：在看不见的副本里逐个点按钮，看哪个弹窗出现了
-  function probe(p) {
-    const f = document.createElement('iframe');
-    f.style.cssText = `position:fixed;left:-30000px;top:0;width:${VW}px;height:${VH}px;visibility:hidden`;
-    f.srcdoc = tileSrc(p, 0, null);
-    f.onload = () => {
-      try {
-        const d = f.contentDocument, w = f.contentWindow;
-        w.alert = w.confirm = w.prompt = () => true;
-        const pops = p.scan.popups.map((x) => ({ x, el: d.querySelector(`[data-cd-loc="${x.loc}"]`) })).filter((o) => o.el);
-        const shown = (e) => { const cs = w.getComputedStyle(e); return !e.hidden && cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().width > 0; };
-        const snap = () => pops.map((o) => ({ o, hidden: o.el.hidden, cls: o.el.className, style: o.el.getAttribute('style') }));
-        const clickables = [...d.querySelectorAll('button[data-cd-loc], a[data-cd-loc][href^="#"], [role=button][data-cd-loc], [onclick][data-cd-loc], input[type=button][data-cd-loc]')]
-          .filter((c) => !pops.some((o) => o.el.contains(c))).slice(0, 60);
-        const start = w.location.href;
-        for (const c of clickables) {
-          const before = snap();
-          const was = pops.map((o) => shown(o.el));
-          try { c.click(); } catch { /* 忽略 */ }
-          if (w.location.href !== start) break;
-          pops.forEach((o, i) => {
-            if (!was[i] && shown(o.el) && !o.x.triggers.some((t) => t.loc === +c.getAttribute('data-cd-loc'))) o.x.triggers.push({ loc: +c.getAttribute('data-cd-loc'), text: (c.textContent || '').trim().slice(0, 30) });
-          });
-          before.forEach((s) => { s.o.el.hidden = s.hidden; s.o.el.className = s.cls; if (s.style == null) s.o.el.removeAttribute('style'); else s.o.el.setAttribute('style', s.style); });
-        }
-      } catch (e) { console.warn(e); }
-      f.remove();
-      const card = p.card && p.card.querySelector('.ov-body iframe');
-      if (card) onFirstTile(p, card);
-    };
-    document.body.appendChild(f);
-  }
   function buildTiles(p) {
     [...p.body.querySelectorAll('.ov-tile')].slice(1).forEach((t) => t.remove());
     if (!p.expanded) return;

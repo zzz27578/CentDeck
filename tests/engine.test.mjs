@@ -22,7 +22,7 @@ const txt = (src, e, k) => { const [a, b] = e.textNodes[k]; return src.slice(a, 
   ok(r.light === 'green' && r.newSource.includes('A &amp; D&nbsp;C'), '缩进：实体原样保留');
   ok(instrument(src).includes('<h1 data-cd-loc="'), '缩进：门牌号注入');
   r = applyEdit(src, { kind: 'style', target: find(p, 'a').loc, props: { 'font-family': '"PingFang SC", sans-serif' } });
-  ok(r.newSource.includes(`style="font-family: 'PingFang SC', sans-serif;"`), '样式：字体名双引号不截断属性');
+  ok(parse(r.newSource).elements.find(e=>e.tag==='a').style === 'font-family: "PingFang SC", sans-serif;', '样式：字体名双引号不截断属性');
 }
 // 2. 压成一行
 {

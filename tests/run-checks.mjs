@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only */
 import {spawnSync} from 'node:child_process';
 const browser=process.argv.includes('--browser');
-const cases=browser?['conversations-browser','i18n-browser','templates-release','capture-page','mcp-transport']:[
-  'frontend-syntax','engine','api','agent-runtime','providers','provider-options','extensions','skills','external-agent','external-runtime','mcp-improvements','mcp-client','frame-scheduling','scan','token-source','workspace-state','note-numbers','composer','conversations','i18n','workbench-interactions','yubai','release-docs','repository-privacy'
+const cases=browser?['reliability-browser','conversations-browser','i18n-browser','templates-release','capture-page','mcp-transport']:[
+  'frontend-syntax','engine','reliability','api','agent-runtime','providers','provider-options','extensions','skills','external-agent','external-runtime','mcp-improvements','mcp-client','frame-scheduling','scan','token-source','workspace-state','note-numbers','composer','conversations','i18n','workbench-interactions','yubai','release-docs','repository-privacy'
 ];
 for(const name of cases){
   console.log('\nChecking '+name);

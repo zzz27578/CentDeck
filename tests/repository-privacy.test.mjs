@@ -9,7 +9,7 @@ const files = git('ls-files', '-z').split('\0').filter(Boolean);
 const privatePaths = [
   /(^|\/)(config\.local|\.centdeck|node_modules|\.ssh)\//i,
   /^projects\/(?!\.gitkeep$)/i,
-  /^(artifacts|coverage|dist|报告|图片|docs\/screenshots)\//i,
+  /^(artifacts|coverage|dist|报告|图片|视频|docs\/screenshots)\//i,
   /(^|\/)\.env(?:$|\.(?!example$|template$))/i,
   /\.(?:local|log|tmp|bak|zip|pem|key|p12|pfx|keystore|swp|swo)$/i,
   /(^|\/)(?:id_rsa|id_ed25519)$/i,
@@ -22,7 +22,7 @@ const ignoreFile = fs.readFileSync('.gitignore', 'utf8');
 const expectedRules = [
   'config.local/', '/projects/*', '!/projects/.gitkeep', '.centdeck/',
   '.env', '.env.*', '*.pem', '*.key', '*.log', '*.zip',
-  '/artifacts/', '/报告/', '/图片/', '/docs/screenshots/',
+  '/artifacts/', '/报告/', '/图片/', '/视频/', '/docs/screenshots/',
 ];
 for (const rule of expectedRules) assert(ignoreFile.split(/\r?\n/).includes(rule), 'Missing privacy ignore rule: ' + rule);
 

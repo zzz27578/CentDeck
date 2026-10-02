@@ -6,6 +6,7 @@ import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 import { createStage } from '../core/stage.js';
 import { getViewport, onViewportChange, getDevice, MOBILE_MAX } from '../core/viewport.js';
 import { createFrame } from '../engine/frame.js';
+import { offsetTranslation } from '../engine/css.js';
 import { applyEdit } from '../engine/writeback.js';
 import { createOverlay } from './overlay.js';
 import { startMove, startResize, CONTAINERS, curTranslate, saveInline, restoreInline, setImp } from './drag.js';
@@ -140,6 +141,7 @@ export function createEditor(app) {
     const prev = ed.tools.get(ed.tool);
     if (prev && prev.deactivate) prev.deactivate(ed);
     ed.tool = id;
+    ed.frame?.setInteractive(id === 'interact').catch(error => toast(error.message, 'err'));
     const t = ed.tools.get(id);
     if (ed.ov) {
       ed.ov.setTool(t.cls || 't-draw');
@@ -157,7 +159,7 @@ export function createEditor(app) {
     try {
       const u = new URL(href, location.href);
       const pre = `/preview/${encodeURIComponent(app.project().id)}/`;
-      if (u.origin !== location.origin || !u.pathname.startsWith(pre)) return null;
+      if (![location.origin,ed.frame?.runtime?.origin].includes(u.origin) || !u.pathname.startsWith(pre)) return null;
       const f = decodeURIComponent(u.pathname.slice(pre.length));
       return app.project().pages.some((p) => p.file === f) ? { file: f, hash: u.hash } : null;
     } catch { return null; }
@@ -206,6 +208,7 @@ export function createEditor(app) {
     ed.frame = createFrame(ed.stage.device, {
       baseHref: `/preview/${encodeURIComponent(proj.id)}/${dir}`,
       onReady: onRendered,
+      onExitInteraction: () => ed.setTool('select'),
       onNavigate: (href) => {
         const hit = projectFileOf(href);
         if (hit && hit.file !== ed.page) app.openPage(hit.file);
@@ -215,7 +218,7 @@ export function createEditor(app) {
     ed.stage.device.appendChild(ed.ov.root);
     ed.measure = ed.frame.makeMeasure(() => ed.stage.size);
     hideVerdict(ed);
-    try { await ed.frame.render(src, { keepScroll: false }); } finally { ed.loading=false; }
+    try { await ed.frame.render(src, { keepScroll: false }); if(ed.tool==='interact')await ed.frame.setInteractive(true); } finally { ed.loading=false; }
     ed.chrome.syncLabel();
     app.syncViewSwitch();
     bus.emit('page', file);
@@ -253,8 +256,8 @@ export function createEditor(app) {
       return applyEdit(src, e2, { measure: ed.measure });
     },
   });
-  ed.commitMove = async (info, dx, dy, restore) => {
-    const r = await ed.runEdit(i18nTpl`移动 <${info.tag}>（${dx}, ${dy}）`, { kind: 'move', target: targetOf(info), dx, dy, crossed: false });
+  ed.commitMove = async (info, dx, dy, restore, baseTranslate = ed.frame.win.getComputedStyle(info.element).translate) => {
+    const r = await ed.runEdit(i18nTpl`移动 <${info.tag}>（${dx}, ${dy}）`, { kind: 'move', target: targetOf(info), dx, dy, baseTranslate, crossed: false });
     if (!r.ok) restore();
   };
   ed.onMoveCrossed = (info, dx, dy) => {
@@ -350,9 +353,9 @@ export function createEditor(app) {
     if (blk !== info.element) { ed.select(blk); info = ed.selection; toast(i18nTpl`行内文字不能单独挪动，改为挪动它所在的 <${info.tag}>`, '', 2600); }
     if (ed.isLocked(info)) { toast(i18nText('这个元素已锁定'), 'err'); return; }
     const e = info.element;
-    if (!nudge || nudge.el !== e) { if (nudge) flushNudge(); nudge = { el: e, info, dx: 0, dy: 0, inline0: saveInline(e), t0: curTranslate(ed.frame.win, e) }; }
+    if (!nudge || nudge.el !== e) { if (nudge) flushNudge(); nudge = { el: e, info, dx: 0, dy: 0, inline0: saveInline(e), baseTranslate: ed.frame.win.getComputedStyle(e).translate }; }
     nudge.dx += dx; nudge.dy += dy;
-    setImp(e, 'translate', `${nudge.t0[0] + nudge.dx}px ${nudge.t0[1] + nudge.dy}px`);
+    setImp(e, 'translate', offsetTranslation(nudge.baseTranslate,nudge.dx,nudge.dy));
     clearTimeout(nudge.timer);
     nudge.timer = setTimeout(flushNudge, 420);
     ed.setHint(i18nTpl`微调 → ${nudge.dx}　↓ ${nudge.dy}（松开方向键后写回）`);
@@ -363,7 +366,7 @@ export function createEditor(app) {
     clearTimeout(n.timer);
     ed.setHint('');
     if (!n.dx && !n.dy) return;
-    ed.commitMove(n.info, n.dx, n.dy, () => restoreInline(n.el, n.inline0));
+    ed.commitMove(n.info, n.dx, n.dy, () => restoreInline(n.el, n.inline0), n.baseTranslate);
   }
 
   // ---------- 覆盖层事件 ----------

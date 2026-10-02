@@ -38,4 +38,5 @@ config.local/
 # Private reports and unreviewed screenshots stay local.
 /报告/
 /图片/
+/视频/
 /docs/screenshots/

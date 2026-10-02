@@ -198,6 +198,10 @@ async function handle(req, res) {
   }
   if(pathname==='/api/appearance'&&method==='GET') {const ext=require('./extensions');sendData(res,{plugins:ext.plugins().filter(p=>p.enabled).map(p=>({manifest:{id:p.manifest.id,name:p.manifest.name,themes:p.manifest.themes||[]},files:p.files})),styleEnabled:ext.plugins().some(p=>p.manifest.id==='official-styles'&&p.enabled)});return;}
   if(pathname.startsWith('/api/'))auth.requireSession(req);
+  if(pathname==='/api/preview'&&method==='GET') {
+    const origin=await require('./preview').origin(url.searchParams.get('base')||'',`http://${req.headers.host}`);
+    sendData(res,{origin});return;
+  }
   const ext=require('./extensions');
   if(pathname==='/api/extensions') {
     if(method==='GET')sendData(res,{plugins:ext.plugins(),skills:ext.userSkills(),preferences:ext.preferences()});
@@ -287,7 +291,7 @@ async function handle(req, res) {
       return;
     }
     if (method === 'DELETE') {
-      sendData(res, store.deleteProject(id));
+      sendData(res, await store.deleteProject(id));
       return;
     }
     throw new ApiError(405, '项目接口只支持 GET / PUT / DELETE');
@@ -364,18 +368,16 @@ async function handle(req, res) {
   m = pathname.match(/^\/preview\/([^/]+)(\/.*)?$/);
   if (m) {
     if (method !== 'GET') throw new ApiError(405, '预览只支持 GET');
-    const dir = store.projectDir(decodeURIComponent(m[1]));
-    serveStatic(res, dir, m[2] || '', '预览文件', { denyMeta: true });
+    const origin=await require('./preview').origin(pathname,`http://${req.headers.host}`);
+    res.writeHead(302,{Location:origin+pathname+url.search});res.end();
     return;
   }
 
   m = pathname.match(/^\/show\/([^/]+)\/(.+)$/);
   if(m&&method==='GET'){
     if(!auth.session(req)||auth.session(req).mustChange){res.writeHead(302,{Location:'/?project='+encodeURIComponent(decodeURIComponent(m[1]))});res.end();return;}
-    const id=decodeURIComponent(m[1]),rel=decodeURIComponent(m[2]);
-    const html=require('./presentation').render(id,rel,url);
-    if(html!=null){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);}
-    else serveStatic(res,store.projectDir(id),m[2],'预览资源',{denyMeta:true});return;
+    const origin=await require('./preview').origin(pathname,`http://${req.headers.host}`);
+    res.writeHead(302,{Location:origin+pathname+url.search});res.end();return;
   }
 
   m = pathname.match(/^\/tpl\/([^/]+)(\/.*)?$/);
@@ -383,7 +385,8 @@ async function handle(req, res) {
     if (method !== 'GET') throw new ApiError(405, '模板预览只支持 GET');
     const tid = decodeURIComponent(m[1]);
     store.assertValidId(tid, '模板 ID');
-    serveStatic(res, path.join(store.TEMPLATES_DIR, tid), m[2] || '', '模板文件');
+    const origin=await require('./preview').origin(pathname,`http://${req.headers.host}`);
+    res.writeHead(302,{Location:origin+pathname+url.search});res.end();
     return;
   }
 
@@ -444,6 +447,7 @@ function shutdown() {
   shuttingDown = true;
   try {
     if (activeServer) activeServer.close();
+    require('./preview').close();
   } catch {
     // 忽略关闭过程中的异常
   }

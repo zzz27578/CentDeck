@@ -24,7 +24,7 @@ async function dispatch(body,sessionId){
   if(method==='initialize') {
     const sid=crypto.randomUUID();
     sessions.set(sid,{reads:{},at:Date.now()});
-    return {sid,result:{protocolVersion:['2025-11-25','2025-06-18','2025-03-26','2024-11-05'].includes(params.protocolVersion)?params.protocolVersion:'2025-03-26',capabilities:{tools:{listChanged:false},resources:{}},serverInfo:{name:'centdeck',version:'1.0.0'},instructions:'Use list_skills/read_skill (platform-guide) before editing. Tools share the built-in Agent write guards. Supply projectId on project tools. Use ui_state then ui_action for real browser operations; file writes alone are not visual tests.'}};
+    return {sid,result:{protocolVersion:['2025-11-25','2025-06-18','2025-03-26','2024-11-05'].includes(params.protocolVersion)?params.protocolVersion:'2025-03-26',capabilities:{tools:{listChanged:false},resources:{}},serverInfo:{name:'centdeck',version:require('./version')},instructions:'Use list_skills/read_skill (platform-guide) before editing. Tools share the built-in Agent write guards. Supply projectId on project tools. Use ui_state then ui_action for real browser operations; file writes alone are not visual tests.'}};
   }
   const s=sessions.get(sessionId);if(!s)throw new store.ApiError(404,'MCP 会话已过期，请重新 initialize');
   s.at=Date.now(); for(const [key,v]of sessions)if(Date.now()-v.at>3600000)sessions.delete(key);

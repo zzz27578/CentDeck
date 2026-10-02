@@ -20,7 +20,7 @@ async function info() {
   } catch {}
   return {
     name: "CentDeck",
-    version: "0.3.0",
+    version: require('./version'),
     revision,
     github,
     accountFile: "config.local/account.json",

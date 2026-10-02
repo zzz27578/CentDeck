@@ -4,18 +4,26 @@ import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 // 拖动与缩放：只改视觉预览（translate / scale / width），松手才写回源码。
 import { buildIndex, snapMove, linesFor, snapEdge } from './guides.js';
 import { toast } from '../core/ui.js';
+import { offsetTranslation, translation } from '../engine/css.js';
 
 export const CONTAINERS = 'section, header, footer, nav, main, article, aside';
 const NAMES = { section: i18nText('版块'), header: i18nText('页眉'), footer: i18nText('页脚'), nav: i18nText('导航'), main: i18nText('主体'), article: i18nText('文章块'), aside: i18nText('侧栏'), body: i18nText('整页') };
 const T_SCREEN = 6;
 
-const tr = (v) => { const p = String(v || '').split(/\s+/).map(parseFloat); return [p[0] || 0, p[1] || 0]; };
 // 预览一律用 !important 写在元素上：这样"只对手机生效"的 @media 规则（也带 !important）不会挡住拖动效果
 const PROPS = ['translate', 'scale', 'width', 'height'];
 const saveInline = (e) => PROPS.map((k) => [k, e.style.getPropertyValue(k), e.style.getPropertyPriority(k)]);
 const restoreInline = (e, saved) => saved.forEach(([k, v, pr]) => { if (v) e.style.setProperty(k, v, pr); else e.style.removeProperty(k); });
 const setImp = (e, k, v) => e.style.setProperty(k, v, 'important');
-export const curTranslate = (win, e) => { const v = win.getComputedStyle(e).translate; return v && v !== 'none' ? tr(v) : [0, 0]; };
+export const curTranslate = (win, e) => {
+  const value=win.getComputedStyle(e).translate;
+  if(!value || value==='none')return [0,0];
+  const [x,y]=translation(value),probe=e.ownerDocument.createElement('div');
+  probe.style.cssText=`all:initial;position:absolute;visibility:hidden;pointer-events:none;width:${e.offsetWidth||e.getBBox?.().width||0}px;height:${e.offsetHeight||e.getBBox?.().height||0}px;transform:translate(${x},${y})!important`;
+  e.ownerDocument.body.appendChild(probe);
+  try {const matrix=new win.DOMMatrix(win.getComputedStyle(probe).transform);return [matrix.m41,matrix.m42];}
+  finally {probe.remove();}
+};
 export { saveInline, restoreInline, setImp };
 const arrowX = (d) => (d >= 0 ? '→ ' : '← ') + Math.abs(d);
 const arrowY = (d) => (d >= 0 ? '↓ ' : '↑ ') + Math.abs(d);
@@ -85,7 +93,7 @@ export function startMove(ed, info0, e0, onClick) {
     const contR = cont ? ed.pageRect(cont) : null;
     if (contR) refs.push(contR);
     st = {
-      r0: ed.pageRect(elm), t0: curTranslate(ed.frame.win, elm), inline0: saveInline(elm),
+      r0: ed.pageRect(elm), baseTranslate: ed.frame.win.getComputedStyle(elm).translate, inline0: saveInline(elm),
       cont, contR, index: buildIndex(refs), peers, list: containerList(ed, elm),
     };
     ov.place(ov.origin, st.r0);
@@ -125,7 +133,7 @@ export function startMove(ed, info0, e0, onClick) {
     if (!e.altKey) res = snapMove(m, st.index, st.peers, T_SCREEN / z, { lockX, lockY });
     dx = Math.round(mx + res.dx);
     dy = Math.round(my + res.dy);
-    setImp(elm, 'translate', `${st.t0[0] + dx}px ${st.t0[1] + dy}px`);
+    setImp(elm, 'translate', offsetTranslation(st.baseTranslate, dx, dy));
     const cx = r0.x + dx + r0.w / 2, cy = r0.y + dy + r0.h / 2;
     crossed = containerAt(st.list, cx, cy) !== (st.cont || null);
     ov.range.classList.toggle('out', crossed);
@@ -143,7 +151,7 @@ export function startMove(ed, info0, e0, onClick) {
       ed.onMoveCrossed(info, dx, dy, st.cont);
       return;
     }
-    ed.commitMove(info, dx, dy, () => restoreInline(elm, st.inline0));
+    ed.commitMove(info, dx, dy, () => restoreInline(elm, st.inline0), st.baseTranslate);
   }, () => {
     if (st) { restoreInline(elm, st.inline0); finishVisuals(); }
   });

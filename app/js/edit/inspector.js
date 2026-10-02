@@ -1,6 +1,7 @@
 /* Copyright (c) 2026 zzz27578 and CentDeck contributors.
  * SPDX-License-Identifier: AGPL-3.0-only */
 import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
+import { curTranslate } from './drag.js';
 // 右侧属性栏：没选中时显示本页信息和操作提示；选中后按"文字 / 字体 / 位置大小 / 操作"分组
 import { icon } from '../core/icons.js';
 import { el, esc, toast } from '../core/ui.js';
@@ -150,7 +151,7 @@ export function renderInspector(ed, info, clear) {
   });
 
   // 位置与大小
-  const t = cs.translate && cs.translate !== 'none' ? cs.translate.split(/\s+/).map(parseFloat) : [0, 0];
+  const t = curTranslate(ed.frame.win, e);
   const xI = q('[data-k=x]'), yI = q('[data-k=y]');
   xI.value = Math.round(t[0] || 0); yI.value = Math.round(t[1] || 0);
   const setOff = () => {

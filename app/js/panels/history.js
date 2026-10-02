@@ -19,7 +19,7 @@ export function setupHistory(app) {
         row.querySelector('button').onclick = async () => {
           const ok = await confirmDlg({ title: i18nText('恢复历史版本'), okLabel: i18nText('恢复'), body: i18nTpl`用 <b>${esc(fmtTime(h.time))}</b> 的版本覆盖 <b>${esc(titleOf(h.file))}</b>。<br>现在的内容不会丢：会先自动再存一份。` });
           if (!ok) return;
-          try { await app.api.restoreHistory(app.project().id, h.hid); app.bus.clearStacks(); toast(i18nText('已恢复'), 'ok'); await app.reloadView(); } catch { /* api 已提示 */ }
+          try { await app.api.restoreHistory(app.project().id, h.hid); app.bus.clearStacks(); await app.refreshProject(); toast(i18nText('已恢复'), 'ok'); await app.reloadView(); } catch { /* api 已提示 */ }
         };
         host.appendChild(row);
       });

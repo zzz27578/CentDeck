@@ -22,6 +22,8 @@ CentDeck is a local frontend workbench for people who build with AI. Connect you
 
 ![CentDeck home](docs/assets/screenshots/home.png)
 
+**New in v0.4.0:** isolated project previews, safer history recovery and more reliable visual edits. [Read the release notes](CHANGELOG.md).
+
 ## One workspace, from idea to finished frontend
 
 | Capability | What you can do |

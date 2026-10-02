@@ -30,6 +30,7 @@ function thumb(url) {
   const { w, h } = getViewport();
   const box = el(i18nTpl`<div class="pc-thumb"><iframe loading="lazy" tabindex="-1" title="预览"></iframe></div>`);
   const f = box.querySelector('iframe');
+  f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
   Object.assign(f.style, { width: w + 'px', height: h + 'px' });
   f.src = url;
   new ResizeObserver(() => { if (box.clientWidth) f.style.transform = `scale(${box.clientWidth / w})`; }).observe(box);

@@ -27,4 +27,23 @@ html[lang=en] .ag.drop::after,html[lang=en] .agent.drop::after { content:'Drop f
 html[lang=en] .landing-copy h1 { font-size:clamp(48px,6.8vw,98px);letter-spacing:-4px;line-height:1.12; }
 html[lang=en] .landing-copy p { font-size:16px;line-height:1.65; }
 @media(max-width:1050px){html[lang=en] .topbar .dev-switch button{font-size:0;gap:0;padding-inline:8px}html[lang=en] .topbar .dev-switch button svg{width:16px}html[lang=en] .save-state{display:none}}
+
+/* Keep editor navigation and the scrolling tool dock usable on narrow screens. */
+@media (max-width: 640px) {
+  html .topbar { height:auto;min-height:82px;grid-template-columns:minmax(0,1fr) auto;gap:4px;padding:6px 8px; }
+  html .topbar .tb-left { grid-column:1;grid-row:1; }
+  html .topbar .tb-right { grid-column:2;grid-row:1;gap:2px; }
+  html .topbar .tb-center { grid-column:1 / -1;grid-row:2;justify-content:center;gap:8px; }
+  html .topbar .tb-proj,html .topbar .tb-sep,html .topbar .save-state { display:none; }
+  html .topbar .tb-logo { font-size:0;gap:0;padding:0;width:30px;flex:none; }
+  html .topbar .tb-logo svg { width:26px;height:26px; }
+  html .topbar .tb-page { max-width:90px;font-size:10px;padding:0 3px; }
+  html .topbar .view-switch button { font-size:11px;white-space:nowrap;padding:0 10px;flex:none; }
+  html .topbar .dev-switch button { width:30px;font-size:0;gap:0;padding:0; }
+  html .topbar .tb-right button { width:28px;min-width:28px;height:30px;font-size:0;gap:0;padding:0;flex:none; }
+  html .topbar .tb-right button svg { width:16px;height:16px; }
+  .tool-dock { left:8px;right:8px;bottom:48px;transform:none;overflow-x:auto; }
+  .tool-dock > * { flex-shrink:0; }
+  .zoom-dock { right:8px;bottom:8px; }
+}
 @media(max-width:760px){html[lang=en] .home-bar-right{gap:5px}html[lang=en] .home-bar-right .btn{font-size:11px;padding-inline:8px}html[lang=en] .studio-nav button{font-size:12px;padding-inline:8px}html[lang=en] .landing-copy h1{font-size:clamp(42px,10vw,64px);letter-spacing:-2px}html[lang=en] .home-hero h1{letter-spacing:-1px}}

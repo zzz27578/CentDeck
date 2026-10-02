@@ -42,7 +42,7 @@ try{
     for(const width of [1440,393]){
       await ui.call('Emulation.setDeviceMetricsOverride',{width,height:width===393?852:1000,deviceScaleFactor:1,mobile:false});
       for(const page of meta.pages){
-        const url=origin+'/tpl/'+id+'/'+page.file;await ui.call('Page.navigate',{url});await ui.until(`location.href===${JSON.stringify(url)} && document.readyState==='complete'`);
+        const url=origin+'/tpl/'+id+'/'+page.file;await ui.call('Page.navigate',{url});await ui.until(`location.pathname===${JSON.stringify(new URL(url).pathname)} && location.origin!==${JSON.stringify(origin)} && document.readyState==='complete'`);
         await ui.evaluate("document.fonts.ready");const overflow=await ui.evaluate("({width:innerWidth,scroll:document.documentElement.scrollWidth,h1:document.querySelectorAll('h1').length})");assert(overflow.scroll<=overflow.width+1,JSON.stringify({id,page:page.file,width,overflow}));assert.equal(overflow.h1,1);
         if(page.file==='index.html'){await ui.call('Page.captureScreenshot',{format:'png'}).then(r=>fs.writeFileSync(path.join(screenshotDir,id+'-'+(width===393?'mobile':'desktop')+'.png'),Buffer.from(r.data,'base64')));}
         if(width===393){await ui.evaluate("document.querySelector('.menu-toggle').click()");assert.equal(await ui.evaluate("document.querySelector('.menu-toggle').getAttribute('aria-expanded')"),'true');await ui.call('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape'});assert.equal(await ui.evaluate("document.querySelector('.menu-toggle').getAttribute('aria-expanded')"),'false');}

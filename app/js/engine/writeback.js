@@ -22,6 +22,7 @@ import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 //   浏览器侧可用 render.js 的 session.makeMeasure() 直接生成该回调。
 
 import { parse } from './parse.js';
+import { declarations, rules, tokens, offsetTranslation } from './css.js';
 
 // ---------- 行级 diff（移植 demo/core.js WB.diffLines）----------
 export function diffLines(a, b) {
@@ -34,17 +35,14 @@ export function diffLines(a, b) {
 
 // ---------- 行内样式解析与改写（移植 demo/core.js）----------
 export function parseStyle(str) {
-  return (str || '').split(';').map(s => s.trim()).filter(Boolean).map(s => {
-    const i = s.indexOf(':');
-    return [s.slice(0, i).trim().toLowerCase(), s.slice(i + 1).trim()];
-  });
+  return declarations(str || '');
 }
 function applyProps(pairs, props) {
   Object.keys(props).forEach(k => {
     let idx = -1;
     const v = props[k];
     pairs.forEach((p, j) => { if (p[0] === k) idx = j; });
-    if (v == null || v === '') { if (idx >= 0) pairs.splice(idx, 1); }
+    if (v == null || v === '') { for(let j=pairs.length-1;j>=0;j--)if(pairs[j][0]===k)pairs.splice(j,1); }
     else if (idx >= 0) pairs[idx][1] = v;
     else pairs.push([k, v]);
   });
@@ -61,10 +59,10 @@ export function getStyleProp(info, prop) {
 // 只改这个元素开标签里的 style="..."，其余源码原样保留（移植 demo/core.js WB.setInlineStyle）
 export function setInlineStyle(source, info, props) {
   // 属性值用双引号包着，值里的双引号（比如字体名）换成单引号，免得把属性截断
-  const styleStr = joinPairs(applyProps(parseStyle(info.style), props)).replace(/"/g, "'");
+  const styleStr = joinPairs(applyProps(parseStyle(info.style), props)).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const open = source.slice(info.openStart, info.openEnd);
   let out;
-  const re = /\sstyle\s*=\s*("[^"]*"|'[^']*')/i;
+  const re = /\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i;
   if (re.test(open)) {
     out = open.replace(re, () => (styleStr ? ' style="' + styleStr + '"' : ''));
   } else if (styleStr) {
@@ -79,20 +77,17 @@ export function setInlineStyle(source, info, props) {
 // 优先在已含该选择器规则的块里改，找不到规则就追加到"最后一块"末尾
 export function setCssRule(source, parsed, selector, props) {
   if (!parsed.styles.length) return null;
-  const escSel = selector.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&');
-  const ruleRe = new RegExp('(\\n[ \\t]*)' + escSel + '\\s*\\{([^}]*)\\}');
   let target = null, match = null;
   parsed.styles.forEach(range => {
     const css = source.slice(range[0], range[1]);
-    const m = ruleRe.exec(css);
-    if (m && !target) { target = range; match = m; }
+    for (const rule of rules(css)) if (rule.selector === selector) { target = range; match = rule; }
   });
   if (!target) target = parsed.styles[parsed.styles.length - 1]; // 没有现成规则：往最后一块追加
   const css = source.slice(target[0], target[1]);
   let out;
   if (match) {
-    const body = joinPairs(applyProps(parseStyle(match[2]), props));
-    out = css.slice(0, match.index) + match[1] + selector + ' { ' + body + ' }' + css.slice(match.index + match[0].length);
+    const body = joinPairs(applyProps(parseStyle(css.slice(match.open+1,match.close)), props));
+    out = css.slice(0,match.open+1) + ' ' + body + ' ' + css.slice(match.close);
   } else {
     const nb = joinPairs(applyProps([], props));
     if (/(\n[ \t]*)$/.test(css)) out = css.replace(/(\n[ \t]*)$/, (all, tail) => '\n    ' + selector + ' { ' + nb + ' }' + tail);
@@ -118,28 +113,31 @@ function mediaBlock(css, maxW) {
   if (at < 0) { css = css.replace(/\s*$/, '') + `\n${head}\n}\n`; at = css.indexOf(head); }
   const open = at + head.length - 1;
   let depth = 0, close = css.length - 1;
-  for (let i = open; i < css.length; i++) { if (css[i] === '{') depth++; else if (css[i] === '}' && --depth === 0) { close = i; break; } }
+  for (const token of tokens(css)) { if(token.at<open)continue;if(token.ch==='{')depth++;else if(token.ch==='}'&&--depth===0){close=token.at;break;} }
   return { css, open, close };
 }
 export function mediaProp(source, selector, prop, maxW) {
   const m = RESP_RE.exec(source);
   if (!m) return null;
   const { css, open, close } = mediaBlock(m[1], maxW);
-  const r = new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}').exec(css.slice(open + 1, close));
+  const inner = css.slice(open + 1, close);
+  const r = rules(inner).filter(rule=>rule.selector===selector).at(-1);
   if (!r) return null;
   let v = null;
-  parseStyle(r[1].replace(/\s*!important/g, '')).forEach((p) => { if (p[0] === prop) v = p[1]; });
+  parseStyle(inner.slice(r.open+1,r.close)).forEach((p) => { if (p[0] === prop) v = p[1].replace(/\s*!important\s*$/i, ''); });
   return v;
 }
 function upsertMediaRule(source, selector, props, maxW) {
   const m = RESP_RE.exec(source);
   const { css, open, close } = mediaBlock(m ? m[1] : '', maxW);
   const inner = css.slice(open + 1, close);
-  const rm = new RegExp('(\\n[ \\t]*)' + selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}').exec(inner);
-  const pairs = applyProps(parseStyle(rm ? rm[2].replace(/\s*!important/g, '') : ''), props);
-  const rule = `${selector} { ${pairs.map(([k, v]) => `${k}: ${String(v).replace(/"/g, "'")} !important;`).join(' ')} }`;
+  const rm = rules(inner).filter(rule=>rule.selector===selector).at(-1);
+  const existing = parseStyle(rm ? inner.slice(rm.open+1,rm.close) : '').map(([key,value])=>[key,value.replace(/\s*!important\s*$/i,'')]);
+  const pairs = applyProps(existing, props);
+  const body = pairs.map(([k,v])=>`${k}: ${String(v).replace(/\s*!important\s*$/i,'')} !important;`).join(' ');
+  const rule = `${selector} { ${body} }`;
   let next;
-  if (rm) next = inner.slice(0, rm.index) + (pairs.length ? `${rm[1]}${rule}` : '') + inner.slice(rm.index + rm[0].length);
+  if (rm) next = inner.slice(0,rm.open+1)+' '+body+' '+inner.slice(rm.close);
   else next = inner.replace(/\s*$/, '') + `\n  ${rule}\n`;
   const block = `<style id="cd-responsive">${css.slice(0, open + 1)}${next}${css.slice(close)}</style>`;
   if (m) return source.slice(0, m.index) + block + source.slice(m.index + m[0].length);
@@ -333,7 +331,7 @@ export function applyEdit(source, edit, opts = {}) {
   } else if (edit.kind === 'style') {
     // —— 字号 / 字体 / 颜色 / 缩放等行内样式 ——
     const props = {};
-    Object.keys(edit.props || {}).forEach(k => { props[k.toLowerCase()] = edit.props[k]; });
+    Object.keys(edit.props || {}).forEach(k => { props[k.startsWith('--')?k:k.toLowerCase()] = edit.props[k]; });
     if (!Object.keys(props).length) return fail(i18nText('edit.props 为空，没有要执行的样式修改。'));
     if ('transform' in props) {
       return fail(i18nText('绝不写 transform（那是动画通道）：挪位请用 move（写独立 translate），缩放请写独立 scale；写 transform 会被动画覆盖、元素"弹回去"。'), { selector: info.selector, line: info.line });
@@ -343,7 +341,7 @@ export function applyEdit(source, edit, opts = {}) {
     if (edit.scope === 'class') {
       const cls = edit.className || info.classes[0];
       if (!cls || !info.classes.includes(cls)) return fail(i18nText('scope:"class" 要求目标带指定 class；该元素上没有 class "') + cls + '"。', { selector: info.selector, line: info.line });
-      newSource = setCssRule(source, parsed, '.' + cls, props);
+      newSource = edit.media ? upsertMediaRule(source, '.' + cls, props, edit.media) : setCssRule(source, parsed, '.' + cls, props);
       if (newSource == null) return fail(i18nText('页面里没有 <style> 块，无处写共用规则。'), { selector: info.selector, line: info.line });
       scopeClass = cls;
     } else if (edit.media) {
@@ -359,14 +357,20 @@ export function applyEdit(source, edit, opts = {}) {
       return fail(at(i18nText('跨区域移动')) + i18nText('属于"改结构"：需要把整段代码剪切到新位置并适应新区域的排版，不宜直接写回；已恢复原样，请记成草图标记交给 AI。'), { selector: info.selector, line: info.line });
     }
     const dx = +edit.dx || 0, dy = +edit.dy || 0;
-    let target = null, base = curTranslate(info);
+    let target = null, base = edit.baseTranslate ?? getStyleProp(info, 'translate') ?? 'none';
     if (edit.media) {
-      target = mediaTarget(source, parsed, info);
+      if(edit.scope==='class'){
+        const cls=edit.className||info.classes[0];
+        if(!cls||!info.classes.includes(cls))return fail(i18nText('scope:"class" 要求目标带指定 class。'));
+        target={source,selector:'.'+cls};scopeClass=cls;
+      }else target = mediaTarget(source, parsed, info);
       const mv = mediaProp(target.source, target.selector, 'translate', edit.media);
-      if (mv) { const p = mv.split(/\s+/).map(parseFloat); base = [p[0] || 0, p[1] || 0]; }
+      if (mv && edit.baseTranslate === undefined) base = mv;
     }
-    const nx = Math.round(base[0] + dx), ny = Math.round(base[1] + dy);
-    const nv = (nx || ny) ? nx + 'px ' + ny + 'px' : null; // 回到原点就清掉 translate
+    if (edit.baseTranslate === undefined && !getStyleProp(info,'translate') && !(target && mediaProp(target.source,target.selector,'translate',edit.media)) && (parsed.styleBodies.some(css=>/\btranslate\s*:/.test(css)) || /<link\b[^>]*\bstylesheet\b/i.test(source))) {
+      return fail('A computed translation baseline is required for stylesheet-based movement.', {selector:info.selector,line:info.line});
+    }
+    const nv = offsetTranslation(base, dx, dy);
     if (target) {
       newSource = upsertMediaRule(target.source, target.selector, { translate: nv || '0px 0px' }, edit.media);
       note = i18nText('只对手机屏幕生效（写在 @media 手机样式里），电脑版不受影响。');

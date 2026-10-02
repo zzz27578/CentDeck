@@ -98,11 +98,12 @@ function resolveProjectFile(dir, relPath) {
   return target;
 }
 
+let historySequence = 0;
 function makeHid() {
   const d = new Date();
   const p = (n) => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  return `${stamp}-${crypto.randomBytes(2).toString('hex')}`;
+  return `${stamp}${String(d.getMilliseconds()).padStart(3,'0')}-${String(historySequence++).padStart(8,'0')}-${crypto.randomBytes(2).toString('hex')}`;
 }
 
 // ---------- 列表 ----------
@@ -291,6 +292,7 @@ function saveHistory(dir, relPath, oldContent) {
     hid,
     time: new Date().toISOString(),
     file: relPath,
+    page: readJson(path.join(dir, 'project.json'), '项目缺少 project.json').pages?.find(p => p.file === relPath) || null,
     note: `修改前自动备份：${relPath}`,
   });
   evictHistory(dir);
@@ -338,10 +340,16 @@ function restoreHistory(id, hid) {
   if (!fs.existsSync(snapFile) || !fs.statSync(snapFile).isFile()) {
     throw new ApiError(404, '历史快照内容缺失');
   }
-  const target = resolveProjectFile(dir, meta.file);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.copyFileSync(snapFile, target);
-  return meta;
+  // Read first: committing creates a snapshot and may evict this old entry.
+  const content = fs.readFileSync(snapFile, 'utf8');
+  const changes = require('./changes');
+  const current = changes.read(id, meta.file);
+  const page = getProject(id).pages.find(p => p.file === meta.file);
+  const result = changes.commit(id, [{
+    path: meta.file, content, baseHash: changes.hash(current),
+    ...(!page && /\.html?$/i.test(meta.file) ? {title: meta.page?.title || path.basename(meta.file)} : {}),
+  }]);
+  return { ...meta, changeId: result.id };
 }
 
 // ---------- 素材 ----------
@@ -517,9 +525,12 @@ function saveAssistants(body) {
   return list;
 }
 // 删除项目：目录自包含（.centdeck 快照/历史都在里面），整体移除
-function deleteProject(id) {
+async function deleteProject(id) {
   const dir = projectDir(id);
-  fs.rmSync(dir, { recursive: true, force: true });
+  const tasks = require('./tasks');
+  await tasks.disposeProject(id);
+  try { require('./preview').closeProject(id); fs.rmSync(dir, { recursive: true, force: true }); }
+  finally { tasks.finishProjectDelete(id); }
   return { deleted: id };
 }
 

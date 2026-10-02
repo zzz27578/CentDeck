@@ -5,6 +5,7 @@ import { text as i18nText, template as i18nTpl } from '../core/i18n.js';
 //   green = 完整可改；yellow = 大部分能改，个别地方要注意；red = 只能查看、圈选，修改交给 AI
 import { parse, instrument, LOC_ATTR } from '../engine/parse.js';
 import { withBase } from '../engine/frame.js';
+import { renderSafePreview } from '../engine/preview.js';
 
 const SPA_MARK = /__NEXT_DATA__|data-reactroot|ng-version=|data-v-app|data-server-rendered|__NUXT__|window\.__remixContext/;
 const TW_CDN = /cdn\.tailwindcss\.com|@tailwindcss\/browser/;
@@ -32,8 +33,8 @@ function renderCount(html, baseHref) {
     };
     f.onload = () => setTimeout(finish, 700);
     setTimeout(finish, 4500);
-    f.srcdoc = withBase(instrument(html), baseHref);
     document.body.appendChild(f);
+    renderSafePreview(f,withBase(instrument(html),baseHref),baseHref).catch(finish);
   });
 }
 

@@ -12,15 +12,22 @@ export function connectWorkbench(app){
   function preview(){
     if(app.view()!=='edit'||!app.editor?.frame?.doc||!visibleControl(app.editor.frame.iframe))return null;
     const frame=app.editor.frame;
-    return {doc:frame.doc,win:frame.win,page:app.state.page};
+    return {doc:frame.doc,win:frame.win,page:app.state.page,frame,remote:frame.runtime};
   }
   function snapshot(){
     const next=new Map();
     const identify=(n,context)=>{if(!ids.has(n))ids.set(n,documentId.slice(0,8)+'-c'+(++sequence));const id=ids.get(n);next.set(id,{node:n,context,doc:n.ownerDocument,page:context==='preview'?app.state.page:null});return id;};
     const list=collectControls(document,'workbench',identify),p=preview();let pageState=null;
     if(p){
-      const pageControls=collectControls(p.doc,'preview',identify),d=p.doc.documentElement;
-      pageState={page:p.page,ready:!app.editor.loading,title:p.doc.title,viewport:{width:p.win.innerWidth,height:p.win.innerHeight,scrollX:p.win.scrollX,scrollY:p.win.scrollY,scrollWidth:d.scrollWidth,scrollHeight:d.scrollHeight,horizontalOverflow:d.scrollWidth>p.win.innerWidth+1},text:previewText(p.doc),controls:pageControls};
+      const d=p.doc.documentElement;
+      let pageControls;
+      if(p.remote?.state){
+        pageControls=p.remote.state.controls.map(control=>{const id=documentId.slice(0,8)+'-'+control.id;next.set(id,{remote:control.id,context:'preview',frame:p.frame,page:p.page});return {...control,id};});
+        pageState={...p.remote.state,page:p.page,ready:!app.editor.loading,controls:pageControls};
+      }else{
+        pageControls=collectControls(p.doc,'preview',identify);
+        pageState={page:p.page,ready:!app.editor.loading,title:p.doc.title,viewport:{width:p.win.innerWidth,height:p.win.innerHeight,scrollX:p.win.scrollX,scrollY:p.win.scrollY,scrollWidth:d.scrollWidth,scrollHeight:d.scrollHeight,horizontalOverflow:d.scrollWidth>p.win.innerWidth+1},text:previewText(p.doc),controls:pageControls};
+      }
       list.push(...pageControls);
     }
     controls=next;
@@ -30,6 +37,11 @@ export function connectWorkbench(app){
   async function settle(){await delay(100);for(let i=0;i<60&&app.view()==='edit'&&app.editor?.loading;i++)await delay(50);}
   function control(c){
     const record=controls.get(c.target),n=record?.node;
+    if(record?.remote){
+      const current=preview();
+      if(current?.frame!==record.frame||current.page!==record.page||!current.remote?.state?.controls.some(control=>control.id===record.remote&&!control.disabled))throw Error(i18nText('STALE_CONTROL：网页已切换，请重新 ui_state'));
+      return record;
+    }
     if(!n||!visibleControl(n)||n.disabled)throw Error(i18nText('STALE_CONTROL：控件已变化或不可操作，请重新 ui_state'));
     if(record.context==='preview'&&(preview()?.doc!==record.doc||record.page!==app.state.page))throw Error(i18nText('STALE_CONTROL：网页已切换，请重新 ui_state'));
     const scope=activeScope(n.ownerDocument);if(scope!==n.ownerDocument&&!scope.contains(n))throw Error(i18nText('控件被弹窗遮挡，请先处理当前弹窗'));
@@ -48,10 +60,11 @@ export function connectWorkbench(app){
     else if(c.action==='click'||c.action==='fill'){
       const r=control(c),n=r.node;
       if(r.context==='preview')app.editor.setTool('interact');
-      if(c.action==='click')n.click();else fillControl(n,c.value);
+      if(r.remote)await r.frame.runtime.action({action:c.action,target:r.remote,value:c.value});
+      else if(c.action==='click')n.click();else fillControl(n,c.value);
     }else if(c.action==='scroll'){
-      if(c.target)control(c).node.scrollIntoView({block:'center',behavior:'instant'});
-      else {const p=preview();if(!p)throw Error(i18nText('请先打开编辑页，或传入控件 target'));const x=c.x??p.win.scrollX,y=c.y??p.win.scrollY;if(![x,y].every(Number.isFinite))throw Error(i18nText('滚动坐标需要数字'));p.win.scrollTo({left:x,top:y,behavior:'instant'});}
+      if(c.target){const record=control(c);if(record.remote)await record.frame.runtime.action({action:'scroll',target:record.remote});else record.node.scrollIntoView({block:'center',behavior:'instant'});}
+      else {const p=preview();if(!p)throw Error(i18nText('请先打开编辑页，或传入控件 target'));const x=c.x??p.win.scrollX,y=c.y??p.win.scrollY;if(![x,y].every(Number.isFinite))throw Error(i18nText('滚动坐标需要数字'));if(p.remote)await p.remote.action({action:'scroll',x,y});else p.win.scrollTo({left:x,top:y,behavior:'instant'});}
     }else if(c.action==='add_mark'){
       const p=app.project(),page=c.page||app.state.page;if(!p?.pages.some(x=>x.file===page))throw Error(i18nText('请先打开需要标记的页面'));
       const mark=await app.sketch.addRaw({page,type:'note',color:'#e5484d',text:c.text||i18nText('请检查此处'),pts:[[c.x??120,c.y??120]],done:false});

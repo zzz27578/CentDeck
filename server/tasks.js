@@ -11,6 +11,8 @@ const { ApiError } = store;
 const cache = new Map(),
   controllers = new Map(),
   listeners = new Set();
+const executions = new Map();
+const deleting = new Set();
 let active = 0;
 const waiting = new Set([
   "waiting_user",
@@ -73,6 +75,7 @@ function scopeOf(scope) {
   return [...new Set(scope)].slice(0, 100);
 }
 function start(id, b, parent = null) {
+  if (deleting.has(id)) throw new ApiError(409, '项目正在删除，请等待操作完成');
   b={...require("./extensions").preferences(),...b};
   const assistant = store.getAssistants().find((x) => x.id === b.assistantId);
   if (!assistant) throw new ApiError(400, "请选择助手");
@@ -532,7 +535,9 @@ async function run(t) {
     t.elapsed += Date.now() - started;
     controllers.delete(t.id);
     active--;
-    save(t.project);
+    // Cleanup must never reject the unawaited scheduler task or kill the server.
+    try { if (!deleting.has(t.project)) save(t.project); }
+    catch (error) { console.error('[CentDeck] Task cleanup failed:', error.message); }
     pump();
   }
 }
@@ -550,11 +555,17 @@ function pump() {
           continue;
         }
         if (active >= 3) return;
-        run(t);
+        const execution = run(t).catch(error => {
+          t.status = 'failed';
+          t.error = error.message;
+          console.error('[CentDeck] Task failed:', error.message);
+        }).finally(() => executions.delete(t.id));
+        executions.set(t.id, execution);
       }
   });
 }
 function action(id, tid, b) {
+  if (deleting.has(id)) throw new ApiError(409, '项目正在删除，请等待操作完成');
   const t = get(id, tid);
   if (b.action === "think") {
     t.think = require("./reasoning").normalizeThink(b.think);
@@ -633,4 +644,20 @@ function subscribe(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
-module.exports = { start, list, action, subscribe, load, toolsFor };
+async function disposeProject(id) {
+  if (deleting.has(id)) throw new ApiError(409, '项目正在删除，请等待操作完成');
+  const tasks = load(id);
+  deleting.add(id);
+  try {
+    for (const task of tasks) {
+      task.epoch++;
+      if (!['completed', 'cancelled'].includes(task.status)) task.status = 'cancelled';
+      controllers.get(task.id)?.abort();
+    }
+    save(id);
+    await Promise.allSettled(tasks.map(task => executions.get(task.id)).filter(Boolean));
+    cache.delete(id);
+  } catch (error) { deleting.delete(id); throw error; }
+}
+function finishProjectDelete(id) { deleting.delete(id); }
+module.exports = { start, list, action, subscribe, load, toolsFor, disposeProject, finishProjectDelete };
