@@ -2,7 +2,7 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/centdeck-dark.svg"><img src="docs/assets/centdeck-light.svg" width="760" alt="CentDeck"></picture>
 
-[简体中文](README.md) · [繁體中文](README.zh-TW.md) · [English](README.en.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
 
 [![CI](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -10,90 +10,90 @@
 [![License](https://img.shields.io/badge/License-AGPL--3.0-315bff)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/zzz27578/CentDeck?style=flat&color=315bff)](https://github.com/zzz27578/CentDeck/stargazers)
 
-**让 Agent 搭建前端，让你像做 PPT 一样完成设计。**
+**Build with agents. Refine your frontend like a presentation.**
 
-内置模型 API 连接 · 无限画布 · 可视化精修 · 手动编辑零模型 Token
+Built-in API connections · Infinite canvas · Visual editing · Zero model tokens for manual edits
 
 </div>
 
-CentDeck（百映）是一款面向 AI 使用者的本地前端工作台。接入自己的模型 API，让 Agent 生成页面；在无限画布上比较风格与页面关系，再用拖拽、改字和属性面板完成精细调整。
+CentDeck is a local frontend workbench for people who build with AI. Connect your own model API, let an agent create the pages, compare design directions on an infinite canvas, then finish the details with direct manipulation.
 
-**移动标题、调整字号、修改文案，不必再发一次提示词。** 可直接编辑的元素会写回真实 HTML/CSS，手动操作不调用模型，也不消耗模型额度。
+**Moving a heading, changing a font size or rewriting a sentence should not need another prompt.** Supported visual edits write back to real HTML/CSS without calling a model or spending model tokens.
 
-![CentDeck 首页](docs/assets/screenshots/home.png)
+![CentDeck home](docs/assets/screenshots/home.png)
 
-## 从想法到成品，留在同一个工作台
+## One workspace, from idea to finished frontend
 
-| 能力 | 你可以做什么 |
+| Capability | What you can do |
 |---|---|
-| **内置 Agent 与 API 连接** | 接入 OpenAI Compatible、Gemini 或本地兼容服务，管理模型、助手、Skills 和独立对话。 |
-| **无限画布** | 同时查看页面、弹窗和设计规范，缩放、平移、拖动排布，快速确定整体方向。 |
-| **像 PPT 一样精修** | 直接改文字，拖动元素，调整大小、字号、颜色和间距；支持吸附、锁定、撤销与版本历史。 |
-| **手动编辑零模型 Token** | 把简单调整交给鼠标和键盘，把 AI 额度留给生成、结构调整和复杂工作。 |
-| **便签与精确引用** | 用彩色便签、草图、参考图和 @ 引用，把修改位置清楚地交给 Agent。 |
-| **MCP 与多助手** | 连接支持 MCP 的外部 AI 应用，在停靠或悬浮窗口中组织多个助手。 |
-| **真实源码交付** | 导入已有 HTML，预览桌面与手机效果，导出包含源码和素材的项目 ZIP。 |
+| **Built-in agents and API connections** | Use OpenAI-compatible, Gemini or local compatible endpoints. Manage models, assistants, Skills and separate conversations. |
+| **Infinite canvas** | Explore pages, dialogs and design systems together. Zoom, pan and arrange your work to find the right direction. |
+| **Presentation-like editing** | Edit text, drag elements, resize and refine typography, colors and spacing, with snapping, locks, undo and version history. |
+| **Zero-token manual refinement** | Use your mouse and keyboard for small edits. Save model usage for generation, structural changes and complex work. |
+| **Precise visual feedback** | Give agents colored notes, sketches, reference images and @ references tied to the right location. |
+| **MCP and multiple assistants** | Connect MCP-compatible AI apps and organize assistants in docked or floating windows. |
+| **Real source, portable output** | Import existing HTML, preview desktop and mobile layouts, and export your source and assets as a ZIP. |
 
-## 先定方向，再打磨细节
+## Choose a direction. Then make it yours.
 
-### 在无限画布上看全局
+### See the whole design on an infinite canvas
 
-把页面、弹窗与设计规范放在一起。比较预设或 Agent 生成的方案，选择方向后再进入单页编辑。
+Keep pages, dialogs and design systems in view. Compare presets or agent-generated directions before opening a page for detailed work.
 
-![无限画布与设计总览](docs/assets/screenshots/overview.png)
+![Overview and infinite canvas](docs/assets/screenshots/overview.png)
 
-### 用鼠标完成最后一毫米
+### Finish the details by hand
 
-点选、拖动、双击改字，像整理一页 PPT。对能映射到源码的元素直接写回；需要结构性修改时，添加标记交给 Agent。
+Click, drag and double-click to edit, much like arranging a slide. Elements that map to source can be changed directly; annotate structural changes for an agent.
 
-![拖动与可视化精修](docs/assets/screenshots/visual-editing.png)
+![Drag-and-drop visual editing](docs/assets/screenshots/visual-editing.png)
 
-### 让助手各司其职
+### Give each assistant a role
 
-创建适合不同工作的助手，按项目管理对话。窗口可停靠、悬浮或折叠；支持编辑重发、停止、重试与上下文压缩。
+Create assistants for different jobs and keep conversations organized by project. Dock, float or collapse their windows. Edit and resend messages, stop or retry responses, and compact context when needed.
 
-![多助手与悬浮工作台](docs/assets/screenshots/multi-agent.png)
+![Multiple assistants and floating windows](docs/assets/screenshots/multi-agent.png)
 
 <a id="quick-start"></a>
-## 快速开始
+## Quick start
 
-需要 **Node.js 22 或更新版本**，无需 npm 安装或构建。
+Requires **Node.js 22 or later**. No npm install and no build step.
 
 ~~~bash
 git clone https://github.com/zzz27578/CentDeck.git
 cd CentDeck
 ~~~
 
-- **Windows**：双击 `CentDeck.bat`。
-- **macOS / Linux**：运行 `bash start.sh`。
-- 也可直接运行 `node server/server.js`。
+- **Windows:** double-click `CentDeck.bat`.
+- **macOS / Linux:** run `bash start.sh`.
+- Or run `node server/server.js` directly.
 
-浏览器默认打开 `http://localhost:8420`。首次使用以 `centdeck / centdeck` 登录，并设置自己的密码。
+Open `http://localhost:8420`. Sign in with `centdeck / centdeck` on first launch, then set your own password.
 
-1. 在 **设置 → 模型提供商** 中添加 API 地址、密钥和模型。
-2. 创建空白项目、使用模板，或导入已有网页。
-3. 让 Agent 生成与调整结构，在画布里直接完成细节修改。
-4. 预览桌面和手机效果，然后导出项目。
+1. Add your endpoint, API key and model in **Settings → Providers**.
+2. Create a blank project, choose a template or import an existing website.
+3. Let agents generate content and handle structure; refine the details directly on the canvas.
+4. Preview desktop and mobile layouts, then export the project.
 
-界面支持 **简体中文与 English**，可在 **设置 → 外观下方的语言选项** 中切换。
+The interface supports **Simplified Chinese and English**. Change it under **Settings → Language**, below Appearance.
 
-## 按你的方式连接 AI
+## Connect AI your way
 
-- **自带 API（BYOK）**：内置连接管理，支持模型发现、单模型测试、能力设置与自定义请求参数。模型调用费用由你的服务商计费。
-- **外部 MCP 助手**：在 **MCP 接管** 中复制连接配置，添加到支持 MCP 的 AI 应用。配置按实际安装目录自动生成。
-- **本地项目**：源码保存在 `projects/`，账号与密钥保存在不入库的 `config.local/`。生成结果是普通前端文件。
+- **Bring your own key:** built-in connection management, model discovery, single-model tests, capability settings and custom request parameters. Your provider bills model usage.
+- **External MCP assistants:** copy the configuration from **MCP connections** into an MCP-compatible AI app. Paths are generated from your actual installation.
+- **Local project files:** source stays in `projects/`; accounts and keys stay in Git-ignored `config.local/`. Your output is ordinary frontend code.
 
-## 模板与扩展
+## Templates and extensions
 
-内置山野旅宿、生活器物、英文建筑事务所等多页模板。风格画廊、个人设计预设、自建 Skills 和插件可按需扩展工作台。
+Start with multipage hospitality, homeware or English architecture templates. Add personal design presets, custom Skills and plugins to shape your workspace.
 
-[MCP 与 Skills](docs/MCP与Skills.md) · [插件开发](docs/插件开发规范.md) · [贡献指南](CONTRIBUTING.md) · [问题反馈](https://github.com/zzz27578/CentDeck/issues)
+[MCP and Skills](docs/MCP与Skills.md) · [Plugin development](docs/插件开发规范.md) · [Contributing](CONTRIBUTING.md) · [Report an issue](https://github.com/zzz27578/CentDeck/issues)
 
-## 许可
+## License
 
-采用 [GNU Affero General Public License v3.0](LICENSE)，并包含 CentDeck 的署名、来源和商标附加条款。二次开发和网络部署必须保留 CentDeck 版权与许可声明，明确标注基于 CentDeck 并说明主要修改，不得冒充官方项目或暗示官方背书。独立创作的网站不因使用本工具而受此许可约束。第三方组件遵循[各自许可](THIRD_PARTY_NOTICES.md)。
+Licensed under the [GNU Affero General Public License v3.0](LICENSE), with CentDeck attribution, provenance and trademark terms. Derivative works and network deployments must retain the CentDeck copyright and license notices, identify the work as based on CentDeck, describe material changes, and must not imply official sponsorship or endorsement. Independently created websites are not covered merely because they were made with CentDeck. Third-party components retain [their own licenses](THIRD_PARTY_NOTICES.md).
 
-如果 CentDeck 让你的前端工作流更顺手，欢迎点亮 **Star**，也欢迎分享作品、提交 Issue 与 Pull Request。
+If CentDeck improves your workflow, give it a **Star**. Contributions, issues and examples of what you build are welcome.
 
 ---
 

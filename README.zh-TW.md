@@ -2,7 +2,7 @@
 
 <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/centdeck-dark.svg"><img src="docs/assets/centdeck-light.svg" width="760" alt="CentDeck"></picture>
 
-[简体中文](README.md) · [繁體中文](README.zh-TW.md) · [English](README.en.md)
+[English](README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
 
 [![CI](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/zzz27578/CentDeck/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-43853d?logo=node.js&logoColor=white)](https://nodejs.org/)

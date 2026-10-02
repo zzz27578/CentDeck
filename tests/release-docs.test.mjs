@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only */
 import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';
 import {createHash} from 'node:crypto';
-const readmes=['README.md','README.zh-TW.md','README.en.md'];
-for(const file of readmes){
+const readmes=['README.md','README.zh-CN.md','README.zh-TW.md'];
+for(const file of [...readmes,'README.en.md']){
   const source=fs.readFileSync(file,'utf8');
   for(const language of readmes)assert(source.includes(']('+language+')'),file+' missing language link');
   assert(!/验证状态|收尾验收|Scope and verification|401|阶段对话核查/.test(source),file+' contains internal audit copy');
